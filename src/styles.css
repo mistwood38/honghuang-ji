@@ -1,0 +1,237 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #14110d;
+  --color-raised: #241c16;
+  --color-paper: #f4ecd9;
+  --color-paper-deep: #e5d3b0;
+  --color-fg: #1c1612;
+  --color-fog: #f3eadc;
+  --color-dim: #b6a78f;
+  --color-faint: #6e6254;
+  --color-cinnabar: #a33b32;
+  --color-gold: #d4b36a;
+  --color-line: #d9cbb0;
+  --color-line-dark: #3c332a;
+  --font-sans: "Noto Sans SC", "PingFang SC", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  --font-serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", serif;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html,
+  body {
+    background: var(--color-ink);
+    color: var(--color-fog);
+    font-family: var(--font-sans);
+    min-height: 100%;
+  }
+
+  body {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 47px,
+      color-mix(in srgb, var(--color-gold) 7%, transparent) 48px
+    );
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-paper-deep);
+    color: var(--color-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+
+  button,
+  summary {
+    touch-action: manipulation;
+  }
+}
+
+.shell {
+  min-height: 100vh;
+  padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
+}
+
+.dock {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  border-top: 1px solid var(--color-line-dark);
+  background: color-mix(in srgb, var(--color-ink) 94%, transparent);
+  backdrop-filter: blur(10px);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.manuscript {
+  background: var(--color-paper);
+  color: var(--color-fg);
+  box-shadow: 0 16px 48px color-mix(in srgb, black 35%, transparent);
+}
+
+.copy p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.9;
+  text-indent: 2em;
+}
+
+.copy p + p {
+  margin-top: 0.85rem;
+}
+
+.aside {
+  margin-top: 1.1rem;
+  border-left: 2px solid var(--color-cinnabar);
+  padding-left: 0.85rem;
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  line-height: 1.75;
+}
+
+.choice {
+  display: flex;
+  width: 100%;
+  min-height: 3.25rem;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: transparent;
+  padding: 0.8rem 0.9rem;
+  text-align: left;
+  color: var(--color-fg);
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--color-cinnabar);
+  background: color-mix(in srgb, var(--color-cinnabar) 7%, var(--color-paper));
+}
+
+.choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.btn-primary,
+.btn-ghost,
+.btn-ink {
+  min-height: 3rem;
+  padding: 0.65rem 1.1rem;
+  font-family: var(--font-serif);
+}
+
+.btn-primary {
+  background: var(--color-cinnabar);
+  color: var(--color-paper);
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--color-cinnabar) 88%, black);
+}
+
+.btn-ghost {
+  border: 1px solid var(--color-line-dark);
+  background: transparent;
+  color: var(--color-fog);
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.btn-ink {
+  border: 1px solid var(--color-fg);
+  background: transparent;
+  color: var(--color-fg);
+}
+
+.btn-ink:disabled,
+.btn-primary:disabled,
+.btn-ghost:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.seal {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 2px solid var(--color-cinnabar);
+  color: var(--color-cinnabar);
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  line-height: 1;
+  transform: rotate(-8deg);
+}
+
+.meter {
+  height: 3px;
+  background: var(--color-line-dark);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  background: var(--color-gold);
+}
+
+.meter-life > span {
+  background: var(--color-cinnabar);
+}
+
+.rise {
+  animation: rise 220ms ease;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+details.entry {
+  border-bottom: 1px solid var(--color-line-dark);
+}
+
+details.entry > summary {
+  min-height: 3rem;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+}
+
+details.entry > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
