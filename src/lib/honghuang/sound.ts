@@ -1,34 +1,50 @@
+import type { SceneMood } from "./visuals";
+
 let ctx: AudioContext | null = null;
-
 function context(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const WebAudio = window.AudioContext;
-  if (!WebAudio) return null;
-  if (!ctx) ctx = new WebAudio();
-  return ctx;
+  if (typeof window === "undefined" || !window.AudioContext) return null;
+  try {
+    if (!ctx) ctx = new window.AudioContext();
+    return ctx;
+  } catch {
+    return null;
+  }
 }
-
 export function unlockSound() {
   const audio = context();
-  if (audio?.state === "suspended") void audio.resume();
+  if (audio?.state === "suspended") void audio.resume().catch(() => undefined);
 }
-
-export function playChoice(enabled: boolean) {
+/** Small synthesized bronze chimes; always called from a user gesture. No autoplay. */
+export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
   if (!enabled) return;
   const audio = context();
   if (!audio) return;
-  if (audio.state === "suspended") void audio.resume();
+  if (audio.state === "suspended") void audio.resume().catch(() => undefined);
   const now = audio.currentTime;
-  const osc = audio.createOscillator();
-  const gain = audio.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(392, now);
-  osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.18);
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
-  osc.connect(gain);
-  gain.connect(audio.destination);
-  osc.start(now);
-  osc.stop(now + 0.4);
+  const notes =
+    mood === "calamity"
+      ? [98, 146.83, 207.65]
+      : mood === "radiance"
+        ? [196, 293.66, 440]
+        : [392, 523.25];
+  const duration = mood === "calamity" || mood === "radiance" ? 1.3 : 0.5;
+  notes.forEach((frequency, index) => {
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    const start = now + index * 0.045;
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(frequency, start);
+    osc.frequency.exponentialRampToValueAtTime(frequency * 0.995, start + duration);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.025 / (index + 1), start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    osc.connect(gain);
+    gain.connect(audio.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+    osc.start(start);
+    osc.stop(start + duration + 0.05);
+  });
 }

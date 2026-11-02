@@ -3,6 +3,8 @@ import { deltaHint, fill, meetsCond, visibleChoices } from "@/lib/honghuang/engi
 import { playChoice, unlockSound } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
+import { artForScene, moodForScene } from "@/lib/honghuang/visuals";
+import { Artwork, Atmosphere } from "./art";
 import { ORIGINS, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
 import { RestartButton } from "./restart-button";
@@ -17,12 +19,14 @@ export function PlayView() {
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
+    document.querySelector<HTMLElement>(".scene-caption h1")?.focus({ preventScroll: true });
     document.getElementById("scene-top")?.scrollIntoView({ block: "start" });
   }, [state.sceneId]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
+      if (useSave.getState().sceneId !== scene?.id) return;
       const target = event.target;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
       const index = Number(event.key) - 1;
@@ -31,8 +35,9 @@ export function PlayView() {
       const pick = options[index];
       if (!pick) return;
       event.preventDefault();
-      unlockSound();
-      playChoice(sound);
+      if (sound) unlockSound();
+      const next = sceneById(pick.choice.to);
+      playChoice(sound, next ? moodForScene(next) : "mist");
       choose(pick.choice, scene.id === "awaken" ? draft : undefined);
     }
     window.addEventListener("keydown", onKey);
@@ -63,93 +68,155 @@ export function PlayView() {
   let openIndex = 0;
 
   return (
-    <section className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
-      <article id="scene-top" className="manuscript rise p-5 md:p-10" key={scene.id}>
-        <p className="text-xs tracking-widest text-cinnabar">
-          {scene.era}
-          {place ? ` · ${place.name}` : ""}
-        </p>
-        <h1 className="mt-2 font-serif text-3xl md:text-4xl">{scene.ending?.name ?? scene.title}</h1>
-        <div className="copy mt-6">
-          {scene.paragraphs.map((paragraph) => (
-            <p key={paragraph}>{fill(paragraph, state)}</p>
-          ))}
+    <section id="scene-top" className="page-wrap play-layout">
+      <article className={`scene-chapter scene-${moodForScene(scene)}`} key={scene.id}>
+        <div className="scene-hero">
+          <Artwork art={artForScene(scene)} eager decorative />
+          <Atmosphere mood={moodForScene(scene)} />
+          <div className="scene-hero-shade" aria-hidden="true" />
+          <div className="scene-caption">
+            <p className="eyebrow">
+              {scene.era} <span> / </span> {place?.name ?? "洪荒"}
+            </p>
+            <h1 tabIndex={-1}>{scene.ending?.name ?? scene.title}</h1>
+            <p className="scene-place-line">{place?.summary}</p>
+          </div>
+          <span className="scene-volume" aria-hidden="true">
+            入世 · 第{String(state.log.length + 1).padStart(2, "0")}笔
+          </span>
         </div>
-        {asides.length > 0 ? (
-          <div className="mt-6 grid gap-3">
-            {asides.map((aside) => (
-              <p key={aside.text} className="aside">
-                {fill(aside.text, state)}
-              </p>
+        <div className="scene-paper manuscript">
+          <div className="narrative-label">
+            <span>因 果 正 文</span>
+            <span aria-hidden="true">—— ◇ ——</span>
+          </div>
+          <div className="copy">
+            {scene.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{fill(paragraph, state)}</p>
             ))}
           </div>
-        ) : null}
-
-        {scene.id === "awaken" ? (
-          <label className="mt-8 block">
-            <span className="text-sm text-faint">道号，可留空</span>
-            <input
-              value={draft}
-              maxLength={8}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="不取则随根骨赐号"
-              className="mt-2 w-full border-0 border-b border-line bg-transparent py-2 font-serif text-lg text-fg outline-none placeholder:text-faint"
-            />
-          </label>
-        ) : null}
-
-        {scene.ending ? (
-          <div className="mt-8 flex flex-col items-start gap-4 border-t border-line pt-6">
-            <span className="seal" aria-hidden="true">
-              {scene.ending.seal}
-            </span>
-            <p className="font-serif text-lg">归处 · {scene.ending.name}</p>
-            <div className="flex flex-wrap gap-3">
-              <RestartButton ink label="再入混沌" />
-              <LifeCopy />
+          {asides.length > 0 ? (
+            <div className="mt-6 grid gap-3">
+              {asides.map((aside) => (
+                <p key={aside.text} className="aside">
+                  {fill(aside.text, state)}
+                </p>
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-3">
-            <p className="text-xs tracking-widest text-cinnabar">抉择</p>
-            {options.map((item) => {
-              const indexLabel = item.open ? String(++openIndex) : "—";
-              const hint = deltaHint(item.choice.delta);
-              return (
-                <button
-                  key={item.choice.id}
-                  type="button"
-                  className="choice"
-                  disabled={!item.open}
-                  onClick={() => {
-                    if (!item.open) return;
-                    unlockSound();
-                    playChoice(sound);
-                    choose(item.choice, scene.id === "awaken" ? draft : undefined);
-                    if (scene.id === "awaken") setDraft("");
-                  }}
-                >
-                  <span className="font-serif text-cinnabar tabular-nums">{indexLabel}</span>
-                  <span className="min-w-0">
-                    <span className="block font-serif text-lg leading-snug">{item.choice.text}</span>
-                    {item.choice.sub ? (
-                      <span className="mt-1 block text-sm leading-relaxed opacity-80">{item.choice.sub}</span>
-                    ) : null}
-                    {item.open && hint ? (
-                      <span className="mt-1 block text-xs tracking-wide text-cinnabar">{hint}</span>
-                    ) : null}
-                    {!item.open && item.reason ? <span className="mt-1 block text-xs">{item.reason}</span> : null}
-                  </span>
-                </button>
-              );
-            })}
-            <p className="hidden text-xs text-faint md:block">数字键亦可抉择</p>
-          </div>
-        )}
+          ) : null}
+
+          {scene.id === "awaken" ? (
+            <label className="mt-8 block">
+              <span className="text-sm text-faint">道号，可留空</span>
+              <input
+                value={draft}
+                maxLength={8}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder="不取则随根骨赐号"
+                className="mt-2 min-h-12 w-full border-0 border-b border-line bg-transparent py-2 font-serif text-lg text-fg outline-none placeholder:text-faint"
+              />
+            </label>
+          ) : null}
+
+          {scene.ending ? (
+            <div className="mt-8 flex flex-col items-start gap-4 border-t border-line pt-6">
+              <span className="seal" aria-hidden="true">
+                {scene.ending.seal}
+              </span>
+              <p className="font-serif text-lg">归处 · {scene.ending.name}</p>
+              <div className="flex flex-wrap gap-3">
+                <RestartButton ink label="再入混沌" />
+                <LifeCopy />
+              </div>
+            </div>
+          ) : (
+            <div className="choice-list mt-8 grid gap-3">
+              <p className="choice-heading">
+                <span>此 刻 · 抉 择</span>
+                <small>一念起，因果生</small>
+              </p>
+              {options.map((item) => {
+                const indexLabel = item.open ? String(++openIndex) : "—";
+                const hint = deltaHint(item.choice.delta);
+                return (
+                  <button
+                    key={item.choice.id}
+                    type="button"
+                    className="choice"
+                    disabled={!item.open}
+                    onClick={() => {
+                      if (!item.open || useSave.getState().sceneId !== scene.id) return;
+                      if (sound) unlockSound();
+                      const next = sceneById(item.choice.to);
+                      playChoice(sound, next ? moodForScene(next) : "mist");
+                      choose(item.choice, scene.id === "awaken" ? draft : undefined);
+                      if (scene.id === "awaken") setDraft("");
+                    }}
+                  >
+                    <span className="choice-number">{indexLabel}</span>
+                    <span className="min-w-0">
+                      <span className="block font-serif text-lg leading-snug">
+                        {item.choice.text}
+                      </span>
+                      {item.choice.sub ? (
+                        <span className="mt-1 block text-sm leading-relaxed opacity-80">
+                          {item.choice.sub}
+                        </span>
+                      ) : null}
+                      {item.open && hint ? (
+                        <span className="mt-1 block text-xs tracking-wide text-cinnabar">
+                          {hint}
+                        </span>
+                      ) : null}
+                      {!item.open && item.reason ? (
+                        <span className="mt-1 block text-xs">{item.reason}</span>
+                      ) : null}
+                    </span>
+                  </button>
+                );
+              })}
+              <p className="hidden text-xs text-faint md:block">数字键亦可抉择</p>
+            </div>
+          )}
+        </div>
       </article>
-      <aside className="hidden lg:block">
-        <div className="sticky top-20 border border-line-dark bg-raised p-4 text-fog">
-          <Identity />
+      <aside className="play-sidebar">
+        <div className="identity-card bronze-panel">
+          <picture className="identity-portrait">
+            <source media="(max-width: 640px)" srcSet="/art/pilgrim-small.webp" />
+            <img
+              src="/art/pilgrim.webp"
+              width={1000}
+              height={1500}
+              loading="lazy"
+              alt="身披青衣的无名灵识，立于云气之间"
+            />
+          </picture>
+          <div className="identity-content">
+            <p className="eyebrow">此 世 · 灵 识</p>
+            <Identity />
+            <div className="identity-foot">
+              <span>所携 {state.items.length}</span>
+              <span>因果 {state.flags.length}</span>
+            </div>
+            <button
+              type="button"
+              className="identity-link"
+              onClick={() => useSave.getState().setScreen("self")}
+            >
+              观照此身 <span aria-hidden="true">⟶</span>
+            </button>
+          </div>
+        </div>
+        <div className="play-note">
+          <p className="eyebrow">正史既定 · 此生由你</p>
+          <p>
+            大能的胜负已写在本纪里。
+            <br />
+            你的自由，是在天地之间，
+            <br />
+            决定自己站在哪里。
+          </p>
         </div>
       </aside>
     </section>
@@ -164,7 +231,9 @@ export function Identity() {
   return (
     <div>
       <p className="font-serif text-xl text-gold">{name || "未名"}</p>
-      <p className="mt-1 text-sm text-dim">{originInfo ? `${originInfo.seal} · ${originInfo.name}` : "根骨未定"}</p>
+      <p className="mt-1 text-sm text-dim">
+        {originInfo ? `${originInfo.seal} · ${originInfo.name}` : "根骨未定"}
+      </p>
       <div className="mt-4">
         <StatList stats={stats} />
       </div>
