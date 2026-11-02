@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "洪荒纪",
+      "hasCanvas": false,
+      "bodyTextLen": 86,
+      "bodyTextHash": "1b0de0cd88e6104d767f5ae4097fbb8bf5c486f46a1b5798c6f3405e5ef5f3b4",
+      "bodyTextPrefix": "洪 洪荒纪 混沌本纪 斧声之前，你已不肯散。 正史从混沌写到封神余响，天书是整套世界。入世不改大事件，只把你写成缝里的那一笔。 ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "洪荒纪",
+      "hasCanvas": false,
+      "bodyTextLen": 86,
+      "bodyTextHash": "1b0de0cd88e6104d767f5ae4097fbb8bf5c486f46a1b5798c6f3405e5ef5f3b4",
+      "bodyTextPrefix": "洪 洪荒纪 混沌本纪 斧声之前，你已不肯散。 正史从混沌写到封神余响，天书是整套世界。入世不改大事件，只把你写成缝里的那一笔。 ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
