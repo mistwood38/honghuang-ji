@@ -14,6 +14,7 @@ type Store = SaveData & {
   setSound: (sound: boolean) => void;
   rename: (name: string) => void;
   restart: () => void;
+  importSave: (raw: string) => void;
 };
 
 function memoryStorage(): Storage {
@@ -95,6 +96,28 @@ function sanitize(persisted: unknown): SaveData {
   return next;
 }
 
+/** Accept the on-disk v1 blob, or the same blob wrapped by the persist middleware. */
+export function readImportedSave(raw: string): SaveData {
+  const trimmed = raw.trim();
+  if (!trimmed) throw new Error("没有可导入的文本");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    throw new Error("这不是存档文本。抄录此生的句子不能当存档导入。");
+  }
+  if (!parsed || typeof parsed !== "object") throw new Error("这不是存档文本");
+  const record = parsed as Record<string, unknown>;
+  const payload =
+    record.state && typeof record.state === "object" ? record.state : parsed;
+  if (!payload || typeof payload !== "object") throw new Error("这不是存档文本");
+  const body = payload as Record<string, unknown>;
+  if (body.version !== 1 || typeof body.sceneId !== "string" || typeof body.stats !== "object") {
+    throw new Error("只接受这一版游戏的存档");
+  }
+  return sanitize(payload);
+}
+
 export const useSave = create<Store>()(
   persist(
     (set, get) => ({
@@ -138,6 +161,9 @@ export const useSave = create<Store>()(
           pastLives,
         });
       },
+      importSave: (raw) => {
+        set({ ...readImportedSave(raw), hydrated: true });
+      },
     }),
     {
       name: "honghuang-ji-save",
@@ -155,6 +181,7 @@ export const useSave = create<Store>()(
           setSound: _f,
           rename: _g,
           restart: _h,
+          importSave: _i,
           ...data
         } = state;
         return data;

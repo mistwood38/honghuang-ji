@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@source "./components";
+@source "./lib";
+@source "./routes";
+@source "./android";
 
 @font-face {
   font-family: "Honghuang Song";

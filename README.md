@@ -13,7 +13,8 @@ npm ci
 npm run dev
 ```
 
-开发服务默认在 `http://localhost:8080`，无需账户、外部图片服务或数据库配置。存档保存在当前浏览器的 `honghuang-ji-save`；请保持原访问域名和浏览器数据，存档不会跨域名自动转移。
+开发服务默认在 `http://localhost:8080`，无需账户、外部图片服务或数据库配置。存档保存在当前浏览器的 `honghuang-ji-save`；请保持原访问域名和浏览器数据，存档不会跨域名自动转移。手机安装包的做法见 [Android 安装说明](docs/android.md)。
+
 
 ```bash
 npm run typecheck

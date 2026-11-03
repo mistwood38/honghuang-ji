@@ -1,0 +1,48 @@
+.save-transfer {
+  margin-top: 18px;
+  color: #d4d9c8;
+  font-family: var(--font-serif);
+}
+.save-transfer summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.save-transfer p {
+  margin: 8px 0 0;
+  line-height: 1.8;
+  font-size: 14px;
+}
+.save-transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.save-transfer-actions > button {
+  min-height: 44px;
+}
+.save-transfer-label {
+  display: block;
+  margin-top: 12px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+.save-transfer-text {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #8d794a55;
+  background: #091413;
+  color: #e7d7ae;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.save-transfer-note {
+  color: #c7ac72;
+}

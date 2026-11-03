@@ -11,6 +11,7 @@ import { LandView } from "./land-view";
 import { NovelView } from "./novel-view";
 import { PlayView } from "./play-view";
 import { RestartButton } from "./restart-button";
+import { SaveTransfer } from "./save-transfer";
 import { SelfView } from "./self-view";
 import "./cinematic.css";
 
@@ -246,6 +247,7 @@ function TitleScreen() {
         ) : (
           <p className="title-save">因果随行 · 自动留存于当前浏览器</p>
         )}
+        <SaveTransfer />
         <nav className="title-links" aria-label="阅览世界">
           <button type="button" onClick={() => setScreen("novel")}>
             <span>壹</span>读本纪

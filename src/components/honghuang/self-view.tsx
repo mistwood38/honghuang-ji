@@ -8,6 +8,7 @@ import { PageHeading, SectionHeading } from "./art";
 import { ItemArt } from "./item-art";
 import { LifeCopy } from "./life-copy";
 import { RestartButton } from "./restart-button";
+import { SaveTransfer } from "./save-transfer";
 import { StatList } from "./stats";
 import "./world-views.css";
 
@@ -236,6 +237,7 @@ export function SelfView() {
           <RestartButton label="弃此生重开" />
         </div>
       </div>
+      <SaveTransfer />
     </section>
   );
 }

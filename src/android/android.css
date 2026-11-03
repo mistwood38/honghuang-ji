@@ -1,0 +1,21 @@
+html.android-app,
+html.android-app body {
+  background: #0a1718;
+}
+html.android-app .game-header,
+html.android-app .title-top {
+  padding-top: env(safe-area-inset-top);
+}
+html.android-app .shell .dock {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transform: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+html.android-app .title-footer {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}

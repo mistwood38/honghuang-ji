@@ -1,0 +1,12 @@
+{
+  "appId": "app.honghuang.ji",
+  "appName": "洪荒纪",
+  "webDir": "dist-android",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  }
+}

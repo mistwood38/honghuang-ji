@@ -193,3 +193,16 @@ export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
   }
   go();
 }
+/** Stop the bed without forgetting that the player still wants sound, and without creating a context. */
+export function pauseAmbience() {
+  stopBed();
+}
+/** Continue only if a gesture already created the context and sound is still wanted. */
+export function resumeAmbience() {
+  if (!wantEnabled || !ctx || typeof document === "undefined" || document.hidden) return;
+  if (ctx.state === "suspended") {
+    void ctx.resume().then(settle).catch(() => undefined);
+    return;
+  }
+  settle();
+}
