@@ -162,6 +162,11 @@ export type RoamState = {
   /** Last time the idle clock was settled, in ms. 0 means unset. */
   lastTick: number;
   haul: Haul | null;
+  /** Map currently being farmed. */
+  farm: PlaceId | null;
+  farmLog: string[];
+  /** Cultivation past a full bar, spent on the next breakthrough. */
+  spare: number;
   eraSkew: number;
   eraSeen: string[];
 };
@@ -183,7 +188,7 @@ export type RoamAct =
   | { type: "sect"; what: "join" | "task" | "leave" | "learn" }
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
-  | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim"; now?: number }
+  | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm"; now?: number; place?: PlaceId }
   | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };

@@ -192,6 +192,21 @@ test("seclusion is several watches, and a garden can be harvested later", () => 
   assert.ok((save.world?.stones ?? 0) < 4);
 });
 
+test("farming a map fights by itself and banks the time you were away", () => {
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, rngFrom(8));
+  assert.equal(save.world?.farm, "earth");
+  const start = save.world!.lastTick;
+  save = applyRoam(save, { type: "idle", what: "fight", now: start + 1000 }, () => 0.1);
+  assert.ok((save.world?.farmLog.length ?? 0) >= 2);
+  assert.ok((save.world?.xiuwei ?? 0) > 0);
+  const before = save.world!.xiuwei;
+  const away = applyRoam(save, { type: "idle", what: "fight", now: start + 1000 + 2_500 * 40 }, () => 0.1);
+  assert.ok((away.world?.haul?.breaths ?? 0) >= 40);
+  assert.equal(away.world?.xiuwei, before);
+  const claimed = applyRoam(away, { type: "idle", what: "claim", now: start + 1000 + 2_500 * 40 });
+  assert.ok((claimed.world?.xiuwei ?? 0) > before);
+});
+
 test("idle keeps cultivating while time passes and the reward stays hidden until collected", () => {
   let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, rngFrom(8));
   const start = 1_700_000_000_000;

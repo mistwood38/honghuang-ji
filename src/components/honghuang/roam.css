@@ -134,3 +134,52 @@
     grid-template-columns: 1fr;
   }
 }
+.farm-desk {
+  display: grid;
+  gap: 0.75rem;
+}
+.farm-bar {
+  height: 0.7rem;
+  margin-top: 0.45rem;
+  border: 1px solid rgba(201, 166, 107, 0.45);
+  background: rgba(8, 16, 15, 0.55);
+}
+.farm-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #8c6a32, #e6d3a1);
+}
+.farm-bar-note,
+.farm-map-label {
+  margin: 0.35rem 0 0;
+  letter-spacing: 0.06em;
+}
+.farm-maps {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+}
+.farm-maps button {
+  min-height: 40px;
+  border: 1px solid rgba(201, 166, 107, 0.45);
+  background: rgba(16, 28, 26, 0.72);
+  color: inherit;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+.farm-maps button.is-on {
+  background: rgba(201, 166, 107, 0.22);
+}
+.farm-log {
+  display: grid;
+  max-height: 14rem;
+  overflow: auto;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.farm-log li {
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid rgba(201, 166, 107, 0.18);
+}

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { storyScrollTop } from "@/lib/honghuang/music";
 import { useSave } from "@/lib/honghuang/store";
-import { realmOf } from "@/lib/honghuang/world";
+import { realmOf, nextRealm } from "@/lib/honghuang/world";
 import { artForPlace, type SceneMood } from "@/lib/honghuang/visuals";
 import { ORIGINS } from "@/lib/honghuang/world";
 import {
   ARTS,
   CHAINS,
   eraName,
+  farmChoices,
   GOODS,
   menuActs,
   ROAM_PLACES,
@@ -37,22 +38,22 @@ export function RoamView() {
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
-    if (!world || world.phase === "origin") return;
-    const sync = () => {
+    if (!world || world.phase !== "free" || world.retreat) return;
+    const tick = () => {
       if (document.visibilityState === "hidden") return;
-      roam({ type: "idle", what: "sync" });
+      roam({ type: "idle", what: "fight" });
     };
-    sync();
-    const timer = window.setInterval(sync, 20_000);
+    tick();
+    const timer = window.setInterval(tick, 2500);
     const onVisible = () => {
-      if (document.visibilityState === "visible") sync();
+      if (document.visibilityState === "visible") tick();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [roam, world?.phase]);
+  }, [roam, world?.phase, world?.retreat]);
 
   useEffect(() => {
     const target = document.getElementById("roam-now");
@@ -102,13 +103,17 @@ export function RoamView() {
 
         {world.phase !== "origin" ? (
           <div className="roam-body" id="roam-now">
-            <div className="copy roam-prose">
-              <h2>{world.report?.title ?? place.name}</h2>
-              {(world.report?.paragraphs ?? place.intro).map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-            {world.report && world.report.changes.length > 0 && world.phase === "free" ? (
+            {world.phase === "free" && !world.retreat ? (
+              <FarmDesk onAct={act} />
+            ) : (
+              <div className="copy roam-prose">
+                <h2>{world.report?.title ?? place.name}</h2>
+                {(world.report?.paragraphs ?? place.intro).map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            )}
+            {world.report && world.report.changes.length > 0 && world.phase === "free" && world.retreat ? (
               <div className="roam-after" aria-label="已经发生的变化">
                 <p>已然</p>
                 <ul>
@@ -153,7 +158,7 @@ export function RoamView() {
               </div>
             ) : null}
 
-            {world.phase === "free" ? (
+            {world.phase === "free" && world.retreat ? (
               <FreeActions
                 sheet={sheet}
                 setSheet={setSheet}
@@ -192,6 +197,128 @@ export function RoamView() {
         )}
       </aside>
     </section>
+  );
+}
+
+function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
+  const save = useSave();
+  const world = save.world;
+  const [tab, setTab] = useState<"farm" | "bag" | "beast" | "home">("farm");
+  if (!world) return null;
+  const realm = realmOf(save.stats.dao);
+  const next = nextRealm(save.stats.dao);
+  const maps = farmChoices(save);
+  const acts = menuActs(save);
+
+  return (
+    <div className="farm-desk">
+      <div className="farm-head">
+        <p className="eyebrow">{realm.name}{next ? ` → ${next.name}` : " · 此生已到檐下"}</p>
+        <div className="farm-bar" aria-label="修为">
+          <span style={{ width: `${Math.max(4, Math.min(100, world.xiuwei))}%` }} />
+        </div>
+        <p className="farm-bar-note">
+          {world.xiuwei >= 100 ? "火候已满，可以突破" : "挂机中，修为自己在涨"}
+          {world.spare >= 1 ? " · 还有存下的火候" : ""}
+        </p>
+      </div>
+      <div className="roam-tabs">
+        {(
+          [
+            ["farm", "挂机"],
+            ["bag", "储物"],
+            ["beast", "灵兽"],
+            ["home", "洞府"],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" className={tab === id ? "is-on" : ""} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "farm" ? (
+        <>
+          <p className="farm-map-label">当前图 · {ROAM_PLACES[world.farm ?? world.place].name}</p>
+          <div className="farm-maps">
+            {maps.map((place) => (
+              <button
+                key={place}
+                type="button"
+                className={place === (world.farm ?? world.place) ? "is-on" : ""}
+                onClick={() => onAct({ type: "idle", what: "farm", place })}
+              >
+                {ROAM_PLACES[place].name}
+              </button>
+            ))}
+          </div>
+          <ol className="farm-log">
+            {(world.farmLog.length ? world.farmLog : ["挂机还没打出第一场。"]).map((line, index) => (
+              <li key={`${index}-${line}`}>{line}</li>
+            ))}
+          </ol>
+          <div className="roam-actions">
+            {world.xiuwei >= 100 ? (
+              <button type="button" onClick={() => onAct({ type: "breakthrough", pill: false })}>突破</button>
+            ) : null}
+            {(world.bag["pill-break"] ?? 0) > 0 && world.xiuwei >= 100 ? (
+              <button type="button" onClick={() => onAct({ type: "breakthrough", pill: true })}>服丹突破</button>
+            ) : null}
+            {(world.haul?.breaths ?? 0) > 0 ? (
+              <button type="button" onClick={() => onAct({ type: "idle", what: "claim" })}>收起离线收获</button>
+            ) : null}
+            <button type="button" onClick={() => onAct({ type: "explore" })}>撞一场奇遇</button>
+            <button type="button" onClick={() => onAct({ type: "rest" })}>调息</button>
+            <button type="button" onClick={() => onAct({ type: "retreat", what: "enter" })}>入定</button>
+          </div>
+          {world.report && world.report.changes.length > 0 ? (
+            <div className="roam-after" aria-label="已经发生的变化">
+              <p>已然</p>
+              <ul>
+                {world.report.changes.map((change) => (
+                  <li key={change}>{change}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {tab === "bag" ? (
+        <div className="roam-actions">
+          {acts
+            .filter((item) => item.id.startsWith("alchemy") || item.id.startsWith("use-") || item.id.startsWith("buy") || item.id.startsWith("sell") || item.id.startsWith("plot"))
+            .map((item) => (
+              <button key={item.id} type="button" onClick={() => onAct(item.act)}>
+                {item.label}
+              </button>
+            ))}
+          {Object.entries(world.bag).length === 0 ? <p className="roam-empty">储物是空的。挂机打怪会掉材料。</p> : null}
+        </div>
+      ) : null}
+      {tab === "beast" ? (
+        <div className="roam-actions">
+          {world.beast ? <p className="farm-map-label">{world.beast.name}{world.beast.bond >= 36 ? " · 相熟" : " · 还在认你"}</p> : <p className="roam-empty">还没有灵兽。奇遇里遇见了，可以留下。</p>}
+          {acts
+            .filter((item) => item.id === "feed" || item.id === "train" || item.id === "release")
+            .map((item) => (
+              <button key={item.id} type="button" onClick={() => onAct(item.act)}>
+                {item.label}
+              </button>
+            ))}
+        </div>
+      ) : null}
+      {tab === "home" ? (
+        <div className="roam-actions">
+          {acts
+            .filter((item) => item.id.startsWith("cave") || item.id === "join" || item.id === "task" || item.id === "learn" || item.id === "leave" || item.id.startsWith("chain-") || item.id.startsWith("notice-"))
+            .map((item) => (
+              <button key={item.id} type="button" onClick={() => onAct(item.act)}>
+                {item.label}
+              </button>
+            ))}
+          <p className="roam-empty">{world.cave > 0 ? "洞府已经立住。" : "还没有自己的洞府。石头够了就可以经营。"}</p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

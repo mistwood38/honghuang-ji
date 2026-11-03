@@ -90,6 +90,9 @@ export function createRoam(): RoamState {
     idle: null,
     lastTick: 0,
     haul: null,
+    farm: null,
+    farmLog: [],
+    spare: 0,
     eraSkew: 0,
     eraSeen: ["chaos"],
   };
@@ -132,6 +135,9 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     idle: body.idle?.kind === "sit" || body.idle?.kind === "wander" ? { kind: body.idle.kind } : null,
     lastTick: Number(body.lastTick) > 0 ? Number(body.lastTick) : 0,
     haul: sanitizeHaul(body.haul),
+    farm: body.farm && body.farm in ROAM_PLACES ? body.farm : null,
+    farmLog: Array.isArray(body.farmLog) ? body.farmLog.filter((line) => typeof line === "string").slice(-12) : [],
+    spare: clamp(Number(body.spare) || 0, 0, 300),
   };
 }
 
@@ -516,6 +522,10 @@ function originOf(act: Extract<RoamAct, { type: "origin" }>, save: SaveData, wor
   }
   world.phase = "free";
   world.place = "earth";
+  world.farm = "earth";
+  world.idle = { kind: "wander" };
+  world.lastTick = Date.now();
+  world.farmLog = ["你在洪荒大地开始挂机。妖兽会自己送上门。"];
   world.report = {
     title: "日子从这里开始",
     paragraphs: [
@@ -592,7 +602,7 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
   else if (act.type === "sect") sectAct(save, world, act.what, rng);
   else if (act.type === "trade") trade(save, world, act.what, act.id);
   else if (act.type === "beast") beastAct(save, world, act.what);
-  else if (act.type === "idle") idleAct(save, world, act.what, act.now ?? Date.now());
+  else if (act.type === "idle") idleAct(save, world, act, rng);
   else if (act.type === "continue") continueChain(save, world, act.chainId);
   else if (act.type === "notice") notice(world, act.eventId);
 }
@@ -674,7 +684,8 @@ function breakthrough(save: SaveData, world: RoamState, pill: boolean, rng: () =
   spend(world, 1);
   if (rng() < chance) {
     save.stats.dao = clamp(Math.max(save.stats.dao, next.min), 0, CAP.dao);
-    world.xiuwei = 0;
+    world.xiuwei = Math.min(100, world.spare);
+    world.spare = Math.max(0, world.spare - world.xiuwei);
     save.stats.life = clamp(save.stats.life + 8, 0, CAP.life);
     world.wound = clamp(world.wound - 1, 0, 6);
     world.report = {
@@ -1205,7 +1216,7 @@ function claimHaul(save: SaveData, world: RoamState, now: number) {
     return;
   }
   const before = world.xiuwei;
-  world.xiuwei = clamp(world.xiuwei + haul.xiu, 0, 100);
+  addXiu(world, haul.xiu);
   world.lingqi = clamp(world.lingqi + haul.ling, 0, 80);
   world.stones += haul.stones;
   world.wound = clamp(world.wound + haul.wound, 0, 6);
@@ -1241,7 +1252,25 @@ function claimHaul(save: SaveData, world: RoamState, now: number) {
   remember(world, "收菜", world.report.paragraphs[0] ?? "");
 }
 
-function idleAct(save: SaveData, world: RoamState, what: "sit" | "wander" | "stop" | "sync" | "claim", now: number) {
+function idleAct(save: SaveData, world: RoamState, act: Extract<RoamAct, { type: "idle" }>, rng: () => number) {
+  const now = act.now ?? Date.now();
+  const what = act.what;
+  if (what === "farm") {
+    if (!act.place || !canReach(world, act.place)) {
+      world.report = { title: "这张图还去不了", paragraphs: ["先把近处的图挂熟，或者把境界抬上去。"], changes: [] };
+      return;
+    }
+    world.farm = act.place;
+    world.place = act.place;
+    world.idle = { kind: "wander" };
+    world.lastTick = now;
+    pushFarm(world, `改挂${ROAM_PLACES[act.place].name}。`);
+    return;
+  }
+  if (what === "fight") {
+    fightTick(save, world, now, rng);
+    return;
+  }
   if (what === "sync") {
     accrueIdle(world, now);
     return;
@@ -1263,6 +1292,7 @@ function idleAct(save: SaveData, world: RoamState, what: "sit" | "wander" | "sto
     }
     return;
   }
+  if (what !== "sit" && what !== "wander") return;
   if (world.retreat) {
     world.report = { title: "定中", paragraphs: ["你还在按时辰坐。出关之后再挂机。"], changes: [] };
     return;
@@ -1281,6 +1311,99 @@ function idleAct(save: SaveData, world: RoamState, what: "sit" | "wander" | "sto
     changes: [],
   };
   remember(world, world.report.title, world.report.paragraphs[0] ?? "");
+}
+
+function pushFarm(world: RoamState, line: string) {
+  world.farmLog = [...(world.farmLog ?? []), line].slice(-12);
+}
+
+function addXiu(world: RoamState, amount: number) {
+  const room = 100 - world.xiuwei;
+  if (amount <= room) {
+    world.xiuwei += amount;
+    return;
+  }
+  world.xiuwei = 100;
+  world.spare = clamp(world.spare + (amount - room), 0, 300);
+}
+
+const FOE: Record<PlaceId, { name: string; need: number }> = {
+  chaos: { name: "未散的气团", need: 6 },
+  earth: { name: "土精", need: 6 },
+  edge: { name: "边风", need: 6 },
+  tribes: { name: "荒原凶兽", need: 10 },
+  east: { name: "海妖残影", need: 12 },
+  wahuan: { name: "火灵", need: 13 },
+  kunlun: { name: "守山石灵", need: 14 },
+  penglai: { name: "岛上老妖", need: 16 },
+  zixiao: { name: "宫门外的光", need: 18 },
+  buzhou: { name: "未冷的石傀", need: 20 },
+  youming: { name: "阴差", need: 20 },
+  bloodsea: { name: "血侍", need: 22 },
+  board: { name: "台下的执笔", need: 24 },
+};
+
+function fightTick(save: SaveData, world: RoamState, now: number, rng: () => number) {
+  if (world.retreat || world.phase !== "free") return;
+  if (!world.farm) world.farm = world.place;
+  const gap = world.lastTick ? now - world.lastTick : 0;
+  if (world.lastTick && gap >= 8_000) {
+    const fights = Math.min(480, Math.floor(gap / 2_500));
+    if (fights > 0) bankFights(world, save, fights, rng);
+    world.lastTick = now;
+    return;
+  }
+  const line = strikeOnce(save, world, rng);
+  pushFarm(world, line);
+  world.idle = { kind: "wander" };
+  world.lastTick = now;
+  world.place = world.farm;
+}
+
+function strikeOnce(save: SaveData, world: RoamState, rng: () => number) {
+  const placeId = world.farm ?? world.place;
+  const place = ROAM_PLACES[placeId];
+  const foe = FOE[placeId];
+  const win = powerOf(save, world) >= foe.need;
+  if (!win) {
+    if (rng() < 0.35) world.wound = clamp(world.wound + 1, 0, 6);
+    addXiu(world, 0.12);
+    return `${foe.name}把你逼退。这张图还压不住。`;
+  }
+  addXiu(world, 0.85 + place.spirit * 0.12);
+  world.lingqi = clamp(world.lingqi + 0.15, 0, 80);
+  const roll = rng();
+  if (roll < 0.42) {
+    world.bag[place.good] = (world.bag[place.good] ?? 0) + 1;
+    return `斩了${foe.name}。修为有所积累，${GOODS[place.good]} +1`;
+  }
+  if (roll < 0.62) {
+    world.stones += 1;
+    return `斩了${foe.name}。修为有所积累，灵石 +1`;
+  }
+  return `斩了${foe.name}。修为有所积累。`;
+}
+
+function bankFights(world: RoamState, save: SaveData, fights: number, rng: () => number) {
+  const haul = world.haul ?? emptyHaul();
+  const placeId = world.farm ?? world.place;
+  const place = ROAM_PLACES[placeId];
+  const foe = FOE[placeId];
+  const win = powerOf(save, world) >= foe.need;
+  haul.breaths += fights;
+  if (win) {
+    haul.xiu += fights * (0.85 + place.spirit * 0.12);
+    haul.ling += fights * 0.15;
+    const goods = Math.floor(fights * 0.42);
+    if (goods > 0) haul.goods[place.good] = (haul.goods[place.good] ?? 0) + goods;
+    haul.stones += Math.floor(fights * 0.2);
+  } else {
+    haul.xiu += fights * 0.12;
+    haul.wound += Math.min(2, Math.floor(fights / 40));
+  }
+  world.haul = haul;
+  pushFarm(world, win ? `离开的这段时间，${place.name}仍在替你斩${foe.name}。回来再收。` : `离开时你压不住${foe.name}。这段几乎没有收获。`);
+  void rng;
 }
 
 function continueChain(save: SaveData, world: RoamState, chainId: string) {
@@ -1517,6 +1640,10 @@ export function menuActs(save: SaveData): MenuAct[] {
     if (event) acts.push({ id: `notice-${eventId}`, label: `观天地异象·${event.title}`, act: { type: "notice", eventId } });
   }
   return acts;
+}
+
+export function farmChoices(save: SaveData): PlaceId[] {
+  return travelOptions(save);
 }
 
 export function legalActs(save: SaveData): RoamAct[] {
