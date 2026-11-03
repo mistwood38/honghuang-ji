@@ -243,8 +243,73 @@
   font-size: 11px;
   letter-spacing: 0.2em;
 }
-.play-layout .scene-place-line {
-  color: #c4d0bc;
+.play-layout .scene-witness {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  height: 108%;
+  margin: 0;
+  pointer-events: none;
+  animation: witness-enter 0.9s ease both;
+}
+.play-layout .scene-witness img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  object-fit: cover;
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent),
+    linear-gradient(180deg, transparent, #000 18% 72%, transparent);
+  mask-composite: intersect;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent),
+    linear-gradient(180deg, transparent, #000 18% 72%, transparent);
+  -webkit-mask-composite: source-in;
+}
+.play-layout .scene-witness figcaption {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  color: #e7d7ae;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-shadow: 0 2px 8px #000;
+}
+.play-layout .scene-volume {
+  z-index: 3;
+}
+.scene-reading-panel .choice {
+  animation: rise 0.55s ease both;
+}
+.scene-reading-panel .choice:nth-child(3) {
+  animation-delay: 0.06s;
+}
+.scene-reading-panel .choice:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.scene-reading-panel .choice:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.scene-calamity .celestial-light {
+  background: radial-gradient(ellipse at 70% 18%, #c45a3a55, transparent 55%);
+}
+.scene-radiance .celestial-light {
+  background: radial-gradient(ellipse at 30% 20%, #e6c27a40, transparent 58%);
+}
+@keyframes witness-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 860px) {
+  .play-layout .scene-witness {
+    display: none;
+  }
 }
 .scene-chapter .scene-reading-panel {
   background: #10201ff2;

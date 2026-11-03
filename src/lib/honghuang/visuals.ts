@@ -13,7 +13,14 @@ export type ArtKey =
   | "penglai"
   | "youming"
   | "worldmap"
-  | "fengshen";
+  | "fengshen"
+  | "earth"
+  | "kunlun"
+  | "buzhou"
+  | "war"
+  | "edge"
+  | "clay"
+  | "heavens";
 export type SceneMood = "mist" | "radiance" | "calamity" | "still" | "embers" | "tide";
 export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = {
   chaos: {
@@ -76,17 +83,80 @@ export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = 
     small: "/art/fengshen-small.webp",
     alt: "古老封神台上，一卷未落名字的金色长卷悬于天地之间",
   },
+  earth: {
+    src: "/art/earth.webp",
+    small: "/art/earth-small.webp",
+    alt: "盘古的身躯横卧成山，河流从胸膛流下，化作洪荒大地",
+  },
+  kunlun: {
+    src: "/art/kunlun.webp",
+    small: "/art/kunlun-small.webp",
+    alt: "西极昆仑的玉色崖阶与古殿，晨光只照到一条长阶",
+  },
+  buzhou: {
+    src: "/art/buzhou.webp",
+    small: "/art/buzhou-small.webp",
+    alt: "未折的不周天柱，青铜兽面箍住黑暗，直顶低沉的天",
+  },
+  war: {
+    src: "/art/war.webp",
+    small: "/art/war-small.webp",
+    alt: "巫妖未分胜负，骨甲与日轮金车隔着山谷对峙，天柱仍在远处",
+  },
+  edge: {
+    src: "/art/edge.webp",
+    small: "/art/edge-small.webp",
+    alt: "混沌边上的静湖与一方空石，像一张没有人的旧床",
+  },
+  clay: {
+    src: "/art/clay.webp",
+    small: "/art/clay-small.webp",
+    alt: "女娲在夜里抟泥，炉火旁一个泥人刚刚睁眼",
+  },
+  heavens: {
+    src: "/art/heavens.webp",
+    small: "/art/heavens-small.webp",
+    alt: "三十三天层层宫阙叠在云上，越往上越淡",
+  },
+};
+
+export type WitnessKey = "pangu" | "hongjun" | "witch" | "dijun";
+export const WITNESS: Record<WitnessKey, { src: string; small: string; name: string; alt: string }> = {
+  pangu: {
+    src: "/art/figure-pangu.webp",
+    small: "/art/figure-pangu-small.webp",
+    name: "盘古",
+    alt: "石骨青铜的盘古，斧垂在身侧",
+  },
+  hongjun: {
+    src: "/art/figure-hongjun.webp",
+    small: "/art/figure-hongjun-small.webp",
+    name: "鸿钧",
+    alt: "麻衣闭目的鸿钧，一缕紫气绕过青铜灯",
+  },
+  witch: {
+    src: "/art/figure-witch.webp",
+    small: "/art/figure-witch-small.webp",
+    name: "祖巫",
+    alt: "骨甲铜环的祖巫，面容沉静",
+  },
+  dijun: {
+    src: "/art/figure-dijun.webp",
+    small: "/art/figure-dijun-small.webp",
+    name: "帝俊",
+    alt: "羽氅与日轮的帝俊，立在扶桑之前",
+  },
 };
 
 const PLACE_ART: Record<string, ArtKey> = {
   chaos: "chaos",
-  edge: "chaos",
-  earth: "mountain",
+  edge: "edge",
+  earth: "earth",
   zixiao: "palace",
-  "thirty-three": "palace",
-  kunlun: "mountain",
+  "thirty-three": "heavens",
+  kunlun: "kunlun",
   bloodsea: "bloodsea",
-  buzhou: "mountain",
+  buzhou: "buzhou",
   east: "east",
   wahuan: "nuwa",
   youming: "youming",
@@ -94,20 +164,38 @@ const PLACE_ART: Record<string, ArtKey> = {
   tribes: "tribes",
   board: "fengshen",
 };
+const SCENE_ART: Partial<Record<string, ArtKey>> = {
+  collapse: "calamity",
+  "end-wu": "calamity",
+  war: "war",
+  mend: "nuwa",
+  clay: "clay",
+  "end-dao": "palace",
+  "end-hidden": "penglai",
+  cleave: "chaos",
+};
+const SCENE_WITNESS: Partial<Record<string, WitnessKey>> = {
+  cleave: "pangu",
+  lecture: "hongjun",
+  road: "hongjun",
+  witch: "witch",
+  yaoting: "dijun",
+  "end-yao": "dijun",
+};
 export function artForPlace(place: string) {
   return ART[PLACE_ART[place] ?? "mountain"];
 }
 export function artForScene(scene: Scene) {
-  if (["collapse", "war"].includes(scene.id)) return ART.calamity;
-  if (scene.id === "mend") return ART.nuwa;
-  if (scene.id === "end-dao") return ART.palace;
-  if (scene.id === "end-hidden") return ART.penglai;
-  if (scene.id === "cleave") return ART.chaos;
-  return artForPlace(scene.place);
+  const key = SCENE_ART[scene.id];
+  return key ? ART[key] : artForPlace(scene.place);
+}
+export function witnessForScene(scene: Scene) {
+  const key = SCENE_WITNESS[scene.id];
+  return key ? WITNESS[key] : null;
 }
 export function moodForScene(scene: Scene): SceneMood {
   if (["collapse", "war"].includes(scene.id)) return "calamity";
-  if (scene.ending || scene.place === "youming") return "still";
+  if (scene.ending || scene.place === "youming" || scene.place === "edge") return "still";
   if (["wahuan", "tribes", "bloodsea"].includes(scene.place)) return "embers";
   if (["east", "penglai"].includes(scene.place)) return "tide";
   if (scene.id === "cleave" || scene.place === "zixiao") return "radiance";

@@ -47,4 +47,33 @@ export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
     osc.start(start);
     osc.stop(start + duration + 0.05);
   });
+  swell(audio, now, mood);
+}
+
+/** A short synthesized air, not a recorded score. Still gated by the sound toggle and a user gesture. */
+function swell(audio: AudioContext, now: number, mood: SceneMood) {
+  const length = Math.floor(audio.sampleRate * 0.7);
+  const buffer = audio.createBuffer(1, length, audio.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+  const noise = audio.createBufferSource();
+  noise.buffer = buffer;
+  const filter = audio.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = mood === "calamity" ? 240 : mood === "still" ? 180 : 420;
+  const gain = audio.createGain();
+  const peak = mood === "calamity" ? 0.035 : mood === "still" || mood === "tide" ? 0.018 : 0.01;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(peak, now + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(audio.destination);
+  noise.onended = () => {
+    noise.disconnect();
+    filter.disconnect();
+    gain.disconnect();
+  };
+  noise.start(now);
+  noise.stop(now + 0.72);
 }

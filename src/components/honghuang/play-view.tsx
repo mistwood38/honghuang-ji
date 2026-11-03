@@ -3,7 +3,7 @@ import { fill, meetsCond, visibleChoices } from "@/lib/honghuang/engine";
 import { playChoice, unlockSound } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
-import { artForScene, moodForScene } from "@/lib/honghuang/visuals";
+import { artForScene, moodForScene, witnessForScene } from "@/lib/honghuang/visuals";
 import { Artwork, Atmosphere } from "./art";
 import { portraitForOrigin } from "@/lib/honghuang/portrait";
 import type { StatKey } from "@/lib/honghuang/types";
@@ -86,6 +86,7 @@ export function PlayView() {
   }
 
   const place = placeById(scene.place);
+  const witness = witnessForScene(scene);
   const asides = (scene.asides ?? []).filter((aside) =>
     (aside.requires ?? []).every((cond) => meetsCond(state, cond)),
   );
@@ -118,6 +119,15 @@ export function PlayView() {
           <span className="scene-volume" aria-hidden="true">
             入世 · 第{String(state.log.length + 1).padStart(2, "0")}笔
           </span>
+          {witness ? (
+            <figure className="scene-witness">
+              <picture>
+                <source media="(max-width: 1100px)" srcSet={witness.small} />
+                <img src={witness.src} alt={witness.alt} width={768} height={1152} />
+              </picture>
+              <figcaption>{witness.name}</figcaption>
+            </figure>
+          ) : null}
         </div>
         <div className="scene-paper scene-reading-panel">
           {scene.ending ? (
