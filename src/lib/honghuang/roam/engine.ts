@@ -574,7 +574,7 @@ export function applyRoam(save: SaveData, act: RoamAct, rng: () => number = Math
     const now = act.now ?? Date.now();
     const world = save.world;
     if (!world?.idle || world.phase !== "free") return save;
-    if (now - (world.lastTick || now) < 20_000) return save;
+    if (now >= world.lastTick && now - (world.lastTick || now) < 20_000) return save;
   }
   const next = cloneSave(save);
   next.world = next.world ?? createRoam();
@@ -1389,6 +1389,12 @@ function fightTick(save: SaveData, world: RoamState, now: number, rng: () => num
   if (world.retreat || world.phase !== "free") return;
   if (!world.farm) world.farm = world.place;
   const gap = world.lastTick ? now - world.lastTick : 0;
+  if (world.lastTick && gap < 2_500) {
+    // Mount/visibility callbacks share the same clock as the interval.
+    // Re-anchor a clock rollback without awarding a fight for it.
+    if (gap < 0) world.lastTick = now;
+    return;
+  }
   if (world.lastTick && gap >= 8_000) {
     const fights = Math.min(480, Math.floor(gap / 2_500));
     if (fights > 0) bankFights(world, save, fights, rng);
