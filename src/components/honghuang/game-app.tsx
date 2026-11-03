@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { musicCue } from "@/lib/honghuang/music";
+import { cueForPlace, musicCue } from "@/lib/honghuang/music";
+import { eraName, ROAM_PLACES } from "@/lib/honghuang/roam/engine";
 import { sceneById } from "@/lib/honghuang/story";
 import { playUi, setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
-import { ART, artForScene, moodForScene } from "@/lib/honghuang/visuals";
+import { ART, artForPlace, artForScene, moodForScene } from "@/lib/honghuang/visuals";
 import { APP_NAME, NOVEL_NAME, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
 import type { Screen } from "@/lib/honghuang/types";
 import { Artwork, Atmosphere } from "./art";
@@ -65,6 +66,7 @@ function Shell() {
   const stats = useSave((state) => state.stats);
   const started = useSave((state) => state.started);
   const sceneId = useSave((state) => state.sceneId);
+  const world = useSave((state) => state.world);
   const scene = sceneById(sceneId);
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -80,9 +82,11 @@ function Shell() {
               ? ART.palace
               : screen === "land"
                 ? ART.worldmap
-                : screen === "play" && scene
-                  ? artForScene(scene)
-                  : ART.mountain
+                : screen === "play" && world
+                  ? artForPlace(world.place)
+                  : screen === "play" && scene
+                    ? artForScene(scene)
+                    : ART.mountain
           }
           decorative
         />
@@ -108,7 +112,9 @@ function Shell() {
             <span className="header-chapter">{DOCK.find((item) => item.id === screen)?.note}</span>
             <span className="header-identity">
               {started
-                ? `${name || "未名"} · ${scene?.ending?.name ?? realmOf(stats.dao).name}`
+                ? world
+                  ? `${name || "未名"} · ${eraName(world).name} · ${ROAM_PLACES[world.place].name}`
+                  : `${name || "未名"} · ${scene?.ending?.name ?? realmOf(stats.dao).name}`
                 : "尚未入世"}
             </span>
             <SoundButton />
@@ -154,20 +160,26 @@ function Ambience() {
   const screen = useSave((state) => state.screen);
   const sound = useSave((state) => state.sound);
   const sceneId = useSave((state) => state.sceneId);
+  const place = useSave((state) => state.world?.place);
   useEffect(() => {
     if (!sound) {
       setAmbience(false);
       return;
     }
+    if (screen === "play" && place) {
+      setAmbience(true, cueForPlace(place));
+      return;
+    }
     const scene = sceneById(sceneId);
     setAmbience(true, musicCue(screen, scene ? moodForScene(scene) : "mist"));
-  }, [screen, sound, sceneId]);
+  }, [screen, sound, sceneId, place]);
   return null;
 }
 function primeSound() {
   const live = useSave.getState();
   const scene = sceneById(live.sceneId);
-  setAmbience(true, musicCue(live.screen, scene ? moodForScene(scene) : "mist"));
+  const cue = live.world ? cueForPlace(live.world.place) : musicCue(live.screen, scene ? moodForScene(scene) : "mist");
+  setAmbience(true, cue);
   unlockSound();
   live.setSound(true);
 }
@@ -217,6 +229,9 @@ function TitleScreen() {
   const past = useSave((state) => state.pastLives.length);
   const name = useSave((state) => state.name);
   const sceneId = useSave((state) => state.sceneId);
+  const world = useSave((state) => state.world);
+  const openWorld = useSave((state) => state.openWorld);
+  const beginChronicle = useSave((state) => state.beginChronicle);
   const ending = sceneById(sceneId)?.ending?.name;
   return (
     <div className="title-screen">
@@ -244,14 +259,12 @@ function TitleScreen() {
           <span />◇<span />
         </div>
         <p className="title-line">
-          斧声之前，
-          <br className="mobile-break" />
-          你已不肯散。
+          斧声之前，你已不肯散。日子很长，不必十几步就写成结局。
         </p>
         <p className="title-description">
-          从混沌到封神，山河皆有定数。
+          山河有时代，没有人强迫你跟着时代跑完。
           <br />
-          在天地的缝隙里，写下属于你的一笔。
+          修炼、赶路、结怨、吃饭，都算这一世。
         </p>
         <button
           type="button"
@@ -265,8 +278,10 @@ function TitleScreen() {
             ◇
           </span>
           <span>
-            {started ? "续 写 因 果" : "踏 入 混 沌"}
-            <small>{started ? "回到你的因果" : "一缕灵识 · 一世洪荒"}</small>
+            {started ? "继 续 此 生" : "踏 入 洪 荒"}
+            <small>
+              {started ? (world ? "回到你停下的那一日" : "回到残卷") : "自由游历 · 不是十几步的结局"}
+            </small>
           </span>
           <span className="fate-button-arrow" aria-hidden="true">
             ⟶
@@ -282,6 +297,26 @@ function TitleScreen() {
           <p className="title-save">因果随行 · 自动留存于当前浏览器</p>
         )}
         <SaveTransfer />
+        {!started ? (
+          <p className="title-save">
+            <button
+              type="button"
+              onClick={() => {
+                if (sound) primeSound();
+                beginChronicle();
+              }}
+            >
+              先沿残卷入世
+            </button>
+          </p>
+        ) : null}
+        {started && !world ? (
+          <p className="title-save">
+            <button type="button" onClick={() => openWorld()}>
+              离开残卷，自行游历
+            </button>
+          </p>
+        ) : null}
         <nav className="title-links" aria-label="阅览世界">
           <button type="button" onClick={() => setScreen("novel")}>
             <span>壹</span>读本纪

@@ -1,0 +1,136 @@
+.roam-page {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+.roam-stage {
+  min-width: 0;
+}
+.roam-hero {
+  min-height: 11.5rem;
+}
+.roam-realm {
+  margin: 0.35rem 0 0;
+  letter-spacing: 0.08em;
+}
+.roam-body {
+  padding: 1rem 0.9rem 1.2rem;
+}
+.roam-prose h2,
+.roam-body h2 {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-serif, "Source Han Serif SC", serif);
+  font-size: 1.45rem;
+}
+.roam-after {
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(201, 166, 107, 0.35);
+  background: rgba(12, 24, 22, 0.45);
+}
+.roam-after p {
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.28em;
+  font-size: 0.75rem;
+}
+.roam-after ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.roam-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+.roam-actions button,
+.roam-origins button,
+.roam-tabs button {
+  min-height: 48px;
+  border: 1px solid rgba(201, 166, 107, 0.45);
+  background: rgba(16, 28, 26, 0.72);
+  color: inherit;
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+}
+.roam-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.9rem 0 0.6rem;
+  overflow-x: auto;
+}
+.roam-tabs button {
+  min-height: 40px;
+  flex: 1;
+}
+.roam-tabs button.is-on {
+  background: rgba(201, 166, 107, 0.2);
+}
+.roam-origins {
+  display: grid;
+  gap: 0.6rem;
+}
+.roam-origins button {
+  text-align: left;
+}
+.roam-origins strong {
+  display: block;
+  font-family: var(--font-serif, serif);
+  font-size: 1.15rem;
+}
+.roam-origins span,
+.roam-empty,
+.roam-risk,
+.roam-quests {
+  display: block;
+  margin-top: 0.25rem;
+  line-height: 1.55;
+  opacity: 0.86;
+}
+.roam-name {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.8rem 0;
+}
+.roam-name input {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid rgba(201, 166, 107, 0.45);
+  background: rgba(255, 248, 230, 0.06);
+  color: inherit;
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+}
+.roam-side {
+  padding: 0.8rem 0.9rem 1rem;
+}
+.roam-side ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+.roam-hp {
+  height: 6px;
+  margin: 0.4rem 0 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+.roam-hp span {
+  display: block;
+  height: 100%;
+  background: #8c2f2f;
+}
+.roam-battle .roam-actions {
+  margin-top: 0.8rem;
+}
+@media (min-width: 960px) {
+  .roam-page {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: start;
+  }
+  .roam-actions {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+@media (max-width: 359px) {
+  .roam-actions {
+    grid-template-columns: 1fr;
+  }
+}

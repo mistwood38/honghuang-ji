@@ -36,6 +36,16 @@ export function musicCue(screen: Screen, mood: SceneMood): MusicCue {
   return screen;
 }
 
+/** Place beds reuse the scene cues. Calamity, tide and embers stay distinct. */
+export function cueForPlace(place: string): MusicCue {
+  if (place === "bloodsea" || place === "buzhou" || place === "board") return "calamity";
+  if (place === "youming" || place === "edge" || place === "chaos") return "still";
+  if (place === "east" || place === "penglai") return "tide";
+  if (place === "wahuan" || place === "tribes") return "embers";
+  if (place === "zixiao") return "radiance";
+  return "mist";
+}
+
 /** Where to place the new prose: under the sticky header, not at the document top. */
 export function storyScrollTop(viewportTop: number, scrollY: number, headerHeight: number) {
   if (!Number.isFinite(viewportTop) || !Number.isFinite(scrollY) || !Number.isFinite(headerHeight)) {

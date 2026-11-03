@@ -1,3 +1,5 @@
+import { MORE_CHAPTERS } from "./chronicle-more.ts";
+
 export type Chapter = {
   id: string;
   volume: string;
@@ -7,7 +9,7 @@ export type Chapter = {
 
 export const NOVEL_PREFACE = [
   "《混沌本纪》不是某一位仙的传。它是这一方天地从「没有名字」到「名字开始伤人」的记录。",
-  "盘古仍会倒下，不周仍会折，女娲仍会补天，榜仍会出现。正史不改字。入世的那一缕灵，走在字与字的缝里。",
+  "盘古仍会倒下，不周仍会折，女娲仍会补天，榜仍会出现。前五卷是正史的骨。卷六以后写龙汉、巫肩、泥与火塘，写大势旁边那些不会被战报表彰的路。",
 ];
 
 export const CHAPTERS: Chapter[] = [
@@ -204,4 +206,5 @@ export const CHAPTERS: Chapter[] = [
       "后面的路，交给入世的那一位。",
     ],
   },
+  ...MORE_CHAPTERS,
 ];

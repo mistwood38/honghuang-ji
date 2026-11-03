@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { sceneById } from "@/lib/honghuang/story";
+import { ROAM_PLACES } from "@/lib/honghuang/roam/engine";
+import type { PlaceId } from "@/lib/honghuang/roam/state";
 import { useSave } from "@/lib/honghuang/store";
 import { artForPlace } from "@/lib/honghuang/visuals";
 import { LAYERS, PLACES } from "@/lib/honghuang/world";
@@ -11,9 +13,13 @@ const MAP_PLACES = ["zixiao", "kunlun", "east", "buzhou", "bloodsea", "wahuan"];
 
 export function LandView() {
   const sceneId = useSave((state) => state.sceneId);
+  const worldPlace = useSave((state) => state.world?.place);
+  const worldPhase = useSave((state) => state.world?.phase);
+  const roam = useSave((state) => state.roam);
+  const setScreen = useSave((state) => state.setScreen);
   const seen = useSave((state) => state.seen);
   const started = useSave((state) => state.started);
-  const currentPlace = sceneById(sceneId)?.place;
+  const currentPlace = worldPlace ?? sceneById(sceneId)?.place;
   const [selectedId, setSelectedId] = useState(currentPlace ?? "buzhou");
   const [region, setRegion] = useState("全部");
   const detailRef = useRef<HTMLElement>(null);
@@ -38,7 +44,7 @@ export function LandView() {
   return (
     <section className="page-wrap atlas-page">
       <PageHeading label="山河 · 天地有形" title="山河地志">
-        <p>大事件发生在这些地方。你改变不了山折与否，只能决定自己站在哪一层风里。</p>
+        <p>这些地方可以走进去。你站在哪一处，决定今天遇见谁，不决定天地必须按你的脚步重写。</p>
       </PageHeading>
       <div className="atlas-layout">
         <div className="atlas-map" aria-label="洪荒山河意象图">
@@ -130,6 +136,23 @@ export function LandView() {
             </div>
             <p className="atlas-summary">{selected.summary}</p>
             <p className="atlas-description">{selected.detail}</p>
+            {worldPlace && selected.id in ROAM_PLACES ? (
+              <button
+                type="button"
+                className="btn-primary mt-4"
+                disabled={worldPhase !== "free" || selected.id === worldPlace}
+                onClick={() => {
+                  roam({ type: "travel", place: selected.id as PlaceId });
+                  setScreen("play");
+                }}
+              >
+                {selected.id === worldPlace
+                  ? "人已在此"
+                  : worldPhase !== "free"
+                    ? "手头的事还没完"
+                    : `前往${selected.name}`}
+              </button>
+            ) : null}
           </div>
         </article>
       </div>

@@ -1,3 +1,5 @@
+import type { RoamState } from "./roam/state.ts";
+
 export type Origin = "dao" | "wu" | "yao" | "ren";
 
 export type StatKey = "dao" | "qi" | "kill" | "virtue" | "demon" | "life";
@@ -73,7 +75,7 @@ export type PastLife = {
 };
 
 export type SaveData = {
-  version: 1;
+  version: 1 | 2;
   screen: Screen;
   started: boolean;
   name: string;
@@ -87,4 +89,6 @@ export type SaveData = {
   novelIndex: number;
   sound: boolean;
   pastLives: PastLife[];
+  /** Null while a life is still on the illustrated chronicle. */
+  world: RoamState | null;
 };

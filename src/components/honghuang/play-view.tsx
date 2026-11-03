@@ -13,6 +13,7 @@ import { ITEMS, ORIGINS, STAT_LABEL, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
 import { Modal } from "./modal";
 import { RestartButton } from "./restart-button";
+import { RoamView } from "./roam-view";
 import { StatList } from "./stats";
 import "./play-navigation.css";
 
@@ -93,6 +94,8 @@ export function PlayView() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [scene, state]);
+
+  if (state.world) return <RoamView />;
 
   if (!state.started || !scene) {
     return (
@@ -341,10 +344,13 @@ export function PlayView() {
           <p>
             大能的胜负已写在本纪里。
             <br />
-            你的自由，是在天地之间，
+            若不想再顺着这一条固定的路往下点，可以离开残卷。
             <br />
-            决定自己站在哪里。
+            根骨、物事和已经结下的因果会跟着你。
           </p>
+          <button type="button" className="btn-primary mt-4" onClick={() => useSave.getState().openWorld()}>
+            离开残卷，自行游历
+          </button>
         </div>
       </aside>
     </section>

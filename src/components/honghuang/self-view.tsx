@@ -2,6 +2,7 @@ import { useState } from "react";
 import { portraitForOrigin } from "@/lib/honghuang/portrait";
 import { flagLabel } from "@/lib/honghuang/engine";
 import { musicCue } from "@/lib/honghuang/music";
+import { CHAINS, eraName, ROAM_PLACES } from "@/lib/honghuang/roam/engine";
 import { setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
@@ -81,6 +82,18 @@ export function SelfView() {
           <div className="self-stats">
             <StatList stats={state.stats} />
           </div>
+          {state.world ? (
+            <p className="self-origin-line">
+              {eraName(state.world).name} · {ROAM_PLACES[state.world.place].name} · 第 {state.world.day} 日
+              {state.world.sect ? " · 有名分" : " · 散修"}
+              {state.world.xiuwei >= 100 ? " · 火候已至" : ""}
+              {CHAINS.filter((chain) => state.world?.quests[chain.id]?.status === "active").length
+                ? ` · 未完 ${CHAINS.filter((chain) => state.world?.quests[chain.id]?.status === "active")
+                    .map((chain) => chain.name)
+                    .join("、")}`
+                : ""}
+            </p>
+          ) : null}
           <form
             className="self-rename"
             onSubmit={(event) => {

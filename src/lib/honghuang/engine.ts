@@ -26,6 +26,7 @@ export const INITIAL: SaveData = {
   novelIndex: 0,
   sound: true,
   pastLives: [],
+  world: null,
 };
 
 export function fresh(): SaveData {

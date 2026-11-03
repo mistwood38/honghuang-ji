@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { applyChoice, archiveLife, cleanName, fresh, INITIAL } from "./engine.ts";
+import { adoptChronicle, applyRoam, createRoam, normalizeRoam } from "./roam/engine.ts";
+import type { RoamAct } from "./roam/state.ts";
 import { sceneById } from "./story.ts";
 import type { Choice, SaveData, Screen } from "./types.ts";
 
@@ -15,6 +17,9 @@ type Store = SaveData & {
   rename: (name: string) => void;
   restart: () => void;
   importSave: (raw: string) => void;
+  roam: (act: RoamAct) => void;
+  openWorld: () => void;
+  beginChronicle: () => void;
 };
 
 function memoryStorage(): Storage {
@@ -91,7 +96,9 @@ function sanitize(persisted: unknown): SaveData {
     screen: raw.screen ?? "title",
     started: Boolean(raw.started),
     origin: raw.origin ?? null,
+    world: normalizeRoam((raw as { world?: unknown }).world),
   };
+  next.version = next.world ? 2 : 1;
   if (!sceneById(next.sceneId)) next.sceneId = "awaken";
   return next;
 }
@@ -112,7 +119,10 @@ export function readImportedSave(raw: string): SaveData {
     record.state && typeof record.state === "object" ? record.state : parsed;
   if (!payload || typeof payload !== "object") throw new Error("这不是存档文本");
   const body = payload as Record<string, unknown>;
-  if (body.version !== 1 || typeof body.sceneId !== "string" || typeof body.stats !== "object") {
+  if (body.version !== 1 && body.version !== 2) {
+    throw new Error("只接受这一版游戏的存档");
+  }
+  if (typeof body.sceneId !== "string" || typeof body.stats !== "object") {
     throw new Error("只接受这一版游戏的存档");
   }
   return sanitize(payload);
@@ -131,6 +141,27 @@ export const useSave = create<Store>()(
           set({
             started: true,
             screen: "play",
+            version: 2,
+            world: createRoam(),
+            sceneId: "awaken",
+            seen: ["awaken"],
+          });
+          return;
+        }
+        set({ screen: "play" });
+      },
+      beginChronicle: () => {
+        const cur = get();
+        if (cur.world) {
+          set({ screen: "play" });
+          return;
+        }
+        if (!cur.started) {
+          set({
+            started: true,
+            screen: "play",
+            version: 1,
+            world: null,
             sceneId: "awaken",
             seen: ["awaken"],
           });
@@ -142,6 +173,12 @@ export const useSave = create<Store>()(
         const cur = get();
         set(applyChoice(cur, choice, nameOverride));
       },
+      roam: (act) => {
+        set(applyRoam(get(), act));
+      },
+      openWorld: () => {
+        set(adoptChronicle(get()));
+      },
       setNovelIndex: (index) => set({ novelIndex: index }),
       setSound: (sound) => set({ sound }),
       rename: (name) => set({ name: cleanName(name) }),
@@ -151,6 +188,8 @@ export const useSave = create<Store>()(
         const pastLives = archived ? [...cur.pastLives, archived].slice(-8) : cur.pastLives;
         set({
           ...fresh(),
+          world: createRoam(),
+          version: 2,
           hydrated: true,
           screen: "play",
           started: true,
@@ -182,6 +221,9 @@ export const useSave = create<Store>()(
           rename: _g,
           restart: _h,
           importSave: _i,
+          roam: _j,
+          openWorld: _k,
+          beginChronicle: _l,
           ...data
         } = state;
         return data;
