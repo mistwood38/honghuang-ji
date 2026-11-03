@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { buildAftermath, type Aftermath } from "@/lib/honghuang/aftermath";
 import { fill, meetsCond, visibleChoices } from "@/lib/honghuang/engine";
-import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
+import { storyScrollTop } from "@/lib/honghuang/music";
+import { playUi } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
 import { WITNESS, artForScene, moodForScene, witnessForScene } from "@/lib/honghuang/visuals";
 import { Artwork, Atmosphere } from "./art";
 import { portraitForOrigin } from "@/lib/honghuang/portrait";
-import type { StatKey } from "@/lib/honghuang/types";
-import { ORIGINS, STAT_LABEL, placeById } from "@/lib/honghuang/world";
+import type { Choice, StatKey } from "@/lib/honghuang/types";
+import { ITEMS, ORIGINS, STAT_LABEL, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
 import { Modal } from "./modal";
 import { RestartButton } from "./restart-button";
@@ -21,20 +23,42 @@ export function PlayView() {
   const sound = useSave((save) => save.sound);
   const scene = sceneById(state.sceneId);
   const [draft, setDraft] = useState("");
+  const [aftermath, setAftermath] = useState<Aftermath | null>(null);
+  const pendingScroll = useRef(false);
   const portrait = portraitForOrigin(state.origin);
 
-  useEffect(() => {
-    if (!scene || !sound) {
-      setAmbience(false);
-      return;
-    }
-    setAmbience(sound, moodForScene(scene));
-    return () => setAmbience(false);
-  }, [scene, sound]);
+  function take(choice: Choice, fromKey: boolean) {
+    const before = useSave.getState();
+    if (!scene || before.sceneId !== scene.id) return;
+    if (fromKey && sound) playUi("confirm");
+    choose(choice, scene.id === "awaken" ? draft : undefined);
+    const after = useSave.getState();
+    if (after.sceneId === before.sceneId) return;
+    pendingScroll.current = true;
+    setAftermath(buildAftermath(before, after, choice.text));
+    if (scene.id === "awaken") setDraft("");
+  }
+  const takeRef = useRef(take);
+  takeRef.current = take;
 
   useEffect(() => {
-    document.querySelector<HTMLElement>(".scene-caption h1")?.focus({ preventScroll: true });
-    document.getElementById("scene-top")?.scrollIntoView({ block: "start" });
+    const heading = document.querySelector<HTMLElement>(".scene-caption h1");
+    if (!pendingScroll.current) {
+      heading?.focus({ preventScroll: true });
+      return;
+    }
+    pendingScroll.current = false;
+    const target = document.getElementById("aftermath") ?? document.getElementById("scene-story");
+    if (target) {
+      const header = document.querySelector(".game-header");
+      const label = document.querySelector(".scene-paper > .narrative-label");
+      const offset =
+        (header?.getBoundingClientRect().height ?? 0) +
+        (label?.getBoundingClientRect().height ?? 0);
+      const top = storyScrollTop(target.getBoundingClientRect().top, window.scrollY, offset);
+      window.scrollTo({ top, behavior: "auto" });
+    }
+    target?.focus({ preventScroll: true });
   }, [state.sceneId]);
 
   useEffect(() => {
@@ -64,14 +88,11 @@ export function PlayView() {
       const pick = options[index];
       if (!pick) return;
       event.preventDefault();
-      if (sound) unlockSound();
-      const next = sceneById(pick.choice.to);
-      playChoice(sound, next ? moodForScene(next) : "mist");
-      choose(pick.choice, scene.id === "awaken" ? draft : undefined);
+      takeRef.current(pick.choice, true);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [choose, draft, scene, sound, state]);
+  }, [scene, state]);
 
   if (!state.started || !scene) {
     return (
@@ -166,6 +187,39 @@ export function PlayView() {
               </button>
             )}
           </div>
+          {aftermath ? (
+            <div id="aftermath" className="choice-aftermath" tabIndex={-1} role="status">
+              <p className="eyebrow">因果已揭</p>
+              <p className="aftermath-choice">{aftermath.text}</p>
+              {aftermath.origin ? (
+                <p className="aftermath-origin">根骨已定 · {ORIGINS[aftermath.origin].name}</p>
+              ) : null}
+              {aftermath.deltas.length > 0 ? (
+                <span className="choice-deltas">
+                  {aftermath.deltas.map((row) => (
+                    <span
+                      className={row.value < 0 ? "delta-cost" : "delta-gain"}
+                      data-stat={row.key}
+                      key={row.key}
+                    >
+                      {STAT_LABEL[row.key as StatKey]} {row.value > 0 ? "+" : ""}
+                      {row.value}
+                    </span>
+                  ))}
+                </span>
+              ) : null}
+              {aftermath.gained.length > 0 ? (
+                <p className="aftermath-items">
+                  得到 {aftermath.gained.map((id) => ITEMS[id]?.name ?? id).join("、")}
+                </p>
+              ) : null}
+              {aftermath.lost.length > 0 ? (
+                <p className="aftermath-items aftermath-lost">
+                  失去 {aftermath.lost.map((id) => ITEMS[id]?.name ?? id).join("、")}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="copy" id="scene-story" tabIndex={-1} aria-label="本幕剧情">
             {scene.paragraphs.map((paragraph) => (
               <p key={paragraph}>{fill(paragraph, state)}</p>
@@ -221,9 +275,6 @@ export function PlayView() {
               </div>
               {options.map((item) => {
                 const indexLabel = item.open ? String(++openIndex) : "—";
-                const changes = Object.entries(item.choice.delta ?? {}).filter(
-                  ([, value]) => value !== 0,
-                );
                 return (
                   <button
                     key={item.choice.id}
@@ -231,12 +282,8 @@ export function PlayView() {
                     className="choice"
                     disabled={!item.open}
                     onClick={() => {
-                      if (!item.open || useSave.getState().sceneId !== scene.id) return;
-                      if (sound) unlockSound();
-                      const next = sceneById(item.choice.to);
-                      playChoice(sound, next ? moodForScene(next) : "mist");
-                      choose(item.choice, scene.id === "awaken" ? draft : undefined);
-                      if (scene.id === "awaken") setDraft("");
+                      if (!item.open) return;
+                      take(item.choice, false);
                     }}
                   >
                     <span className={`choice-number${item.choice.setOrigin ? " choice-root" : ""}`}>
@@ -250,20 +297,6 @@ export function PlayView() {
                       {item.choice.sub ? (
                         <span className="mt-1 block text-sm leading-relaxed opacity-80">
                           {item.choice.sub}
-                        </span>
-                      ) : null}
-                      {item.open && changes.length ? (
-                        <span className="choice-deltas">
-                          {changes.map(([key, value]) => (
-                            <span
-                              className={value! < 0 ? "delta-cost" : "delta-gain"}
-                              data-stat={key}
-                              key={key}
-                            >
-                              {STAT_LABEL[key as StatKey]} {value! > 0 ? "+" : ""}
-                              {value}
-                            </span>
-                          ))}
                         </span>
                       ) : null}
                       {!item.open && item.reason ? (

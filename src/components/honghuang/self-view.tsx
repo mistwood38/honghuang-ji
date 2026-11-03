@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { portraitForOrigin } from "@/lib/honghuang/portrait";
 import { flagLabel } from "@/lib/honghuang/engine";
-import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
+import { musicCue } from "@/lib/honghuang/music";
+import { setAmbience, unlockSound } from "@/lib/honghuang/sound";
+import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
-import { ITEMS, ORIGINS, realmOf } from "@/lib/honghuang/world";
+import { moodForScene } from "@/lib/honghuang/visuals";
+import { ORIGINS, realmOf } from "@/lib/honghuang/world";
 import { PageHeading, SectionHeading } from "./art";
-import { ItemArt } from "./item-art";
+import { RelicList } from "./item-art";
 import { LifeCopy } from "./life-copy";
 import { RestartButton } from "./restart-button";
 import { SaveTransfer } from "./save-transfer";
@@ -131,20 +134,7 @@ export function SelfView() {
                 身无外物。<span>天地初醒，一念随身。</span>
               </p>
             ) : (
-              <ul className="self-items">
-                {state.items.map((id) => {
-                  const item = ITEMS[id];
-                  return (
-                    <li key={id}>
-                      <ItemArt id={id} />
-                      <div>
-                        <h3>{item?.name ?? id}</h3>
-                        <p>{item?.lore}</p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <RelicList ids={state.items} />
             )}
           </div>
         </section>
@@ -214,7 +204,7 @@ export function SelfView() {
       <div className="self-actions bronze-panel">
         <div>
           <p className="eyebrow">此世留痕</p>
-          <p>钟声、抄录与轮回</p>
+          <p>乐声、抄录与轮回</p>
         </div>
         <div className="self-action-buttons">
           <button
@@ -223,21 +213,33 @@ export function SelfView() {
             aria-pressed={state.sound}
             onClick={() => {
               if (!state.sound) {
+                const scene = sceneById(useSave.getState().sceneId);
+                setAmbience(
+                  true,
+                  musicCue("self", scene ? moodForScene(scene) : "mist"),
+                );
                 unlockSound();
-                playChoice(true);
               } else {
                 setAmbience(false);
               }
               setSound(!state.sound);
             }}
           >
-            钟声{state.sound ? "开" : "关"}
+            乐声{state.sound ? "开" : "关"}
           </button>
           <LifeCopy />
           <RestartButton label="弃此生重开" />
         </div>
       </div>
       <SaveTransfer />
+      <details className="music-credits">
+        <summary>乐声来处</summary>
+        <p>
+          各界面是不同的长曲，不是同一段钟鸣。古琴为 Charlie Huang
+          的录音（CC BY 2.5 / CC BY-SA）。劫难场面用 MintoDog 的管弦曲 Hope（CC0，约七十秒循环，不是中国古乐）。按钮另有短促的击木与拨弦。全文见项目内
+          public/audio/CREDITS.txt。
+        </p>
+      </details>
     </section>
   );
 }

@@ -10,6 +10,7 @@ export function Modal({
   title,
   titleId,
   description,
+  media,
   initialFocusRef,
   children,
 }: {
@@ -19,6 +20,7 @@ export function Modal({
   title: string;
   titleId: string;
   description: string;
+  media?: ReactNode;
   initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }) {
@@ -48,6 +50,7 @@ export function Modal({
           <Dialog.Title id={titleId} className="hh-modal-title">
             {title}
           </Dialog.Title>
+          {media}
           <Dialog.Description className="hh-modal-description">{description}</Dialog.Description>
           <Dialog.Close asChild>
             <button type="button" className="hh-modal-close" aria-label="关闭对话框">

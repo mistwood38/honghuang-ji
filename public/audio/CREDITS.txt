@@ -1,0 +1,20 @@
+洪荒纪乐声来处
+这些文件随游戏离线打包。转成 32 kHz 单声道 Vorbis 只为体积，曲目本身没有重编。
+
+古琴演奏：Charlie Huang，来自维基共享资源。
+- 佩兰 Pei Lan、孔子读易 Kongzi Duyi、流水 Liu Shui、平沙落雁 Pingsha Luoyan、秋风辞 Qiu Feng Ci、酒狂 Jiu Kuang
+  许可：Creative Commons Attribution 2.5
+  https://creativecommons.org/licenses/by/2.5/
+- 阳关三叠 Yangguan Sandie、醉渔唱晚 Zuiyu Changwan、即兴其一 Improvisation 1
+  许可：Creative Commons Attribution-ShareAlike 3.0
+  https://creativecommons.org/licenses/by-sa/3.0/
+- 神人畅 Shenren Chang
+  许可：Creative Commons Attribution-ShareAlike 2.5
+  https://creativecommons.org/licenses/by-sa/2.5/
+上述 BY-SA 曲目的转码文件仍以相同许可分发。游戏代码不是这些录音的演绎作品。
+
+劫难场面：Hope，MintoDog，2013–2023，OpenGameArt，CC0。
+https://opengameart.org/content/hopeorchestral-battle-music
+这是一段约七十秒、可循环的管弦战曲，不是中国古乐。没有找到可以合法随包分发的长篇洪荒战乐，因此只把它用在灾劫情绪，并在游戏内注明。
+
+界面击键与抉择拨弦是本项目为按钮写的短音，可自由使用。

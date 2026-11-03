@@ -1,9 +1,10 @@
 import { useEffect } from "react";
+import { musicCue } from "@/lib/honghuang/music";
 import { sceneById } from "@/lib/honghuang/story";
-import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
+import { playUi, setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
+import { ART, artForScene, moodForScene } from "@/lib/honghuang/visuals";
 import { APP_NAME, NOVEL_NAME, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
-import { ART, artForScene } from "@/lib/honghuang/visuals";
 import type { Screen } from "@/lib/honghuang/types";
 import { Artwork, Atmosphere } from "./art";
 import { CodexView } from "./codex-view";
@@ -14,6 +15,7 @@ import { RestartButton } from "./restart-button";
 import { SaveTransfer } from "./save-transfer";
 import { SelfView } from "./self-view";
 import "./cinematic.css";
+import "./experience.css";
 
 const DOCK: { id: Screen; label: string; mark: string; note: string }[] = [
   { id: "play", label: "入世", mark: "世", note: "一生因果" },
@@ -29,9 +31,25 @@ export function GameApp() {
       useSave.getState().setHydrated(true),
     );
   }, []);
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!useSave.getState().sound) return;
+      const element = event.target instanceof Element ? event.target.closest("button, summary") : null;
+      if (!(element instanceof HTMLElement)) return;
+      if (element instanceof HTMLButtonElement && element.disabled) return;
+      const confirm =
+        element.classList.contains("choice") || element.classList.contains("fate-button");
+      playUi(confirm ? "confirm" : "tap");
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
   const hydrated = useSave((state) => state.hydrated);
   return hydrated ? (
-    <Shell />
+    <>
+      <Ambience />
+      <Shell />
+    </>
   ) : (
     <div className="awakening" role="status">
       <span className="seal">洪</span>
@@ -132,6 +150,27 @@ function Shell() {
     </div>
   );
 }
+function Ambience() {
+  const screen = useSave((state) => state.screen);
+  const sound = useSave((state) => state.sound);
+  const sceneId = useSave((state) => state.sceneId);
+  useEffect(() => {
+    if (!sound) {
+      setAmbience(false);
+      return;
+    }
+    const scene = sceneById(sceneId);
+    setAmbience(true, musicCue(screen, scene ? moodForScene(scene) : "mist"));
+  }, [screen, sound, sceneId]);
+  return null;
+}
+function primeSound() {
+  const live = useSave.getState();
+  const scene = sceneById(live.sceneId);
+  setAmbience(true, musicCue(live.screen, scene ? moodForScene(scene) : "mist"));
+  unlockSound();
+  live.setSound(true);
+}
 function CompactStats() {
   const stats = useSave((state) => state.stats);
   return (
@@ -151,16 +190,14 @@ function SoundButton() {
     <button
       type="button"
       className="sound-button"
-      aria-label={`钟声${sound ? "开" : "关"}`}
+      aria-label={`乐声${sound ? "开" : "关"}`}
       aria-pressed={sound}
       onClick={() => {
-        if (!sound) {
-          unlockSound();
-          playChoice(true);
-        } else {
+        if (!sound) primeSound();
+        else {
           setAmbience(false);
+          setSound(false);
         }
-        setSound(!sound);
       }}
     >
       <span className={`sound-bars ${sound ? "sound-on" : ""}`} aria-hidden="true">
@@ -168,7 +205,7 @@ function SoundButton() {
         <i />
         <i />
       </span>
-      <span>钟声{sound ? "开" : "关"}</span>
+      <span>乐声{sound ? "开" : "关"}</span>
     </button>
   );
 }
@@ -220,10 +257,7 @@ function TitleScreen() {
           type="button"
           className="fate-button"
           onClick={() => {
-            if (sound) {
-              unlockSound();
-              playChoice(sound, "radiance");
-            }
+            if (sound) primeSound();
             begin();
           }}
         >
