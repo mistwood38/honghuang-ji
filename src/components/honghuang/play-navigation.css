@@ -1,0 +1,86 @@
+/* The paper's own reading rail keeps long scenes navigable without advancing them. */
+.scene-paper > .narrative-label {
+  position: sticky;
+  top: 76px;
+  z-index: 12;
+  min-height: 50px;
+  margin: -28px -32px 20px;
+  padding: 3px 32px;
+  background: var(--color-paper);
+  box-shadow: 0 4px 8px #382f1910;
+}
+.scene-jump {
+  display: inline-flex;
+  gap: 12px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--color-cinnabar);
+}
+.scene-jump:hover {
+  color: #763328;
+}
+.scene-jump > span {
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+.scene-jump-back {
+  font-size: 12px;
+  color: var(--color-faint);
+}
+.choice-heading h2 {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 400;
+}
+#scene-choices,
+#scene-story {
+  /* The document already contributes 100px of scroll padding. */
+  scroll-margin-top: 44px;
+}
+#scene-choices:focus,
+#scene-story:focus {
+  outline: none;
+}
+#scene-choices:focus-visible {
+  color: var(--color-cinnabar);
+}
+#scene-story:focus-visible {
+  box-shadow: -2px 0 0 var(--color-cinnabar);
+}
+@media (max-width: 1023px) {
+  .scene-paper > .narrative-label {
+    top: 96px;
+  }
+  #scene-choices,
+  #scene-story {
+    scroll-margin-top: 64px;
+  }
+}
+@media (max-width: 640px) {
+  .scene-chapter .scene-hero {
+    height: 196px;
+  }
+  .scene-paper > .narrative-label {
+    top: 92px;
+    margin: -21px -22px 16px;
+    padding: 2px 22px;
+    min-height: 48px;
+  }
+  .scene-jump {
+    font-size: 12px;
+  }
+  #scene-choices,
+  #scene-story {
+    scroll-margin-top: 52px;
+  }
+}
+@media (max-width: 359px) {
+  .scene-paper > .narrative-label {
+    margin-inline: -18px;
+    padding-inline: 18px;
+  }
+}

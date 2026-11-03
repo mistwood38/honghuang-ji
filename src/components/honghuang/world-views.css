@@ -1,0 +1,1158 @@
+/* Painted map folios and jade character dossiers. No selector changes game data. */
+.atlas-layout {
+  display: grid;
+  gap: 20px;
+  margin-top: 30px;
+  align-items: stretch;
+}
+.atlas-map {
+  position: relative;
+  min-height: 430px;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #93805688;
+  box-shadow:
+    0 20px 50px #0003,
+    inset 0 0 0 5px #0b1819;
+}
+.atlas-map::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid #c7ac7233;
+  pointer-events: none;
+  z-index: 2;
+}
+.atlas-map > .artwork,
+.atlas-map-shade {
+  position: absolute;
+  inset: 0;
+}
+.atlas-map > .artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 48%;
+}
+.atlas-map-shade {
+  background: linear-gradient(180deg, #08171899, transparent 32%, #0817181a 70%, #081718e6);
+  pointer-events: none;
+}
+.atlas-map-inscription {
+  position: absolute;
+  right: 22px;
+  top: 26px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--color-paper);
+  text-shadow: 0 2px 10px #0009;
+}
+.atlas-map-inscription > span {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  writing-mode: vertical-rl;
+  line-height: 1.4;
+  letter-spacing: 0.2em;
+}
+.atlas-map-inscription small {
+  writing-mode: vertical-rl;
+  font-family: var(--font-serif);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+}
+.atlas-map-note {
+  position: absolute;
+  left: 22px;
+  top: 24px;
+  color: var(--color-paper);
+  text-shadow: 0 1px 7px #000a;
+}
+.atlas-map-note > span {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  letter-spacing: 0.2em;
+}
+.atlas-map-note p {
+  margin-top: 8px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #c5c9ad;
+}
+.atlas-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #9d8d6680;
+  background: #091d1dec;
+  color: #ece3c6;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  box-shadow:
+    0 5px 16px #0005,
+    inset 0 0 0 3px #c7ac7210;
+  transition:
+    background-color 0.18s,
+    border-color 0.18s,
+    box-shadow 0.18s;
+  z-index: 3;
+}
+.atlas-marker::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #c7ac7224;
+  pointer-events: none;
+}
+.atlas-marker:hover,
+.atlas-marker.is-selected {
+  background: #293b31f5;
+  border-color: var(--color-gold);
+  color: #efe3bd;
+  box-shadow:
+    0 0 24px #c7ac7224,
+    0 6px 18px #0005;
+}
+.atlas-pin {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--color-gold);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+.atlas-marker.is-current .atlas-pin {
+  background: var(--color-gold);
+  box-shadow: 0 0 9px var(--color-gold);
+}
+.atlas-marker-zixiao {
+  left: 42%;
+  top: 23%;
+}
+.atlas-marker-kunlun {
+  left: 24%;
+  top: 44%;
+}
+.atlas-marker-east {
+  left: 75%;
+  top: 43%;
+}
+.atlas-marker-buzhou {
+  left: 49%;
+  top: 55%;
+}
+.atlas-marker-bloodsea {
+  left: 25%;
+  top: 76%;
+}
+.atlas-marker-wahuan {
+  left: 76%;
+  top: 73%;
+}
+.atlas-map-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #ddd9bd;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  z-index: 3;
+}
+.atlas-map-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.atlas-map-legend i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--color-gold);
+  transform: rotate(45deg);
+}
+.atlas-map-legend .atlas-legend-current {
+  background: var(--color-gold);
+}
+.atlas-detail {
+  min-width: 0;
+  scroll-margin-top: 12px;
+  overflow: hidden;
+  outline-offset: 4px;
+}
+.atlas-detail-art {
+  position: relative;
+  height: 165px;
+  overflow: hidden;
+}
+.atlas-detail-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 55%, #102526);
+  pointer-events: none;
+}
+.atlas-detail-art .artwork,
+.atlas-detail-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.atlas-region-seal {
+  position: absolute;
+  z-index: 1;
+  right: 24px;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  min-width: 37px;
+  height: 50px;
+  border: 1px solid #c7ac7277;
+  background: #8a4937;
+  color: #f0dfba;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  box-shadow: inset 0 0 0 3px #d3ae6b22;
+}
+.atlas-detail-copy {
+  padding: 24px;
+}
+.atlas-detail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.atlas-detail-title h2 {
+  font-family: var(--font-serif);
+  font-size: 31px;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  color: var(--color-fog);
+}
+.atlas-status {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--color-dim);
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+.atlas-status.is-current {
+  color: var(--color-gold);
+}
+.atlas-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #7b795244;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-gold);
+}
+.atlas-description {
+  margin-top: 12px;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.95;
+  color: #c4cbbd;
+}
+.atlas-places,
+.atlas-layers {
+  margin-top: 42px;
+}
+.atlas-places .ornament-heading small,
+.atlas-layers .ornament-heading small {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--color-dim);
+}
+.atlas-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0;
+}
+.atlas-filters button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 15px;
+  border: 1px solid #43514a;
+  background: #11242266;
+  color: var(--color-dim);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+.atlas-filters button:hover,
+.atlas-filters button[aria-pressed="true"] {
+  color: #ead9ad;
+  border-color: #ad9662;
+  background: #84724625;
+  box-shadow: inset 0 -2px #c7ac7266;
+}
+.atlas-place-grid {
+  display: grid;
+  gap: 14px;
+}
+.atlas-place-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-align: left;
+  min-width: 0;
+  padding: 0;
+  background: #112422;
+  border: 1px solid #394940;
+  box-shadow: 0 6px 20px #0002;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+.atlas-place-card:hover,
+.atlas-place-card.is-selected {
+  border-color: #ac9563;
+  background: #19302a;
+}
+.atlas-card-landscape {
+  display: block;
+  width: 100%;
+  height: 112px;
+  position: relative;
+  overflow: hidden;
+}
+.atlas-card-landscape .artwork {
+  width: 100%;
+  height: 100%;
+}
+.atlas-card-landscape img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  opacity: 0.85;
+}
+.atlas-place-card:hover .atlas-card-landscape img {
+  transform: scale(1.035);
+}
+.atlas-card-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 40%, #112422);
+  pointer-events: none;
+}
+.atlas-card-body {
+  display: block;
+  width: 100%;
+  padding: 8px 20px 18px;
+  margin-top: -9px;
+  position: relative;
+}
+.atlas-place-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.atlas-place-name {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  letter-spacing: 0.05em;
+  color: var(--color-fog);
+}
+.atlas-place-summary {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.8;
+  color: #b2c0b4;
+}
+.atlas-place-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid #66745644;
+  color: var(--color-gold);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+.atlas-place-link > span:last-child {
+  margin-left: auto;
+  font-size: 15px;
+}
+.atlas-layers > ol {
+  display: grid;
+  gap: 1px;
+  margin-top: 22px;
+  background: #4c5745;
+  border: 1px solid #4c5745;
+}
+.atlas-layers > ol > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px;
+  background: #0c1e1d;
+}
+.atlas-layer-number {
+  color: var(--color-gold);
+  font-family: var(--font-serif);
+  font-size: 22px;
+  border-right: 1px solid #6e755044;
+  padding-right: 16px;
+  line-height: 1.8;
+}
+.atlas-layers h3 {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: #e4decb;
+}
+.atlas-layers li p {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #a9baae;
+}
+
+/* A portrait, its name seal and the six measures form a single character folio. */
+.self-overview {
+  display: grid;
+  margin-top: 28px;
+  overflow: hidden;
+  position: relative;
+}
+.self-overview::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid #c7ac7228;
+  pointer-events: none;
+}
+.self-portrait {
+  position: relative;
+  height: 270px;
+  min-width: 0;
+  overflow: hidden;
+  background: #0a1718;
+}
+.self-portrait picture,
+.self-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 17%;
+}
+.self-portrait picture {
+  position: absolute;
+  inset: 0;
+}
+.self-portrait-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #09191820 25%, #0919181a 40%, #091918ed);
+}
+.self-portrait-edition {
+  position: absolute;
+  top: 23px;
+  right: 22px;
+  writing-mode: vertical-rl;
+  color: #e6d6a9aa;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-shadow: 0 2px 8px #0008;
+}
+.self-portrait-caption {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.self-origin-seal {
+  display: grid;
+  place-items: center;
+  flex: 0 0 43px;
+  height: 54px;
+  color: #e2c68c;
+  background: #1b312acc;
+  border: 1px solid #b79b66;
+  box-shadow: inset 0 0 0 4px #9a7c3924;
+  font-family: var(--font-serif);
+  font-size: 26px;
+}
+.self-portrait-caption > div > p {
+  color: #cebc91;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.self-portrait-caption h2 {
+  margin-top: 5px;
+  color: #ece3c7;
+  font-family: var(--font-serif);
+  font-size: 37px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.15em;
+}
+.self-portrait-caption > div > span {
+  display: block;
+  margin-top: 6px;
+  color: #afbdaf;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+.self-origin-wu .self-origin-seal {
+  background: #683e2dd9;
+  border-color: #bd8d65;
+}
+.self-origin-yao .self-origin-seal {
+  box-shadow:
+    inset 0 0 0 4px #9a7c3924,
+    0 0 28px #c7ac7224;
+}
+.self-origin-ren .self-origin-seal {
+  background: #6d5834b3;
+}
+.self-identity {
+  padding: 22px 24px 26px;
+  min-width: 0;
+}
+.self-dossier-heading {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #7b795244;
+}
+.self-dossier-heading h3 {
+  margin-top: 6px;
+  color: #e0dbc5;
+  font-family: var(--font-serif);
+  font-size: 25px;
+  letter-spacing: 0.15em;
+  font-weight: 400;
+}
+.self-dossier-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 45px;
+  border: 1px solid #8c80535c;
+  color: #c7ac7270;
+  font-family: var(--font-serif);
+  font-size: 25px;
+}
+.self-origin-line {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.85;
+  color: #acbfb2;
+}
+.self-realm {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 16px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #63715155;
+}
+.self-realm > span {
+  font-size: 10px;
+  color: var(--color-dim);
+}
+.self-realm > span:last-child {
+  margin-left: auto;
+}
+.self-realm > strong {
+  color: var(--color-gold);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+}
+.self-stats {
+  margin-top: 16px;
+}
+.self-stats .meter {
+  height: 3px;
+  background: #4a5a444f;
+}
+.self-stats .meter > span {
+  box-shadow: 0 0 9px #c7ac721a;
+}
+.self-rename {
+  margin-top: 22px;
+  border-top: 1px solid #63715155;
+  padding-top: 18px;
+}
+.self-rename > label {
+  display: block;
+  margin-bottom: 10px;
+  color: #a9b9ab;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+.self-rename > div {
+  display: flex;
+  gap: 12px;
+}
+.self-rename input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid #78826266;
+  background: #0a171833;
+  color: var(--color-fog);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  padding: 8px;
+  outline-offset: 2px;
+}
+.self-rename .btn-ghost {
+  flex-shrink: 0;
+}
+.self-rename > p {
+  min-height: 15px;
+  margin-top: 8px;
+  color: #99ae9f;
+  font-size: 10px;
+}
+.self-record-grid {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+  align-items: start;
+}
+.self-inventory {
+  overflow: hidden;
+}
+.self-relic-art {
+  height: 170px;
+  position: relative;
+  overflow: hidden;
+}
+.self-relic-art picture,
+.self-relic-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.self-relic-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 35%, #102526);
+  pointer-events: none;
+}
+.self-relic-art > span {
+  position: absolute;
+  z-index: 1;
+  bottom: 20px;
+  left: 24px;
+  color: #d0bd8c;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+}
+.self-section-body,
+.self-karma {
+  padding: 24px;
+}
+.self-page .ornament-heading small {
+  color: var(--color-dim);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+.self-empty {
+  margin: 22px 0;
+  color: #d1d8c5;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.8;
+}
+.self-empty > span {
+  display: block;
+  margin-top: 7px;
+  color: #9eb19f;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.self-items {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.self-items > li {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 16px;
+  background: #0a171866;
+  border: 1px solid #53654e66;
+  box-shadow: inset 0 0 0 3px #c7ac7207;
+}
+.self-items > li > .item-art {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+}
+.self-items > li > div {
+  min-width: 0;
+}
+.self-items h3 {
+  color: #d9c28b;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.self-items p {
+  margin-top: 6px;
+  color: #b5c2b1;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.self-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 20px;
+}
+.self-flags > li {
+  padding: 7px 10px;
+  border: 1px solid #7d805255;
+  background: #7d71451a;
+  color: #d5c89d;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.self-timeline {
+  display: grid;
+  margin-top: 24px;
+  padding-left: 4px;
+}
+.self-timeline > li {
+  position: relative;
+  display: flex;
+  gap: 15px;
+  padding: 0 0 22px;
+}
+.self-timeline > li::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: 3px;
+  width: 1px;
+  background: #68745655;
+}
+.self-timeline > li:last-child::before {
+  display: none;
+}
+.self-timeline-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 23px;
+  height: 25px;
+  color: #c7ac72;
+  border: 1px solid #69775777;
+  font-family: var(--font-serif);
+  font-size: 10px;
+}
+.self-timeline h3 {
+  color: #d9c595;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.self-timeline p {
+  margin-top: 5px;
+  color: #b9c7b7;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.85;
+}
+.self-history-note {
+  margin-top: 16px;
+  color: #9aaf9e;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.self-past {
+  margin-top: 38px;
+}
+.self-past-empty {
+  padding: 20px 0;
+  color: #a7b7a6;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.8;
+}
+.self-past > ul {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.self-past > ul > li {
+  display: flex;
+  gap: 18px;
+  padding: 24px;
+  align-items: flex-start;
+}
+.self-past-seal {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 41px;
+  height: 51px;
+  border: 1px solid #b68865;
+  color: #e0b28a;
+  background: #7b422624;
+  font-family: var(--font-serif);
+  font-size: 24px;
+}
+.self-past > ul > li > div {
+  flex: 1;
+  min-width: 0;
+}
+.self-past h3 {
+  margin-top: 7px;
+  color: #e4dbc1;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+}
+.self-past-ending {
+  margin-top: 8px;
+  color: #aabcaa;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.85;
+}
+.self-past details {
+  margin-top: 8px;
+}
+.self-past summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: #c7ac72;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-serif);
+  font-size: 12px;
+}
+.self-past summary::after {
+  content: "＋";
+  margin-left: auto;
+}
+.self-past details[open] summary::after {
+  content: "－";
+}
+.self-past details ol {
+  display: grid;
+  gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid #5c6e4d55;
+  color: #b3c2ad;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.self-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-top: 24px;
+  padding: 24px;
+}
+.self-actions > div > p:last-child {
+  margin-top: 7px;
+  color: #ddd8bf;
+  font-family: var(--font-serif);
+  font-size: 17px;
+}
+.self-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (min-width: 600px) {
+  .atlas-place-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .atlas-layers > ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .self-overview {
+    grid-template-columns: minmax(0, 0.94fr) minmax(0, 1fr);
+  }
+  .self-portrait {
+    height: auto;
+    min-height: 650px;
+  }
+  .self-portrait-caption {
+    bottom: 36px;
+    left: 30px;
+    right: 30px;
+  }
+  .self-portrait-caption h2 {
+    font-size: 46px;
+  }
+  .self-portrait-caption > div > span {
+    margin-top: 10px;
+  }
+  .self-origin-seal {
+    flex-basis: 46px;
+    height: 61px;
+  }
+  .self-identity {
+    padding: 32px;
+  }
+  .self-dossier-heading {
+    display: flex;
+  }
+  .self-origin-line {
+    margin-top: 20px;
+    font-size: 14px;
+  }
+  .self-realm {
+    margin-top: 22px;
+  }
+  .self-stats {
+    margin-top: 20px;
+  }
+  .self-past > ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 960px) {
+  .atlas-layout {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  }
+  .atlas-map {
+    min-height: 590px;
+  }
+  .atlas-detail-art {
+    height: 210px;
+  }
+  .atlas-detail-copy {
+    padding: 27px;
+  }
+  .atlas-place-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .atlas-card-landscape {
+    height: 138px;
+  }
+  .atlas-layers > ol {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .atlas-layers > ol > li {
+    padding: 22px 18px;
+    gap: 12px;
+  }
+  .atlas-layer-number {
+    padding-right: 12px;
+  }
+  .self-portrait {
+    min-height: 660px;
+  }
+  .self-identity {
+    padding: 38px;
+  }
+  .self-portrait-caption {
+    bottom: 40px;
+    left: 36px;
+  }
+  .self-record-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+  .self-section-body,
+  .self-karma {
+    padding: 28px;
+  }
+  .self-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .self-items > li {
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+  }
+  .self-relic-art {
+    height: 200px;
+  }
+}
+@media (max-width: 640px) {
+  .self-page > .page-heading {
+    margin-bottom: 16px;
+  }
+  .self-page > .page-heading .page-intro {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .self-overview {
+    margin-top: 20px;
+  }
+  .self-portrait {
+    height: 260px;
+  }
+  .self-portrait-caption {
+    bottom: 20px;
+    left: 22px;
+  }
+  .self-origin-line {
+    font-size: 12px;
+  }
+  .self-realm {
+    margin-top: 12px;
+  }
+  .self-stats {
+    margin-top: 12px;
+  }
+  .self-stats > div {
+    gap: 10px;
+  }
+  .self-stats > div > div:first-child > p {
+    font-size: 12px;
+  }
+  .self-stats > div > div:last-child {
+    row-gap: 10px;
+  }
+  .self-items > li {
+    padding: 14px;
+    gap: 13px;
+  }
+  .self-page .self-actions {
+    padding: 20px;
+  }
+  .self-action-buttons {
+    width: 100%;
+  }
+  .self-action-buttons > button {
+    flex: 1;
+    padding-inline: 12px;
+  }
+  .atlas-marker {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+  .atlas-map {
+    min-height: 440px;
+  }
+  .atlas-map-note {
+    top: 20px;
+    left: 20px;
+  }
+  .atlas-map-note > span {
+    font-size: 12px;
+  }
+  .atlas-map-note p {
+    font-size: 8px;
+  }
+  .atlas-map-inscription {
+    right: 18px;
+    top: 20px;
+  }
+  .atlas-map-inscription > span {
+    font-size: 27px;
+  }
+  .atlas-map-inscription small {
+    display: none;
+  }
+  .atlas-place-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .atlas-card-landscape {
+    height: 95px;
+  }
+  .atlas-card-body {
+    padding: 7px 12px 14px;
+  }
+  .atlas-place-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .atlas-place-name {
+    font-size: 17px;
+  }
+  .atlas-status {
+    font-size: 9px;
+  }
+  .atlas-place-summary {
+    font-size: 12px;
+  }
+  .atlas-place-link {
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    gap: 5px;
+  }
+}
+@media (max-width: 359px) {
+  .atlas-place-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .atlas-card-landscape {
+    height: 115px;
+  }
+  .atlas-place-top {
+    flex-direction: row;
+    align-items: center;
+  }
+  .self-identity,
+  .self-section-body,
+  .self-karma {
+    padding-inline: 20px;
+  }
+  .self-portrait-caption h2 {
+    font-size: 33px;
+  }
+  .self-action-buttons {
+    gap: 7px;
+  }
+  .self-action-buttons > button {
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-marker,
+  .atlas-place-card,
+  .atlas-card-landscape img {
+    transition: none;
+  }
+}

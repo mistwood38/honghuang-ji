@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import test from "node:test";
+import test, { after } from "node:test";
 import {
   appNameFromHost,
-  createHeadInjector,
+  createHeadInjector as createPlatformHeadInjector,
   grokXCreatorHeadTags,
-  injectGrokPwaHead,
+  injectGrokPwaHead as injectPlatformPwaHead,
   isDocumentPath,
   isInstallQuery,
   publicAppHost,
@@ -20,6 +20,19 @@ import {
 import { renderInstallPage } from "./grok-pwa-plugin.mjs";
 
 const TEMPLATE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const EMPTY_SITE_ROOT = mkdtempSync(join(tmpdir(), "grok-pwa-site-fixture-"));
+
+after(() => rmSync(EMPTY_SITE_ROOT, { recursive: true, force: true }));
+
+// Platform fixtures must not inherit this game's site.json or public share card.
+// Filesystem-specific cases still supply their own cwd below.
+function injectGrokPwaHead(html, context = {}) {
+  return injectPlatformPwaHead(html, { cwd: EMPTY_SITE_ROOT, ...context });
+}
+
+function createHeadInjector(context = {}) {
+  return createPlatformHeadInjector({ cwd: EMPTY_SITE_ROOT, ...context });
+}
 
 test("injects before </head>", () => {
   const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>");

@@ -1,0 +1,431 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "ok": true,
+  "checks": [
+    "Established full/refinement browser suite passes unchanged, including actual v1 restore, choice deltas, modal focus, reduced motion and complete dao ending/restart",
+    "mobile: all six pages render with no horizontal overflow, decoded visible art, readable primary text and reachable dock",
+    "narrow: all six pages render with no horizontal overflow, decoded visible art, readable primary text and reachable dock",
+    "desktop: all six pages render with no horizontal overflow, decoded visible art, readable primary text and reachable dock",
+    "landscape: all six pages render with no horizontal overflow, decoded visible art, readable primary text and reachable dock",
+    "All four existing roots select distinct decoded local portrait artwork without changing any save field",
+    "All nine original item names/lore remain; the actual local icon atlas decodes and uses nine distinct 3x3 sprite positions",
+    "Layered original world atlas loads; all fourteen places expose complete original descriptions without moving the player",
+    "Fengshen altar artwork is correctly mapped to the existing board/final story scenes and does not alter state",
+    "All nine existing endings preserve their full original paragraphs and actions, render without overflow, and keep v1 save data unchanged"
+  ],
+  "errors": [],
+  "screenshots": [
+    "play-mobile.png",
+    "novel-mobile.png",
+    "title-desktop.png",
+    "land-desktop.png",
+    "self-desktop.png",
+    "codex-desktop.png",
+    "self-items-mobile.png",
+    "ending-mobile.png",
+    "title-mobile.png"
+  ],
+  "viewports": [
+    {
+      "label": "mobile",
+      "width": 390,
+      "height": 844,
+      "ok": true
+    },
+    {
+      "label": "narrow",
+      "width": 320,
+      "height": 740,
+      "ok": true
+    },
+    {
+      "label": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "ok": true
+    },
+    {
+      "label": "landscape",
+      "width": 844,
+      "height": 390,
+      "ok": true
+    }
+  ],
+  "contrastSamples": [
+    {
+      "label": "mobile/story",
+      "foreground": [
+        211,
+        218,
+        203
+      ],
+      "background": [
+        15,
+        31,
+        30
+      ],
+      "size": "16px",
+      "ratio": 11.87,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "mobile/choice",
+      "foreground": [
+        224,
+        225,
+        202
+      ],
+      "background": [
+        20,
+        43,
+        40
+      ],
+      "size": "17px",
+      "ratio": 11.23,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "mobile/novel",
+      "foreground": [
+        43,
+        48,
+        40
+      ],
+      "background": [
+        231,
+        220,
+        192
+      ],
+      "size": "17px",
+      "ratio": 9.89,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "mobile/codex",
+      "foreground": [
+        188,
+        200,
+        187
+      ],
+      "background": [
+        15,
+        34,
+        35
+      ],
+      "size": "16px",
+      "ratio": 9.52,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "narrow/story",
+      "foreground": [
+        211,
+        218,
+        203
+      ],
+      "background": [
+        15,
+        31,
+        30
+      ],
+      "size": "16px",
+      "ratio": 11.87,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "narrow/choice",
+      "foreground": [
+        224,
+        225,
+        202
+      ],
+      "background": [
+        20,
+        43,
+        40
+      ],
+      "size": "17px",
+      "ratio": 11.23,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "narrow/novel",
+      "foreground": [
+        43,
+        48,
+        40
+      ],
+      "background": [
+        231,
+        220,
+        192
+      ],
+      "size": "17px",
+      "ratio": 9.89,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "narrow/codex",
+      "foreground": [
+        188,
+        200,
+        187
+      ],
+      "background": [
+        15,
+        34,
+        35
+      ],
+      "size": "16px",
+      "ratio": 9.52,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "desktop/story",
+      "foreground": [
+        211,
+        218,
+        203
+      ],
+      "background": [
+        15,
+        31,
+        30
+      ],
+      "size": "17px",
+      "ratio": 11.87,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "desktop/choice",
+      "foreground": [
+        224,
+        225,
+        202
+      ],
+      "background": [
+        20,
+        43,
+        40
+      ],
+      "size": "18px",
+      "ratio": 11.23,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "desktop/novel",
+      "foreground": [
+        43,
+        48,
+        40
+      ],
+      "background": [
+        231,
+        220,
+        192
+      ],
+      "size": "17px",
+      "ratio": 9.89,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "desktop/codex",
+      "foreground": [
+        188,
+        200,
+        187
+      ],
+      "background": [
+        15,
+        34,
+        35
+      ],
+      "size": "16px",
+      "ratio": 9.52,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "landscape/story",
+      "foreground": [
+        211,
+        218,
+        203
+      ],
+      "background": [
+        15,
+        31,
+        30
+      ],
+      "size": "17px",
+      "ratio": 11.87,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "landscape/choice",
+      "foreground": [
+        224,
+        225,
+        202
+      ],
+      "background": [
+        20,
+        43,
+        40
+      ],
+      "size": "18px",
+      "ratio": 11.23,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "landscape/novel",
+      "foreground": [
+        43,
+        48,
+        40
+      ],
+      "background": [
+        231,
+        220,
+        192
+      ],
+      "size": "17px",
+      "ratio": 9.89,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    },
+    {
+      "label": "landscape/codex",
+      "foreground": [
+        188,
+        200,
+        187
+      ],
+      "background": [
+        15,
+        34,
+        35
+      ],
+      "size": "16px",
+      "ratio": 9.52,
+      "method": "Computed foreground against resolved solid CSS backgrounds; artwork textures are excluded."
+    }
+  ],
+  "baseChecks": 50,
+  "portraits": [
+    {
+      "origin": "dao",
+      "src": "http://127.0.0.1:8080/art/pilgrim-small.webp",
+      "width": 600,
+      "height": 900
+    },
+    {
+      "origin": "wu",
+      "src": "http://127.0.0.1:8080/art/origin-wu-small.webp",
+      "width": 600,
+      "height": 900
+    },
+    {
+      "origin": "yao",
+      "src": "http://127.0.0.1:8080/art/origin-yao-small.webp",
+      "width": 600,
+      "height": 900
+    },
+    {
+      "origin": "ren",
+      "src": "http://127.0.0.1:8080/art/origin-ren-small.webp",
+      "width": 600,
+      "height": 900
+    }
+  ],
+  "itemIcons": {
+    "cells": [
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "0% 0%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "50% 0%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "100% 0%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "0% 50%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "50% 50%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "100% 50%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "0% 100%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "50% 100%",
+        "size": "300% 300%"
+      },
+      {
+        "image": "url(\"http://127.0.0.1:8080/art/relic-icons-small.webp\")",
+        "position": "100% 100%",
+        "size": "300% 300%"
+      }
+    ],
+    "spriteSize": {
+      "width": 720,
+      "height": 720
+    }
+  },
+  "endings": [
+    {
+      "id": "end-dao",
+      "title": "听完的人"
+    },
+    {
+      "id": "end-wu",
+      "title": "扛天者"
+    },
+    {
+      "id": "end-yao",
+      "title": "日月同座"
+    },
+    {
+      "id": "end-ren",
+      "title": "守火人"
+    },
+    {
+      "id": "end-demon",
+      "title": "饥饿"
+    },
+    {
+      "id": "end-hidden",
+      "title": "旧床"
+    },
+    {
+      "id": "end-board",
+      "title": "被写成字"
+    },
+    {
+      "id": "end-free",
+      "title": "空白"
+    },
+    {
+      "id": "end-fallen",
+      "title": "散尽"
+    }
+  ],
+  "captureNotes": "Eight focused UI captures plus the final mobile title frame supplied by the owning visual pass; item capture positions the first item below the fixed header. Runtime loading and game data are unchanged. The end-ren frame uses a complete original-engine-generated human route; other ending assertions use presentation fixtures, with actual browser end-to-end dao coverage retained in the base suite."
+}

@@ -1,0 +1,75 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": [
+    {
+      "viewport": "mobile",
+      "width": 390,
+      "height": 844,
+      "ok": true
+    },
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "ok": true
+    },
+    {
+      "viewport": "narrow",
+      "width": 320,
+      "height": 740,
+      "ok": true
+    }
+  ],
+  "compatibility": [
+    "prefers-reduced-motion disables all sampled title and atmospheric animations",
+    "untouched original v1 road fixture restores all stats, items, flags, logs, seen, chapter, sound and archived past life",
+    "muted choice advances normally without creating an AudioContext or requiring autoplay permission",
+    "original dao path reaches its ending; restart cancel preserves all fields; confirm archives life and retains novel chapter/sound with usable mobile modal and dock"
+  ],
+  "errors": [],
+  "checks": [
+    "mobile/title: rendered, images loaded, no horizontal overflow",
+    "mobile/play: rendered, images loaded, no horizontal overflow",
+    "mobile/cleave: rendered, images loaded, no horizontal overflow",
+    "mobile: new game, name, root choice and keyboard follow original engine deltas",
+    "mobile/novel: rendered, images loaded, no horizontal overflow",
+    "mobile: fourteen chapter directory, previous/next, larger type and persisted chapter 8",
+    "mobile/codex: rendered, images loaded, no horizontal overflow",
+    "mobile: codex category, full text search, no-results reset and expand all",
+    "mobile/land: rendered, images loaded, no horizontal overflow",
+    "mobile: atlas region and marker inspection leave original gameplay data unchanged",
+    "mobile/self: rendered, images loaded, no horizontal overflow",
+    "mobile: rename and sound-off survive reload",
+    "mobile/collapse: rendered, images loaded, no horizontal overflow",
+    "desktop/title: rendered, images loaded, no horizontal overflow",
+    "desktop/play: rendered, images loaded, no horizontal overflow",
+    "desktop/cleave: rendered, images loaded, no horizontal overflow",
+    "desktop: new game, name, root choice and keyboard follow original engine deltas",
+    "desktop/novel: rendered, images loaded, no horizontal overflow",
+    "desktop: fourteen chapter directory, previous/next, larger type and persisted chapter 8",
+    "desktop/codex: rendered, images loaded, no horizontal overflow",
+    "desktop: codex category, full text search, no-results reset and expand all",
+    "desktop/land: rendered, images loaded, no horizontal overflow",
+    "desktop: atlas region and marker inspection leave original gameplay data unchanged",
+    "desktop/self: rendered, images loaded, no horizontal overflow",
+    "desktop: rename and sound-off survive reload",
+    "desktop/collapse: rendered, images loaded, no horizontal overflow",
+    "narrow/title: rendered, images loaded, no horizontal overflow",
+    "narrow/play: rendered, images loaded, no horizontal overflow",
+    "narrow/cleave: rendered, images loaded, no horizontal overflow",
+    "narrow: new game, name, root choice and keyboard follow original engine deltas",
+    "narrow/novel: rendered, images loaded, no horizontal overflow",
+    "narrow: fourteen chapter directory, previous/next, larger type and persisted chapter 8",
+    "narrow/codex: rendered, images loaded, no horizontal overflow",
+    "narrow: codex category, full text search, no-results reset and expand all",
+    "narrow/land: rendered, images loaded, no horizontal overflow",
+    "narrow: atlas region and marker inspection leave original gameplay data unchanged",
+    "narrow/self: rendered, images loaded, no horizontal overflow",
+    "narrow: rename and sound-off survive reload",
+    "narrow/collapse: rendered, images loaded, no horizontal overflow",
+    "mobile/restore: rendered, images loaded, no horizontal overflow",
+    "mobile/ending: rendered, images loaded, no horizontal overflow"
+  ],
+  "ok": true,
+  "captureNotes": "Full-page codex screenshots explicitly load/decode below-fold lazy art for complete archival capture; normal runtime loading remains lazy."
+}
