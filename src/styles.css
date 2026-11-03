@@ -1440,3 +1440,18 @@ details.entry > summary::-webkit-details-marker {
     display: none;
   }
 }
+
+/* Regional atmospheres retain the same small composited layer budget. */
+.atmosphere-embers .celestial-light {
+  background: radial-gradient(ellipse at 65% 35%, #db985933, transparent 60%);
+}
+.atmosphere-embers .spirit-mote {
+  background: #d69a5f;
+  box-shadow: 0 0 8px #c97d4b80;
+}
+.atmosphere-tide .mist-bank {
+  background: radial-gradient(ellipse, #88c0bb26, transparent 65%);
+}
+.atmosphere-tide .celestial-light {
+  background: radial-gradient(ellipse at 65% 30%, #8bd3ca28, transparent 60%);
+}

@@ -1,5 +1,7 @@
 # 美术重建验收
 
+本文件保留第一轮验收记录。后续原画、交互和检查修复请见 [第二轮验收](refinement-validation.md)。
+
 日期：2026-11-02。原 main 基线 `71dda56`；工作分支 `art/primordial-rebuild`。没有合并 main 或发布正式版本。
 
 ## 实际完成

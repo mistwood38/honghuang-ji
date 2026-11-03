@@ -9,6 +9,7 @@ import { ORIGINS, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
 import { RestartButton } from "./restart-button";
 import { StatList } from "./stats";
+import "./play-navigation.css";
 
 export function PlayView() {
   const state = useSave();
@@ -25,10 +26,25 @@ export function PlayView() {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
-      if (useSave.getState().sceneId !== scene?.id) return;
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.repeat
+      )
+        return;
+      const live = useSave.getState();
+      if (!state.started || !live.started || live.screen !== "play" || live.sceneId !== scene?.id)
+        return;
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
       const target = event.target;
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      if (
+        target instanceof Element &&
+        target.closest('input, textarea, select, [contenteditable="true"]')
+      )
+        return;
       const index = Number(event.key) - 1;
       if (!Number.isInteger(index) || index < 0 || !scene || scene.ending) return;
       const options = visibleChoices(state).filter((item) => item.open);
@@ -60,6 +76,12 @@ export function PlayView() {
     );
   }
 
+  function goToSection(id: "scene-story" | "scene-choices") {
+    const target = document.getElementById(id);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "start", behavior: "auto" });
+  }
+
   const place = placeById(scene.place);
   const asides = (scene.asides ?? []).filter((aside) =>
     (aside.requires ?? []).every((cond) => meetsCond(state, cond)),
@@ -88,9 +110,19 @@ export function PlayView() {
         <div className="scene-paper manuscript">
           <div className="narrative-label">
             <span>因 果 正 文</span>
-            <span aria-hidden="true">—— ◇ ——</span>
+            {scene.ending ? (
+              <span aria-hidden="true">—— ◇ ——</span>
+            ) : (
+              <button
+                type="button"
+                className="scene-jump"
+                onClick={() => goToSection("scene-choices")}
+              >
+                前往抉择 <span aria-hidden="true">↓</span>
+              </button>
+            )}
           </div>
-          <div className="copy">
+          <div className="copy" id="scene-story" tabIndex={-1} aria-label="本幕剧情">
             {scene.paragraphs.map((paragraph) => (
               <p key={paragraph}>{fill(paragraph, state)}</p>
             ))}
@@ -126,15 +158,23 @@ export function PlayView() {
               <p className="font-serif text-lg">归处 · {scene.ending.name}</p>
               <div className="flex flex-wrap gap-3">
                 <RestartButton ink label="再入混沌" />
-                <LifeCopy />
+                <LifeCopy ink />
               </div>
             </div>
           ) : (
             <div className="choice-list mt-8 grid gap-3">
-              <p className="choice-heading">
-                <span>此 刻 · 抉 择</span>
-                <small>一念起，因果生</small>
-              </p>
+              <div className="choice-heading">
+                <h2 id="scene-choices" tabIndex={-1}>
+                  此 刻 · 抉 择
+                </h2>
+                <button
+                  type="button"
+                  className="scene-jump scene-jump-back"
+                  onClick={() => goToSection("scene-story")}
+                >
+                  回看剧情 <span aria-hidden="true">↑</span>
+                </button>
+              </div>
               {options.map((item) => {
                 const indexLabel = item.open ? String(++openIndex) : "—";
                 const hint = deltaHint(item.choice.delta);

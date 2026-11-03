@@ -41,7 +41,7 @@ test("hunger can finish a life", () => {
 });
 
 test("low comprehension sits at the edge of the hall", () => {
-  let state = run(["ren", "watch", "blood"]);
+  const state = run(["ren", "watch", "blood"]);
   const ids = visibleChoices(state).map((item) => item.choice.id);
   assert.ok(ids.includes("partial"));
   assert.equal(ids.includes("sit"), false);

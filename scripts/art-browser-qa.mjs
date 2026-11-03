@@ -4,17 +4,39 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
-import { fresh, chooseById, visibleChoices } from "../src/lib/honghuang/engine.ts";
+import { fresh, chooseById, visibleChoices, lifeText } from "../src/lib/honghuang/engine.ts";
 
 const url = process.argv[2] ?? "http://127.0.0.1:8080/";
 const output = resolve(process.argv[3] ?? "screenshots/after");
+const refinement = process.argv.includes("--refinement");
+const productionRefinement = refinement && /refinement-production$/.test(output);
+const refinementCaptures = new Set(
+  productionRefinement
+    ? ["refinement-choice-mobile", "refinement-dialog-mobile"]
+    : [
+        "refinement-choice-mobile",
+        "refinement-dialog-mobile",
+        "refinement-copy-mobile",
+        "refinement-reader-mobile",
+        "refinement-codex-mobile",
+        "refinement-regions-gallery",
+      ],
+);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ?? "/usr/bin/chromium",
   headless: true,
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });
-const report = { url, viewports: [], compatibility: [], errors: [], checks: [] };
+const report = {
+  url,
+  mode: refinement ? "refinement" : "full",
+  viewports: [],
+  compatibility: [],
+  errors: [],
+  checks: [],
+  screenshots: [],
+};
 const saveKey = "honghuang-ji-save";
 const readSave = (page) =>
   page.evaluate((key) => JSON.parse(localStorage.getItem(key)).state, saveKey);
@@ -85,7 +107,10 @@ async function screen(page, name, viewport, fullPage = true) {
         .map((image) => image.currentSrc),
     );
   assert.deepEqual(broken, [], `${viewport} ${name}: broken art`);
-  await page.screenshot({ path: `${output}/${name}-${viewport}.png`, fullPage });
+  if (!refinement) {
+    await page.screenshot({ path: `${output}/${name}-${viewport}.png`, fullPage });
+    report.screenshots.push(`${name}-${viewport}.png`);
+  }
   report.checks.push(`${viewport}/${name}: rendered, images loaded, no horizontal overflow`);
 }
 async function goto(page) {
@@ -101,6 +126,294 @@ async function loadSave(page, state) {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator(".shell").waitFor();
   await settle(page);
+}
+
+async function refinementCapture(page, name, options = {}) {
+  if (!refinementCaptures.has(name)) return;
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  await page.screenshot({ path: `${output}/${name}.png`, ...options });
+  report.screenshots.push(`${name}.png`);
+}
+
+async function refinementChecks() {
+  // Display helpers and keyboard shortcuts must not create gameplay actions.
+  for (const [label, viewport] of [
+    ["mobile", { width: 390, height: 844 }],
+    ["narrow", { width: 320, height: 740 }],
+    ["landscape", { width: 844, height: 390 }],
+  ]) {
+    const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+    const page = await context.newPage();
+    watch(page, `refinement-${label}`);
+    await goto(page);
+    await loadSave(page, { ...fresh(), screen: "play", sound: false });
+    const unstarted = await readSave(page);
+    await page.keyboard.press("1");
+    assert.deepEqual(
+      await readSave(page),
+      unstarted,
+      `${label}: a digit before starting must not choose a root`,
+    );
+    await page.getByRole("button", { name: "踏入混沌", exact: true }).click();
+    await page.locator("#scene-story").waitFor();
+    const beforeJump = invariant(await readSave(page));
+    const nameInput = page.getByPlaceholder("不取则随根骨赐号");
+    await nameInput.focus();
+    await page.keyboard.press("1");
+    assert.deepEqual(
+      invariant(await readSave(page)),
+      beforeJump,
+      `${label}: typing a digit in the name field does not choose`,
+    );
+    await nameInput.fill("");
+    // Browser-side probes exercise form/dialog guards while the real PlayView shortcut is mounted.
+    for (const kind of ["select", "contenteditable", "dialog", "alertdialog"]) {
+      await page.evaluate((kind) => {
+        const probe = document.createElement(kind === "select" ? "select" : "div");
+        probe.id = "qa-shortcut-focus-probe";
+        probe.tabIndex = 0;
+        if (kind === "select") probe.innerHTML = "<option>一</option><option>二</option>";
+        else if (kind === "contenteditable") probe.contentEditable = "true";
+        else probe.setAttribute("role", kind);
+        document.body.append(probe);
+        probe.focus();
+      }, kind);
+      await page.keyboard.press("1");
+      assert.deepEqual(
+        invariant(await readSave(page)),
+        beforeJump,
+        `${label}: ${kind} blocks scene shortcuts`,
+      );
+      await page.locator("#qa-shortcut-focus-probe").evaluate((element) => element.remove());
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: "前往抉择", exact: true }).click();
+    await page.waitForTimeout(150);
+    const heading = await page.locator("#scene-choices").boundingBox();
+    const header = await page.locator(".game-header").boundingBox();
+    const dock = await page.locator(".dock").boundingBox();
+    assert.ok(
+      heading.y >= header.y + header.height - 2 && heading.y + heading.height < dock.y,
+      `${label}: jump reveals the choice heading between fixed chrome`,
+    );
+    assert.equal(
+      await page
+        .locator("#scene-choices")
+        .evaluate((element) => element === document.activeElement),
+      true,
+    );
+    assert.deepEqual(invariant(await readSave(page)), beforeJump);
+    if (label === "mobile") await refinementCapture(page, "refinement-choice-mobile");
+    await page.getByRole("button", { name: "回看剧情", exact: true }).click();
+    const story = await page.locator("#scene-story").boundingBox();
+    assert.ok(
+      story.y >= header.y + header.height - 2 && story.y < viewport.height,
+      `${label}: return reveals story below fixed header`,
+    );
+    assert.deepEqual(invariant(await readSave(page)), beforeJump);
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+      false,
+    );
+    report.checks.push(
+      `${label}: unstarted/form/dialog digits are guarded; choice/story jumps preserve gameplay and reveal focused headings`,
+    );
+    await context.close();
+  }
+
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    reducedMotion: "reduce",
+  });
+  await context.addInitScript(() =>
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined }),
+  );
+  const page = await context.newPage();
+  watch(page, "refinement-interactions");
+  await goto(page);
+  let state = { ...fresh(), started: true, screen: "play", seen: ["awaken"], sound: false };
+  state = chooseById(state, "dao", "问青");
+  state = chooseById(state, "help");
+  await loadSave(page, state);
+  await navigation(page, "我的").click();
+  const beforeModal = await readSave(page);
+  const restartTrigger = page.getByRole("button", { name: "弃此生重开", exact: true });
+  await restartTrigger.click();
+  const restartDialog = page.getByRole("dialog", { name: "弃此生", exact: true });
+  await restartDialog.waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "留下", exact: true })
+      .evaluate((element) => element === document.activeElement),
+    true,
+  );
+  for (let i = 0; i < 8; i += 1) {
+    await page.keyboard.press("Tab");
+    assert.equal(
+      await restartDialog.evaluate((element) => element.contains(document.activeElement)),
+      true,
+      "Tab remains trapped inside restart dialog",
+    );
+  }
+  await page.keyboard.press("1");
+  assert.deepEqual(await readSave(page), beforeModal);
+  await refinementCapture(page, "refinement-dialog-mobile");
+  await page.keyboard.press("Escape");
+  await restartDialog.waitFor({ state: "hidden" });
+  assert.equal(
+    await restartTrigger.evaluate((element) => element === document.activeElement),
+    true,
+  );
+  assert.deepEqual(await readSave(page), beforeModal);
+  report.checks.push(
+    "mobile: restart uses safe initial focus, traps Tab, blocks digits, cancels on Escape and restores trigger focus without changing save",
+  );
+
+  const copyTrigger = page.getByRole("button", { name: "抄录此生", exact: true });
+  await copyTrigger.click();
+  const copyDialog = page.getByRole("dialog", { name: "此生抄本", exact: true });
+  const manuscript = copyDialog.getByRole("textbox", { name: "此生抄本", exact: true });
+  await manuscript.waitFor();
+  const expectedText = lifeText(await readSave(page));
+  assert.equal(await manuscript.inputValue(), expectedText);
+  await copyDialog.getByRole("button", { name: "复制", exact: true }).click();
+  assert.match(await copyDialog.getByRole("status").textContent(), /浏览器未提供剪贴板/);
+  await copyDialog.getByRole("button", { name: "选取全文", exact: true }).click();
+  const selected = await manuscript.evaluate((element) => ({
+    start: element.selectionStart,
+    end: element.selectionEnd,
+  }));
+  assert.deepEqual(selected, { start: 0, end: expectedText.length });
+  assert.match(await copyDialog.getByRole("status").textContent(), /已选取全文/);
+  await refinementCapture(page, "refinement-copy-mobile");
+  await page.keyboard.press("Escape");
+  await copyDialog.waitFor({ state: "hidden" });
+  assert.equal(await copyTrigger.evaluate((element) => element === document.activeElement), true);
+  assert.deepEqual(await readSave(page), beforeModal);
+  report.checks.push(
+    "mobile: unavailable clipboard has a visible fallback; manual selection covers exact original lifeText and copy dialog restores focus",
+  );
+
+  await navigation(page, "本纪").click();
+  await page.evaluate(() => scrollTo(0, 0));
+  await settle(page);
+  const firstParagraph = await page.locator(".reader-copy p").first().boundingBox();
+  assert.ok(
+    firstParagraph.y >= 0 && firstParagraph.y <= 550,
+    `390px reader first paragraph starts at ${firstParagraph.y}, expected <=550`,
+  );
+  await refinementCapture(page, "refinement-reader-mobile");
+  const beforeDirectory = await readSave(page);
+  await page.getByRole("button", { name: "回到目录", exact: true }).click();
+  assert.equal(await page.locator(".reader-mobile-directory").getAttribute("open"), "");
+  assert.equal(
+    await page
+      .locator(".reader-mobile-directory > summary")
+      .evaluate((element) => element === document.activeElement),
+    true,
+  );
+  assert.deepEqual(await readSave(page), beforeDirectory);
+  report.checks.push(
+    `mobile: reader first paragraph begins at ${Math.round(firstParagraph.y)}px and return-to-directory opens/focuses catalog without changing chapter`,
+  );
+
+  await navigation(page, "天书").click();
+  const search = page.getByRole("searchbox", { name: "检索天书标题和正文" });
+  const defaultOpen = await page.locator(".codex-entry[open]").count();
+  await search.fill("财政");
+  await page.waitForTimeout(100);
+  const matches = await page.locator(".codex-entry").count();
+  assert.ok(matches > 0);
+  assert.equal(await page.locator(".codex-entry[open]").count(), matches);
+  assert.ok(await page.locator(".codex-entry-copy mark.codex-search-match").count());
+  assert.ok(
+    (await page.locator("mark.codex-search-match").allTextContents()).every(
+      (text) => text === "财政",
+    ),
+  );
+  await page.locator(".codex-entry").first().scrollIntoViewIfNeeded();
+  await refinementCapture(page, "refinement-codex-mobile");
+  await search.fill("");
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator("mark.codex-search-match").count(), 0);
+  assert.equal(await page.locator(".codex-entry[open]").count(), defaultOpen);
+  report.checks.push(
+    "mobile: body-only codex search auto-opens matches, highlights exact text, and clearing restores normal disclosure",
+  );
+
+  const capState = {
+    ...(await readSave(page)),
+    screen: "self",
+    stats: { dao: 200, qi: 80, kill: 80, virtue: 80, demon: 50, life: 50 },
+  };
+  await loadSave(page, capState);
+  const widths = await page
+    .locator(".self-stats .meter > span")
+    .evaluateAll((elements) => elements.slice(1).map((element) => element.style.width));
+  assert.deepEqual(widths, ["50%", "50%", "50%", "50%", "50%", "50%"]);
+  assert.deepEqual((await readSave(page)).stats, capState.stats);
+  report.checks.push("stat meters use original engine caps without mutating numerical values");
+
+  await navigation(page, "山河").click();
+  const regions = [
+    ["血海", "bloodsea"],
+    ["东海妖庭", "east"],
+    ["人族火塘", "tribes"],
+    ["娲皇宫", "nuwa"],
+    ["蓬莱", "penglai"],
+    ["幽冥", "youming"],
+  ];
+  const assets = [];
+  const beforeRegions = invariant(await readSave(page));
+  for (const [name, file] of regions) {
+    await page
+      .locator(".atlas-place-card")
+      .filter({ has: page.locator(".atlas-place-name", { hasText: name }) })
+      .click();
+    assert.equal(await page.locator(".atlas-detail h2").textContent(), name);
+    const art = page.locator(".atlas-detail-art img");
+    await art.evaluate((image) => {
+      image.loading = "eager";
+    });
+    await page.waitForFunction(() => {
+      const image = document.querySelector(".atlas-detail-art img");
+      return image.complete && image.naturalWidth > 0;
+    });
+    const asset = await art.evaluate((image) => ({
+      src: image.currentSrc,
+      alt: image.alt,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    }));
+    assert.match(new URL(asset.src).pathname, new RegExp(`/art/${file}(?:-small)?\\.webp$`));
+    assets.push({ name, ...asset });
+    assert.deepEqual(invariant(await readSave(page)), beforeRegions);
+  }
+  report.regionAssets = assets;
+  report.checks.push(
+    "all six new regions select distinct local artwork and leave gameplay data unchanged",
+  );
+  if (!productionRefinement) {
+    const gallery = await context.newPage();
+    await gallery.setViewportSize({ width: 1200, height: 700 });
+    const tiles = assets
+      .map(
+        (asset) =>
+          `<figure><img src="${asset.src}" alt="${asset.name}"><figcaption>${asset.name}</figcaption></figure>`,
+      )
+      .join("");
+    await gallery.setContent(
+      `<html lang="zh"><head><style>*{box-sizing:border-box}body{margin:0;padding:20px;background:#081b1b;color:#ddc58f;font-family:serif}main{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}figure{margin:0;border:1px solid #50605a}img{display:block;width:100%;height:270px;object-fit:cover}figcaption{padding:12px;font-size:20px;letter-spacing:5px}</style></head><body><main>${tiles}</main></body></html>`,
+    );
+    await gallery.waitForFunction(() =>
+      [...document.images].every((image) => image.complete && image.naturalWidth > 0),
+    );
+    await refinementCapture(gallery, "refinement-regions-gallery");
+    await gallery.close();
+  }
+  await context.close();
 }
 
 try {
@@ -354,6 +667,8 @@ try {
     "original dao path reaches its ending; restart cancel preserves all fields; confirm archives life and retains novel chapter/sound with usable mobile modal and dock",
   );
   await context.close();
+
+  if (refinement) await refinementChecks();
 
   assert.deepEqual(report.errors, [], "browser errors or failed local assets");
   report.ok = true;

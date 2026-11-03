@@ -15,11 +15,11 @@ const CHAPTER_ART: ArtKey[] = [
   "palace",
   "mountain",
   "mountain",
-  "palace",
+  "east",
   "calamity",
-  "mountain",
-  "calamity",
-  "mountain",
+  "nuwa",
+  "nuwa",
+  "tribes",
   "palace",
   "mountain",
 ];
@@ -32,6 +32,8 @@ export function NovelView() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const lastChapter = useRef(safe);
   const directoryRef = useRef<HTMLDetailsElement>(null);
+  const directorySummaryRef = useRef<HTMLElement>(null);
+  const desktopDirectoryRef = useRef<HTMLElement>(null);
   const [largeText, setLargeText] = useState(false);
 
   useEffect(() => {
@@ -44,6 +46,19 @@ export function NovelView() {
   function goToChapter(next: number) {
     setNovelIndex(next);
     if (directoryRef.current) directoryRef.current.open = false;
+  }
+
+  function returnToDirectory() {
+    if (window.matchMedia("(min-width: 1000px)").matches) {
+      const selected =
+        desktopDirectoryRef.current?.querySelector<HTMLButtonElement>('[aria-current="page"]');
+      selected?.focus({ preventScroll: true });
+      selected?.scrollIntoView({ block: "nearest", behavior: "auto" });
+      return;
+    }
+    if (directoryRef.current) directoryRef.current.open = true;
+    directorySummaryRef.current?.focus({ preventScroll: true });
+    directorySummaryRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
   }
 
   function chapterDirectory() {
@@ -84,7 +99,11 @@ export function NovelView() {
         <p>天地初开，万灵有名。翻开这一方洪荒的正史。</p>
       </PageHeading>
       <div className="reader-layout">
-        <aside className="reader-directory bronze-panel" aria-label="本纪卷册目录">
+        <aside
+          className="reader-directory bronze-panel"
+          aria-label="本纪卷册目录"
+          ref={desktopDirectoryRef}
+        >
           <div className="reader-directory-heading">
             <span className="seal" aria-hidden="true">
               纪
@@ -99,7 +118,7 @@ export function NovelView() {
         </aside>
         <div className="reader-main">
           <details className="reader-mobile-directory bronze-panel" ref={directoryRef}>
-            <summary>
+            <summary ref={directorySummaryRef}>
               <span>卷册目录</span>
               <span>
                 {safe + 1} / {CHAPTERS.length} · {chapter.title}
@@ -175,11 +194,20 @@ export function NovelView() {
                   下一章
                 </button>
               </nav>
-              {safe < CHAPTERS.length - 1 ? (
-                <p className="reader-next-label">下章 · {CHAPTERS[safe + 1]!.title}</p>
-              ) : (
-                <p className="reader-next-label">本纪终，天地仍在。</p>
-              )}
+              <div className="reader-chapter-footer">
+                <button
+                  type="button"
+                  className="reader-return-directory"
+                  onClick={returnToDirectory}
+                >
+                  回到目录
+                </button>
+                {safe < CHAPTERS.length - 1 ? (
+                  <p className="reader-next-label">下章 · {CHAPTERS[safe + 1]!.title}</p>
+                ) : (
+                  <p className="reader-next-label">本纪终，天地仍在。</p>
+                )}
+              </div>
             </div>
           </article>
         </div>

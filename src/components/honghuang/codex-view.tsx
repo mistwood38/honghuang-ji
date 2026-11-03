@@ -9,8 +9,8 @@ const CATEGORY_ART: Record<string, ArtKey> = {
   宇宙: "chaos",
   时间: "calamity",
   法则: "palace",
-  众生: "mountain",
-  势力: "palace",
+  众生: "nuwa",
+  势力: "east",
   山河: "mountain",
   法宝: "palace",
   凡例: "mountain",
@@ -30,10 +30,26 @@ const FIRST_ENTRIES = CODEX_CATEGORIES.map(
   (category) => CODEX.find((entry) => entry.category === category)?.id,
 ).filter((id): id is string => Boolean(id));
 
+function highlightMatches(text: string, query: string) {
+  if (!query) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.split(new RegExp(`(${escaped})`, "giu")).map((part, index) =>
+    index % 2 ? (
+      <mark className="codex-search-match" key={index}>
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
 export function CodexView() {
   const [category, setCategory] = useState("全部");
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set(FIRST_ENTRIES));
+  // Search disclosure is temporary: clearing the query restores the reader's open rolls.
+  const [searchClosedIds, setSearchClosedIds] = useState<Set<string>>(() => new Set());
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filtered = CODEX.filter(
     (entry) =>
@@ -43,9 +59,22 @@ export function CodexView() {
           .toLocaleLowerCase()
           .includes(normalizedQuery)),
   );
-  const allOpen = filtered.length > 0 && filtered.every((entry) => openIds.has(entry.id));
+  const isEntryOpen = (id: string) =>
+    normalizedQuery ? !searchClosedIds.has(id) : openIds.has(id);
+  const allOpen = filtered.length > 0 && filtered.every((entry) => isEntryOpen(entry.id));
 
   function toggleAll() {
+    if (normalizedQuery) {
+      setSearchClosedIds((current) => {
+        const next = new Set(current);
+        filtered.forEach((entry) => {
+          if (allOpen) next.add(entry.id);
+          else next.delete(entry.id);
+        });
+        return next;
+      });
+      return;
+    }
     setOpenIds((current) => {
       const next = new Set(current);
       filtered.forEach((entry) => {
@@ -101,7 +130,10 @@ export function CodexView() {
               <span>检索</span>
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setSearchClosedIds(new Set());
+                }}
                 placeholder="寻神名、山河、器物或正文…"
                 type="search"
                 aria-label="检索天书标题和正文"
@@ -159,9 +191,19 @@ export function CodexView() {
                   <details
                     key={entry.id}
                     className="codex-entry"
-                    open={openIds.has(entry.id)}
+                    open={isEntryOpen(entry.id)}
                     onToggle={(event) => {
                       const isOpen = event.currentTarget.open;
+                      if (normalizedQuery) {
+                        setSearchClosedIds((current) => {
+                          if (current.has(entry.id) === !isOpen) return current;
+                          const next = new Set(current);
+                          if (isOpen) next.delete(entry.id);
+                          else next.add(entry.id);
+                          return next;
+                        });
+                        return;
+                      }
                       setOpenIds((current) => {
                         if (current.has(entry.id) === isOpen) return current;
                         const next = new Set(current);
@@ -175,7 +217,7 @@ export function CodexView() {
                       <span className="codex-entry-mark" aria-hidden="true">
                         简
                       </span>
-                      <h3>{entry.title}</h3>
+                      <h3>{highlightMatches(entry.title, query.trim())}</h3>
                       <span className="codex-entry-toggle">
                         <span className="codex-closed-label">展开</span>
                         <span className="codex-open-label">收卷</span>
@@ -186,7 +228,9 @@ export function CodexView() {
                     </summary>
                     <div className="copy codex-entry-copy">
                       {entry.paragraphs.map((paragraph) => (
-                        <p key={paragraph.slice(0, 32)}>{paragraph}</p>
+                        <p key={paragraph.slice(0, 32)}>
+                          {highlightMatches(paragraph, query.trim())}
+                        </p>
                       ))}
                     </div>
                   </details>

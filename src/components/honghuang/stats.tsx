@@ -1,12 +1,13 @@
 import { nextRealm, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
 import type { Stats } from "@/lib/honghuang/types";
 
+// Display scales mirror the existing engine caps; this does not alter any stat.
 const CAP: Record<keyof Stats, number> = {
-  dao: 160,
-  qi: 80,
-  kill: 80,
-  virtue: 80,
-  demon: 80,
+  dao: 400,
+  qi: 160,
+  kill: 160,
+  virtue: 160,
+  demon: 100,
   life: 100,
 };
 
@@ -38,14 +39,21 @@ export function StatList({ stats }: { stats: Stats }) {
                 <span>{STAT_LABEL[key]}</span>
                 <span className="tabular-nums text-fog">{value}</span>
               </div>
-              <div className={key === "life" || key === "demon" ? "meter meter-life mt-1" : "meter mt-1"} aria-hidden="true">
+              <div
+                className={
+                  key === "life" || key === "demon" ? "meter meter-life mt-1" : "meter mt-1"
+                }
+                aria-hidden="true"
+              >
                 <span style={{ width: `${pct}%` }} />
               </div>
             </div>
           );
         })}
       </div>
-      {stats.life < 30 ? <p className="text-sm text-cinnabar">道躯残损。再硬扛一次，可能就散了。</p> : null}
+      {stats.life < 30 ? (
+        <p className="text-sm text-cinnabar">道躯残损。再硬扛一次，可能就散了。</p>
+      ) : null}
     </div>
   );
 }
