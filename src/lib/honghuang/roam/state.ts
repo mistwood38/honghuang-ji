@@ -107,6 +107,20 @@ export type RetreatState = { watch: number };
 
 export type PlotState = { ready: number };
 
+export type IdleKind = "sit" | "wander";
+
+export type IdleState = { kind: IdleKind };
+
+/** Unclaimed time. Numbers stay here until the player collects. */
+export type Haul = {
+  breaths: number;
+  xiu: number;
+  ling: number;
+  stones: number;
+  wound: number;
+  goods: Partial<Record<GoodId, number>>;
+};
+
 export type RoamReport = { title: string; paragraphs: string[]; changes: string[] };
 
 export type RoamState = {
@@ -143,6 +157,11 @@ export type RoamState = {
   retreat: RetreatState | null;
   /** Herb bed. `ready` is the day it can be picked. */
   plot: PlotState | null;
+  /** What keeps going while the player is away. */
+  idle: IdleState | null;
+  /** Last time the idle clock was settled, in ms. 0 means unset. */
+  lastTick: number;
+  haul: Haul | null;
   eraSkew: number;
   eraSeen: string[];
 };
@@ -164,6 +183,7 @@ export type RoamAct =
   | { type: "sect"; what: "join" | "task" | "leave" | "learn" }
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
+  | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim"; now?: number }
   | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };

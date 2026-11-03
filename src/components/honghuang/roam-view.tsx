@@ -37,6 +37,24 @@ export function RoamView() {
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
+    if (!world || world.phase === "origin") return;
+    const sync = () => {
+      if (document.visibilityState === "hidden") return;
+      roam({ type: "idle", what: "sync" });
+    };
+    sync();
+    const timer = window.setInterval(sync, 20_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [roam, world?.phase]);
+
+  useEffect(() => {
     const target = document.getElementById("roam-now");
     if (!target) return;
     const header = document.querySelector(".game-header");
@@ -73,6 +91,7 @@ export function RoamView() {
             <h1>{place.name}</h1>
             <p className="roam-realm">
               {save.name || "未名"} · {realm.name} · 修为{xiuLabel}
+              {world.idle ? ` · ${world.idle.kind === "sit" ? "打坐挂机中" : "游历挂机中"}` : ""}
             </p>
           </div>
         </div>
@@ -160,6 +179,8 @@ export function RoamView() {
           {world.beast ? <li>{world.beast.name}{world.beast.bond >= 36 ? " · 相熟" : ""}</li> : null}
           {world.retreat ? <li>定中 · 时辰未完</li> : null}
           {world.plot ? <li>{world.day >= world.plot.ready ? "药圃可采" : "药圃未成"}</li> : null}
+          {world.idle ? <li>{world.idle.kind === "sit" ? "打坐挂机" : "游历挂机"} · 离开也算</li> : null}
+          {(world.haul?.breaths ?? 0) > 0 ? <li>有一段修行可收</li> : null}
           {Object.entries(world.bag).map(([id, count]) => (
             <li key={id}>{GOODS[id as keyof typeof GOODS]} {count}</li>
           ))}
@@ -225,7 +246,7 @@ function FreeActions({
   const save = useSave();
   const acts = menuActs(save);
   const primary = acts.filter((item) =>
-    ["cultivate", "retreat-enter", "retreat-watch", "retreat-leave", "explore", "gather", "rest", "break", "break-pill"].includes(item.id),
+    ["cultivate", "retreat-enter", "retreat-watch", "retreat-leave", "explore", "gather", "rest", "break", "break-pill", "idle-sit", "idle-wander", "idle-stop", "idle-claim"].includes(item.id),
   );
   const moves = acts.filter((item) => item.id.startsWith("go-") || item.id.startsWith("notice-") || item.id.startsWith("chain-"));
   const make = acts.filter(

@@ -87,6 +87,9 @@ export function createRoam(): RoamState {
     beast: null,
     retreat: null,
     plot: null,
+    idle: null,
+    lastTick: 0,
+    haul: null,
     eraSkew: 0,
     eraSeen: ["chaos"],
   };
@@ -126,6 +129,29 @@ export function normalizeRoam(raw: unknown): RoamState | null {
         ? { watch: clamp(body.retreat.watch, 0, 3) }
         : null,
     plot: body.plot && typeof body.plot.ready === "number" ? { ready: Math.max(1, body.plot.ready) } : null,
+    idle: body.idle?.kind === "sit" || body.idle?.kind === "wander" ? { kind: body.idle.kind } : null,
+    lastTick: Number(body.lastTick) > 0 ? Number(body.lastTick) : 0,
+    haul: sanitizeHaul(body.haul),
+  };
+}
+
+function sanitizeHaul(raw: RoamState["haul"] | undefined): RoamState["haul"] {
+  if (!raw || typeof raw !== "object") return null;
+  const breaths = Math.max(0, Math.floor(Number(raw.breaths) || 0));
+  if (breaths <= 0) return null;
+  const goods: Partial<Record<GoodId, number>> = {};
+  if (raw.goods && typeof raw.goods === "object") {
+    for (const [id, count] of Object.entries(raw.goods)) {
+      if (id in GOODS && Number(count) > 0) goods[id as GoodId] = Math.floor(Number(count));
+    }
+  }
+  return {
+    breaths,
+    xiu: Math.max(0, Number(raw.xiu) || 0),
+    ling: Math.max(0, Number(raw.ling) || 0),
+    stones: Math.max(0, Math.floor(Number(raw.stones) || 0)),
+    wound: Math.max(0, Math.floor(Number(raw.wound) || 0)),
+    goods,
   };
 }
 
@@ -522,6 +548,12 @@ function cloneSave(save: SaveData): SaveData {
 }
 
 export function applyRoam(save: SaveData, act: RoamAct, rng: () => number = Math.random): SaveData {
+  if (act.type === "idle" && act.what === "sync") {
+    const now = act.now ?? Date.now();
+    const world = save.world;
+    if (!world?.idle || world.phase !== "free") return save;
+    if (now - (world.lastTick || now) < 20_000) return save;
+  }
   const next = cloneSave(save);
   next.world = next.world ?? createRoam();
   dispatch(next, next.world, act, rng);
@@ -560,6 +592,7 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
   else if (act.type === "sect") sectAct(save, world, act.what, rng);
   else if (act.type === "trade") trade(save, world, act.what, act.id);
   else if (act.type === "beast") beastAct(save, world, act.what);
+  else if (act.type === "idle") idleAct(save, world, act.what, act.now ?? Date.now());
   else if (act.type === "continue") continueChain(save, world, act.chainId);
   else if (act.type === "notice") notice(world, act.eventId);
 }
@@ -1121,6 +1154,135 @@ function beastAct(save: SaveData, world: RoamState, what: "feed" | "release" | "
   void save;
 }
 
+function emptyHaul(): NonNullable<RoamState["haul"]> {
+  return { breaths: 0, xiu: 0, ling: 0, stones: 0, wound: 0, goods: {} };
+}
+
+function accrueIdle(world: RoamState, now: number) {
+  if (!world.idle) return false;
+  const from = world.lastTick || now;
+  if (now < from) {
+    world.lastTick = now;
+    return false;
+  }
+  const capBreaths = 8 * 60 * 3;
+  const have = world.haul?.breaths ?? 0;
+  const room = capBreaths - have;
+  if (room <= 0) {
+    world.lastTick = now;
+    return false;
+  }
+  const breaths = Math.min(room, Math.floor((now - from) / 20_000));
+  if (breaths <= 0) return false;
+  const haul = world.haul ?? emptyHaul();
+  const place = ROAM_PLACES[world.place];
+  const art = world.equipped ? ARTS[world.equipped] : undefined;
+  const sit = world.idle.kind === "sit";
+  const per = sit ? 0.08 + place.spirit * 0.012 + world.cave * 0.02 + (art?.xiu ?? 0) * 0.01 : 0.03 + place.spirit * 0.004;
+  haul.breaths += breaths;
+  haul.xiu += per * breaths * (world.wound >= 3 ? 0.7 : 1);
+  haul.ling += (sit ? 0.12 : 0.04) * breaths;
+  if (!sit) {
+    const goods = Math.floor(breaths / 6);
+    if (goods > 0) haul.goods[place.good] = (haul.goods[place.good] ?? 0) + goods;
+    haul.stones += Math.floor(breaths / 15);
+    if (place.danger >= 3) haul.wound += Math.min(2, Math.floor(breaths / 45));
+  }
+  world.haul = haul;
+  world.lastTick = from + breaths * 20_000;
+  return true;
+}
+
+function claimHaul(save: SaveData, world: RoamState, now: number) {
+  accrueIdle(world, now);
+  const haul = world.haul;
+  if (!haul || haul.breaths <= 0) {
+    world.report = {
+      title: "还没有可收的",
+      paragraphs: ["挂机刚坐下，时辰还没走完一息。你可以离开，回来再收。"],
+      changes: [],
+    };
+    return;
+  }
+  const before = world.xiuwei;
+  world.xiuwei = clamp(world.xiuwei + haul.xiu, 0, 100);
+  world.lingqi = clamp(world.lingqi + haul.ling, 0, 80);
+  world.stones += haul.stones;
+  world.wound = clamp(world.wound + haul.wound, 0, 6);
+  const changes: string[] = [];
+  if (world.xiuwei >= 100 && before < 100) changes.push("火候已满，可以尝试突破");
+  else if (haul.xiu >= 1) changes.push("修为有所积累");
+  else changes.push("气息动了一点");
+  if (haul.ling >= 1) changes.push(`灵气 +${Math.floor(haul.ling)}`);
+  if (haul.stones > 0) changes.push(`灵石 +${haul.stones}`);
+  for (const [id, count] of Object.entries(haul.goods)) {
+    if (!count) continue;
+    const good = id as GoodId;
+    world.bag[good] = (world.bag[good] ?? 0) + count;
+    changes.push(`${GOODS[good]} +${count}`);
+  }
+  if (haul.wound > 0) changes.push("路上受了些伤");
+  const days = Math.max(1, Math.min(8, Math.floor(haul.breaths / 90)));
+  const kind = world.idle?.kind === "wander" ? "游历" : "打坐";
+  world.haul = null;
+  world.lastTick = now;
+  spend(world, days);
+  world.report = {
+    title: "收起这段修行",
+    paragraphs: [
+      `你离开的时候，人还在${ROAM_PLACES[world.place].name}${kind}。`,
+      kind === "打坐"
+        ? "灵气没有因为你去看别处就停。回来时，火候比走的时候厚。"
+        : "路自己在走。你不在的时候，它仍把能捡的东西留在原地。",
+      "一次最多收下八个时辰。更早的部分，天地没有替你存着。",
+    ],
+    changes,
+  };
+  remember(world, "收菜", world.report.paragraphs[0] ?? "");
+}
+
+function idleAct(save: SaveData, world: RoamState, what: "sit" | "wander" | "stop" | "sync" | "claim", now: number) {
+  if (what === "sync") {
+    accrueIdle(world, now);
+    return;
+  }
+  if (what === "claim") {
+    claimHaul(save, world, now);
+    return;
+  }
+  if (what === "stop") {
+    if (world.haul && world.haul.breaths > 0) claimHaul(save, world, now);
+    world.idle = null;
+    world.lastTick = now;
+    if (!world.haul) {
+      world.report = {
+        title: "停下",
+        paragraphs: ["挂机停了。停下之后，离开不再替你修炼。"],
+        changes: [],
+      };
+    }
+    return;
+  }
+  if (world.retreat) {
+    world.report = { title: "定中", paragraphs: ["你还在按时辰坐。出关之后再挂机。"], changes: [] };
+    return;
+  }
+  accrueIdle(world, now);
+  world.idle = { kind: what };
+  world.lastTick = now;
+  world.report = {
+    title: what === "sit" ? "打坐挂机" : "游历挂机",
+    paragraphs: [
+      what === "sit"
+        ? `你在${ROAM_PLACES[world.place].name}坐下。这页可以关。你回来的时候，再收这一段。`
+        : `你把脚步交给${ROAM_PLACES[world.place].name}。人离开，路还在捡东西。回来再收。`,
+      "按钮上不会先写你会得到多少。收的时候才知道。",
+    ],
+    changes: [],
+  };
+  remember(world, world.report.title, world.report.paragraphs[0] ?? "");
+}
+
 function continueChain(save: SaveData, world: RoamState, chainId: string) {
   const chain = CHAINS.find((item) => item.id === chainId);
   const quest = world.quests[chainId];
@@ -1283,7 +1445,11 @@ export function menuActs(save: SaveData): MenuAct[] {
     { id: "explore", label: "四处探寻", act: { type: "explore" } },
     { id: "gather", label: "采集", act: { type: "gather" } },
     { id: "rest", label: "调息疗伤", act: { type: "rest" } },
+    { id: "idle-sit", label: world.idle?.kind === "sit" ? "继续打坐挂机" : "在此打坐挂机", act: { type: "idle", what: "sit" } },
+    { id: "idle-wander", label: world.idle?.kind === "wander" ? "继续游历挂机" : "在此游历挂机", act: { type: "idle", what: "wander" } },
   ];
+  if (world.idle) acts.push({ id: "idle-stop", label: "停下挂机", act: { type: "idle", what: "stop" } });
+  if ((world.haul?.breaths ?? 0) > 0) acts.push({ id: "idle-claim", label: "收起这段修行", act: { type: "idle", what: "claim" } });
   if (world.xiuwei >= 100 && realmIndex(save.stats.dao) < REALMS.length - 1) {
     acts.push({ id: "break", label: "尝试突破", act: { type: "breakthrough", pill: false } });
     if ((world.bag["pill-break"] ?? 0) > 0) {

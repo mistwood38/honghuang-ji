@@ -192,6 +192,25 @@ test("seclusion is several watches, and a garden can be harvested later", () => 
   assert.ok((save.world?.stones ?? 0) < 4);
 });
 
+test("idle keeps cultivating while time passes and the reward stays hidden until collected", () => {
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, rngFrom(8));
+  const start = 1_700_000_000_000;
+  save = applyRoam(save, { type: "idle", what: "sit", now: start });
+  assert.equal(save.world?.idle?.kind, "sit");
+  assert.equal(save.world?.xiuwei ?? 0, 0);
+  assert.deepEqual(
+    labelsLeakNumbers(["在此打坐挂机", "收起这段修行"]),
+    [],
+  );
+  const later = applyRoam(save, { type: "idle", what: "sync", now: start + 20_000 * 30 });
+  assert.ok((later.world?.haul?.breaths ?? 0) >= 30);
+  assert.equal(later.world?.xiuwei ?? 0, 0);
+  const claimed = applyRoam(later, { type: "idle", what: "claim", now: start + 20_000 * 30 });
+  assert.ok((claimed.world?.xiuwei ?? 0) > 0);
+  assert.equal(claimed.world?.haul, null);
+  assert.ok(claimed.world?.report?.changes.length);
+});
+
 test("menu labels never preview exact gains", () => {
   const { save } = play(11, 15);
   const labels = menuActs(save).map((item) => item.label);
