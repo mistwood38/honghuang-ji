@@ -157,7 +157,9 @@ export function RoamView() {
           <li>灵石 {world.stones}</li>
           {world.equipped ? <li>功法 {ARTS[world.equipped]?.name}</li> : null}
           {world.sect ? <li>{SECTS.find((sect) => sect.id === world.sect)?.name} · {SECTS.find((sect) => sect.id === world.sect)?.rank[world.sectRank]}</li> : <li>散修</li>}
-          {world.beast ? <li>{world.beast.name}</li> : null}
+          {world.beast ? <li>{world.beast.name}{world.beast.bond >= 36 ? " · 相熟" : ""}</li> : null}
+          {world.retreat ? <li>定中 · 时辰未完</li> : null}
+          {world.plot ? <li>{world.day >= world.plot.ready ? "药圃可采" : "药圃未成"}</li> : null}
           {Object.entries(world.bag).map(([id, count]) => (
             <li key={id}>{GOODS[id as keyof typeof GOODS]} {count}</li>
           ))}
@@ -222,15 +224,29 @@ function FreeActions({
 }) {
   const save = useSave();
   const acts = menuActs(save);
-  const primary = acts.filter((item) => ["cultivate", "explore", "gather", "rest", "break", "break-pill"].includes(item.id));
+  const primary = acts.filter((item) =>
+    ["cultivate", "retreat-enter", "retreat-watch", "retreat-leave", "explore", "gather", "rest", "break", "break-pill"].includes(item.id),
+  );
   const moves = acts.filter((item) => item.id.startsWith("go-") || item.id.startsWith("notice-") || item.id.startsWith("chain-"));
-  const make = acts.filter((item) => item.id.startsWith("alchemy") || item.id.startsWith("use-") || item.id.startsWith("cave") || item.id.startsWith("buy") || item.id.startsWith("sell") || item.id === "feed" || item.id === "release");
+  const make = acts.filter(
+    (item) =>
+      item.id.startsWith("alchemy") ||
+      item.id.startsWith("use-") ||
+      item.id.startsWith("cave") ||
+      item.id.startsWith("buy") ||
+      item.id.startsWith("sell") ||
+      item.id.startsWith("plot") ||
+      item.id === "feed" ||
+      item.id === "train" ||
+      item.id === "release",
+  );
   const sect = acts.filter((item) => ["join", "task", "learn", "leave"].includes(item.id));
   const shown = sheet === "move" ? moves : sheet === "make" ? make : sheet === "sect" ? sect : primary;
 
   return (
     <div className="roam-free">
-      {sheet === null && save.world && save.world.xiuwei >= 100 ? <p className="roam-risk">{risk}</p> : null}
+      {sheet === null && save.world?.retreat ? <p className="roam-risk">你还在定中。时辰走完或你自己起身之前，山河先不放你。</p> : null}
+      {sheet === null && save.world && !save.world.retreat && save.world.xiuwei >= 100 ? <p className="roam-risk">{risk}</p> : null}
       <div className="roam-tabs">
         <button type="button" className={sheet === null ? "is-on" : ""} onClick={() => setSheet(null)}>日课</button>
         <button type="button" className={sheet === "move" ? "is-on" : ""} onClick={() => setSheet("move")}>山河</button>

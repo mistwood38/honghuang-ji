@@ -103,6 +103,10 @@ export type BattleState = {
 
 export type QuestState = { stage: number; status: "active" | "done" | "failed" };
 
+export type RetreatState = { watch: number };
+
+export type PlotState = { ready: number };
+
 export type RoamReport = { title: string; paragraphs: string[]; changes: string[] };
 
 export type RoamState = {
@@ -135,6 +139,10 @@ export type RoamState = {
   battle: BattleState | null;
   cave: number;
   beast: { id: string; name: string; bond: number } | null;
+  /** Set while the day is already spent inside seclusion. */
+  retreat: RetreatState | null;
+  /** Herb bed. `ready` is the day it can be picked. */
+  plot: PlotState | null;
   eraSkew: number;
   eraSeen: string[];
 };
@@ -151,9 +159,11 @@ export type RoamAct =
   | { type: "alchemy"; recipe: string }
   | { type: "use"; id: GoodId }
   | { type: "cave"; what: "upgrade" | "meditate" }
+  | { type: "retreat"; what: "enter" | "watch" | "leave" }
+  | { type: "plot"; what: "plant" | "harvest" }
   | { type: "sect"; what: "join" | "task" | "leave" | "learn" }
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
-  | { type: "beast"; what: "feed" | "release" }
+  | { type: "beast"; what: "feed" | "release" | "train" }
   | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };

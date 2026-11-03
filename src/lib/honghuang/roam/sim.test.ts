@@ -163,6 +163,35 @@ test("gather, alchemy, sect and cave are real actions", () => {
   assert.equal(joined.world?.sect, "hearth");
 });
 
+test("seclusion is several watches, and a garden can be harvested later", () => {
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, rngFrom(2));
+  const day = save.world!.day;
+  save = applyRoam(save, { type: "retreat", what: "enter" });
+  assert.equal(save.world?.retreat?.watch, 0);
+  assert.ok(save.world!.day > day);
+  for (let i = 0; i < 4; i += 1) save = applyRoam(save, { type: "retreat", what: "watch" });
+  assert.equal(save.world?.retreat, null);
+  assert.ok((save.world?.xiuwei ?? 0) > 0);
+  assert.deepEqual(
+    labelsLeakNumbers(menuActs(save).map((item) => item.label)),
+    [],
+  );
+  save.world!.bag.herb = 1;
+  save.world!.cave = 1;
+  save = applyRoam(save, { type: "plot", what: "plant" });
+  assert.ok(save.world?.plot);
+  assert.equal(save.world?.bag.herb ?? 0, 0);
+  save.world!.day = save.world!.plot!.ready;
+  save = applyRoam(save, { type: "plot", what: "harvest" });
+  assert.ok((save.world?.bag.herb ?? 0) >= 2);
+  assert.equal(save.world?.plot, null);
+  save = applyRoam(save, { type: "travel", place: "kunlun" });
+  save.world!.stones = 4;
+  save = applyRoam(save, { type: "trade", what: "buy", id: "dew" });
+  assert.ok((save.world?.bag.dew ?? 0) >= 1);
+  assert.ok((save.world?.stones ?? 0) < 4);
+});
+
 test("menu labels never preview exact gains", () => {
   const { save } = play(11, 15);
   const labels = menuActs(save).map((item) => item.label);

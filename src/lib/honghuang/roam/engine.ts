@@ -8,6 +8,7 @@ import {
   ENEMIES,
   ERAS,
   GOODS,
+  MARKETS,
   QUIET,
   RECIPES,
   ROAM_PLACES,
@@ -84,6 +85,8 @@ export function createRoam(): RoamState {
     battle: null,
     cave: 0,
     beast: null,
+    retreat: null,
+    plot: null,
     eraSkew: 0,
     eraSeen: ["chaos"],
   };
@@ -118,6 +121,11 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     lingqi: clamp(Number(body.lingqi) || 0, 0, 80),
     wound: clamp(Number(body.wound) || 0, 0, 6),
     day: Math.max(1, Number(body.day) || 1),
+    retreat:
+      body.retreat && typeof body.retreat.watch === "number"
+        ? { watch: clamp(body.retreat.watch, 0, 3) }
+        : null,
+    plot: body.plot && typeof body.plot.ready === "number" ? { ready: Math.max(1, body.plot.ready) } : null,
   };
 }
 
@@ -547,6 +555,8 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
   else if (act.type === "alchemy") alchemy(save, world, act.recipe);
   else if (act.type === "use") takeGood(save, world, act.id);
   else if (act.type === "cave") caveAct(save, world, act.what);
+  else if (act.type === "retreat") retreatAct(save, world, act.what, rng);
+  else if (act.type === "plot") plotAct(save, world, act.what);
   else if (act.type === "sect") sectAct(save, world, act.what, rng);
   else if (act.type === "trade") trade(save, world, act.what, act.id);
   else if (act.type === "beast") beastAct(save, world, act.what);
@@ -755,9 +765,23 @@ function alchemy(save: SaveData, world: RoamState, recipeId: string) {
     world.bag[id] = (world.bag[id] ?? 0) - count;
     if ((world.bag[id] ?? 0) <= 0) delete world.bag[id];
   }
-  world.bag[recipe.out] = (world.bag[recipe.out] ?? 0) + 1;
+  const ruined = world.cave === 0 && world.wound >= 4 && world.lingqi < 4;
   spend(world, 1);
-  world.report = { title: recipe.name, paragraphs: [recipe.text], changes: [`${GOODS[recipe.out]} +1`] };
+  if (ruined) {
+    world.wound = clamp(world.wound + 1, 0, 6);
+    world.report = {
+      title: "炉翻了",
+      paragraphs: ["火候和伤叠在一起。药材进了灰，丹没有成。你还活着，所以可以再备一炉。"],
+      changes: ["药材耗去", "伤势加重"],
+    };
+    return;
+  }
+  world.bag[recipe.out] = (world.bag[recipe.out] ?? 0) + 1;
+  world.report = {
+    title: recipe.name,
+    paragraphs: [recipe.text, world.cave > 0 ? "洞壁把火托住了。这一炉比在风口上稳。" : "风会进来。你用手把最关键的一下捂住了。"],
+    changes: [`${GOODS[recipe.out]} +1`],
+  };
   void save;
 }
 
@@ -816,6 +840,138 @@ function caveAct(save: SaveData, world: RoamState, what: "upgrade" | "meditate")
     title: "洞中",
     paragraphs: ["外面的纪元仍在走。你在墙里只走自己的一息。两件事同时为真。"],
     changes: ["修为有所积累"],
+  };
+  void save;
+}
+
+const WATCHES = [
+  { name: "子时", line: "夜还没有退出骨头。你把呼吸放慢到能听见自己的血，而不去数它。" },
+  { name: "卯时", line: "外面大概亮了。你不睁眼。亮与不亮，都不准改你这一息的长短。" },
+  { name: "午时", line: "火候走到最吵的地方。吵的是念头，不是钟。你让念头过去，不请它们留下。" },
+  { name: "酉时", line: "光退了。退的时候最容易把没做成的事谎称已经做成。你把谎按住。" },
+];
+
+function retreatAct(save: SaveData, world: RoamState, what: "enter" | "watch" | "leave", rng: () => number) {
+  if (what === "enter") {
+    if (world.retreat) return;
+    if (interrupt(world)) return;
+    world.retreat = { watch: 0 };
+    spend(world, 1);
+    world.report = {
+      title: "入定",
+      paragraphs: [
+        "你把今天剩下的路按住。这一日已经交给打坐，不是交给赶路。",
+        "时辰要一个一个坐。坐到一半可以起身，起身不会把已经过去的白天还你。",
+      ],
+      changes: ["这一日已经入定"],
+    };
+    remember(world, "入定", "你把今天交给打坐。");
+    return;
+  }
+  if (!world.retreat) return;
+  if (what === "leave") {
+    const sat = world.retreat.watch;
+    world.retreat = null;
+    world.report = {
+      title: "出关",
+      paragraphs: [
+        sat > 0
+          ? "时辰还没走完，你已经起身。起身不是失败。外面还有你想看见的东西。"
+          : "你几乎没有坐。门还是原来的门，只是这一日已经不在赶路上。",
+      ],
+      changes: sat > 0 ? ["提前出关"] : [],
+    };
+    return;
+  }
+  if (interrupt(world)) {
+    world.retreat = null;
+    return;
+  }
+  const watch = WATCHES[world.retreat.watch] ?? WATCHES[WATCHES.length - 1]!;
+  const art = world.equipped ? ARTS[world.equipped] : undefined;
+  const place = ROAM_PLACES[world.place];
+  let gain = 3.2 + world.wuxing * 0.18 + place.spirit * 0.45 + (art?.xiu ?? 0) * 0.35 + world.cave * 0.8;
+  const changes: string[] = [];
+  if (world.lingqi >= 1) {
+    world.lingqi -= 1;
+    changes.push("灵气 -1");
+  } else {
+    gain *= 0.5;
+    changes.push("灵气枯了，这一时辰很浅");
+  }
+  if (world.wound >= 3) gain *= 0.8;
+  const before = world.xiuwei;
+  world.xiuwei = clamp(world.xiuwei + gain, 0, 100);
+  if (world.xiuwei >= 100 && before < 100) changes.push("火候已满，可以尝试突破");
+  else if (world.xiuwei > before) changes.push("修为有所积累");
+  world.retreat.watch += 1;
+  const finished = world.retreat.watch >= WATCHES.length;
+  const paragraphs = [watch.line, `${place.name}不因为你闭眼就停止。你只是暂时不回应它。`];
+  if (finished) {
+    world.retreat = null;
+    if (rng() < 0.16 + save.stats.demon / 400) {
+      save.stats.demon = clamp(save.stats.demon + 1, 0, CAP.demon);
+      changes.push("心魔 +1");
+      paragraphs.push("最后一个时辰里，有个声音把没做完的事说成已经做完。你听见了，没有照做。");
+    } else {
+      paragraphs.push("四个时辰走完。这一日没有被切成赶路和应付。火候是坐出来的，不是点出来的。");
+    }
+    world.report = { title: "一日入定", paragraphs, changes };
+    remember(world, "出定", paragraphs[0] ?? "");
+    return;
+  }
+  world.report = { title: watch.name, paragraphs, changes };
+  remember(world, watch.name, watch.line);
+}
+
+function plotAct(save: SaveData, world: RoamState, what: "plant" | "harvest") {
+  if (world.retreat) {
+    world.report = { title: "定中", paragraphs: ["你还坐着。土里的事等出关再说。"], changes: [] };
+    return;
+  }
+  if (what === "plant") {
+    if (world.plot || (world.bag.herb ?? 0) < 1) return;
+    const fertile = world.cave > 0 || ["earth", "wahuan", "tribes", "kunlun", "penglai"].includes(world.place);
+    if (!fertile) {
+      world.report = { title: "种不活", paragraphs: ["这块地不肯留根。换一处有土或有洞壁的地方。"], changes: [] };
+      return;
+    }
+    if (interrupt(world)) return;
+    world.bag.herb = (world.bag.herb ?? 1) - 1;
+    if ((world.bag.herb ?? 0) <= 0) delete world.bag.herb;
+    const wait = world.cave > 0 ? 2 : 4;
+    world.plot = { ready: world.day + wait };
+    spend(world, 1);
+    world.report = {
+      title: "药圃",
+      paragraphs: [
+        world.cave > 0
+          ? "你把一株灵草按进洞壁下的土。土记得你的手，比记得你的道号早。"
+          : "你在露天种下它。露天长得慢，慢是它要付的风。",
+        "它不会在你转身的时候就成熟。你得去做别的事，再回来看。",
+      ],
+      changes: ["灵草 -1", "药圃种下了"],
+    };
+    return;
+  }
+  if (!world.plot || world.day < world.plot.ready) {
+    world.report = { title: "还没到", paragraphs: ["苗还在。拔早了，你得到的是一截不肯负责的绿。"], changes: [] };
+    return;
+  }
+  if (interrupt(world)) return;
+  world.plot = null;
+  const amount = world.cave > 0 ? 3 : 2;
+  world.bag.herb = (world.bag.herb ?? 0) + amount;
+  const changes = [`灵草 +${amount}`];
+  if (world.cave > 1 || world.place === "wahuan") {
+    world.bag.dew = (world.bag.dew ?? 0) + 1;
+    changes.push("清露 +1");
+  }
+  spend(world, 1);
+  world.report = {
+    title: "采圃",
+    paragraphs: ["你收回比种下去更多的草。多出来的部分不是奇迹，是你肯等。"],
+    changes,
   };
   void save;
 }
@@ -887,28 +1043,44 @@ function sectAct(save: SaveData, world: RoamState, what: "join" | "task" | "leav
 }
 
 function trade(save: SaveData, world: RoamState, what: "buy" | "sell", id: GoodId) {
-  if (!["east", "tribes", "penglai"].includes(world.place)) {
+  const market = MARKETS[world.place];
+  if (!market) {
     world.report = { title: "没有集市", paragraphs: ["这里的人还不用你手里的石头说话。"], changes: [] };
     return;
   }
-  if (what === "buy" && id === "herb") {
-    if (world.stones < 2) return;
-    world.stones -= 2;
-    world.bag.herb = (world.bag.herb ?? 0) + 1;
-    world.report = { title: "换草", paragraphs: ["草比故事便宜，也比故事有用。"], changes: ["灵石 -2", "灵草 +1"] };
+  if (world.retreat) {
+    world.report = { title: "定中", paragraphs: ["你还坐着。集市不会等，可你今天已经不在路上。"], changes: [] };
     return;
   }
-  if (what === "sell" && (id === "ore" || id === "salt") && (world.bag[id] ?? 0) > 0) {
-    world.bag[id] = (world.bag[id] ?? 1) - 1;
-    if ((world.bag[id] ?? 0) <= 0) delete world.bag[id];
-    const gain = id === "ore" ? 3 : 2;
-    world.stones += gain;
-    world.report = { title: "脱手", paragraphs: ["你把东西换成以后能用的石头。石头不神圣，所以可靠。"], changes: [`${GOODS[id]} -1`, `灵石 +${gain}`] };
+  if (what === "buy") {
+    const offer = market.buy.find((item) => item.id === id);
+    if (!offer || world.stones < offer.cost) {
+      world.report = { title: "换不成", paragraphs: ["石头不够，或者这处集市根本不卖这个。"], changes: [] };
+      return;
+    }
+    world.stones -= offer.cost;
+    world.bag[id] = (world.bag[id] ?? 0) + 1;
+    world.report = {
+      title: "换取",
+      paragraphs: [`你在${ROAM_PLACES[world.place].name}换到${GOODS[id]}。价钱是当面说的，不是事先写在袖子上的。`],
+      changes: [`灵石 -${offer.cost}`, `${GOODS[id]} +1`],
+    };
+    return;
   }
+  const offer = market.sell.find((item) => item.id === id);
+  if (!offer || (world.bag[id] ?? 0) <= 0) return;
+  world.bag[id] = (world.bag[id] ?? 1) - 1;
+  if ((world.bag[id] ?? 0) <= 0) delete world.bag[id];
+  world.stones += offer.pay;
+  world.report = {
+    title: "脱手",
+    paragraphs: ["你把东西换成以后能用的石头。石头不神圣，所以可靠。"],
+    changes: [`${GOODS[id]} -1`, `灵石 +${offer.pay}`],
+  };
   void save;
 }
 
-function beastAct(save: SaveData, world: RoamState, what: "feed" | "release") {
+function beastAct(save: SaveData, world: RoamState, what: "feed" | "release" | "train") {
   if (!world.beast) return;
   if (what === "release") {
     const name = world.beast.name;
@@ -919,6 +1091,22 @@ function beastAct(save: SaveData, world: RoamState, what: "feed" | "release") {
       paragraphs: [`你让${name}走。走的东西若还回头看一眼，那一眼就够你记很久。`],
       changes: ["灵兽离开了"],
     };
+    return;
+  }
+  if (what === "train") {
+    if (world.retreat) return;
+    if (interrupt(world)) return;
+    world.beast.bond = clamp(world.beast.bond + 6, 0, 100);
+    const changes = ["它更认你"];
+    const paragraphs = [`你和${world.beast.name}把同一个动作做了很多遍。它不说话，可它开始在你停的地方停。`];
+    if (world.beast.bond >= 36) {
+      const place = ROAM_PLACES[world.place];
+      world.bag[place.good] = (world.bag[place.good] ?? 0) + 1;
+      changes.push(`${GOODS[place.good]} +1`);
+      paragraphs.push("同练结束时，它把地上的一点东西推到你脚边。不是进贡，是它也看见了。");
+    }
+    spend(world, 1);
+    world.report = { title: world.beast.name, paragraphs, changes };
     return;
   }
   if ((world.bag.herb ?? 0) <= 0) return;
@@ -1078,8 +1266,20 @@ export type MenuAct = { id: string; label: string; act: RoamAct; note?: string }
 export function menuActs(save: SaveData): MenuAct[] {
   const world = save.world;
   if (!world || world.phase !== "free") return [];
+  if (world.retreat) {
+    const last = world.retreat.watch >= WATCHES.length - 1;
+    return [
+      {
+        id: "retreat-watch",
+        label: last ? "坐完这最后一个时辰" : "再坐一个时辰",
+        act: { type: "retreat", what: "watch" },
+      },
+      { id: "retreat-leave", label: "提前出关", act: { type: "retreat", what: "leave" } },
+    ];
+  }
   const acts: MenuAct[] = [
     { id: "cultivate", label: "闭关一日", act: { type: "cultivate" } },
+    { id: "retreat-enter", label: "入定，按时辰坐", act: { type: "retreat", what: "enter" } },
     { id: "explore", label: "四处探寻", act: { type: "explore" } },
     { id: "gather", label: "采集", act: { type: "gather" } },
     { id: "rest", label: "调息疗伤", act: { type: "rest" } },
@@ -1104,6 +1304,13 @@ export function menuActs(save: SaveData): MenuAct[] {
     acts.push({ id: "cave-up", label: "经营洞府", act: { type: "cave", what: "upgrade" } });
   }
   if (world.cave > 0) acts.push({ id: "cave-med", label: "洞中打坐", act: { type: "cave", what: "meditate" } });
+  const fertile = world.cave > 0 || ["earth", "wahuan", "tribes", "kunlun", "penglai"].includes(world.place);
+  if (!world.plot && fertile && (world.bag.herb ?? 0) > 0) {
+    acts.push({ id: "plot-plant", label: "种下药圃", act: { type: "plot", what: "plant" } });
+  }
+  if (world.plot && world.day >= world.plot.ready) {
+    acts.push({ id: "plot-harvest", label: "采收回药圃", act: { type: "plot", what: "harvest" } });
+  }
   const here = SECTS.find((sect) => sect.place === world.place);
   if (!world.sect && here) acts.push({ id: "join", label: `拜见${here.name}`, act: { type: "sect", what: "join" } });
   if (world.sect) {
@@ -1116,15 +1323,26 @@ export function menuActs(save: SaveData): MenuAct[] {
     }
     acts.push({ id: "leave", label: "辞去名分", act: { type: "sect", what: "leave" } });
   }
-  if (["east", "tribes", "penglai"].includes(world.place)) {
-    if (world.stones >= 2) acts.push({ id: "buy", label: "换一株灵草", act: { type: "trade", what: "buy", id: "herb" } });
-    if ((world.bag.ore ?? 0) > 0) acts.push({ id: "sell-ore", label: "售出玄矿", act: { type: "trade", what: "sell", id: "ore" } });
-    if ((world.bag.salt ?? 0) > 0) acts.push({ id: "sell-salt", label: "售出海盐晶", act: { type: "trade", what: "sell", id: "salt" } });
+  const market = MARKETS[world.place];
+  if (market) {
+    for (const offer of market.buy) {
+      if (world.stones >= offer.cost) {
+        acts.push({ id: `buy-${offer.id}`, label: `换取${GOODS[offer.id]}`, act: { type: "trade", what: "buy", id: offer.id } });
+      }
+    }
+    for (const offer of market.sell) {
+      if ((world.bag[offer.id] ?? 0) > 0) {
+        acts.push({ id: `sell-${offer.id}`, label: `售出${GOODS[offer.id]}`, act: { type: "trade", what: "sell", id: offer.id } });
+      }
+    }
   }
   if (world.beast && (world.bag.herb ?? 0) > 0) {
     acts.push({ id: "feed", label: `喂${world.beast.name}`, act: { type: "beast", what: "feed" } });
   }
-  if (world.beast) acts.push({ id: "release", label: `放${world.beast.name}离开`, act: { type: "beast", what: "release" } });
+  if (world.beast) {
+    acts.push({ id: "train", label: `与${world.beast.name}同练`, act: { type: "beast", what: "train" } });
+    acts.push({ id: "release", label: `放${world.beast.name}离开`, act: { type: "beast", what: "release" } });
+  }
   for (const chain of continuableChains(world)) {
     acts.push({ id: `chain-${chain.id}`, label: `继续「${chain.name}」`, act: { type: "continue", chainId: chain.id } });
   }
@@ -1169,4 +1387,4 @@ export function labelsLeakNumbers(labels: string[]) {
   return labels.filter((label) => LEAK.test(label));
 }
 
-export { ERAS, ROAM_PLACES, SECTS, RECIPES, GOODS, ARTS, CHAINS };
+export { ERAS, MARKETS, ROAM_PLACES, SECTS, RECIPES, GOODS, ARTS, CHAINS };

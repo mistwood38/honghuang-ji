@@ -188,6 +188,60 @@ export const RECIPES: {
   },
 ];
 
+/** Prices stay off the button. The aftermath says what was paid. */
+export const MARKETS: Partial<
+  Record<PlaceId, { buy: { id: GoodId; cost: number }[]; sell: { id: GoodId; pay: number }[] }>
+> = {
+  east: {
+    buy: [
+      { id: "herb", cost: 2 },
+      { id: "salt", cost: 2 },
+    ],
+    sell: [
+      { id: "ore", pay: 3 },
+      { id: "clay", pay: 2 },
+      { id: "dew", pay: 2 },
+    ],
+  },
+  tribes: {
+    buy: [
+      { id: "herb", cost: 2 },
+      { id: "dew", cost: 3 },
+    ],
+    sell: [
+      { id: "ore", pay: 2 },
+      { id: "salt", pay: 2 },
+    ],
+  },
+  penglai: {
+    buy: [
+      { id: "dew", cost: 2 },
+      { id: "herb", cost: 3 },
+    ],
+    sell: [
+      { id: "salt", pay: 1 },
+      { id: "ore", pay: 4 },
+    ],
+  },
+  kunlun: {
+    buy: [{ id: "dew", cost: 2 }],
+    sell: [
+      { id: "ore", pay: 2 },
+      { id: "herb", pay: 2 },
+    ],
+  },
+  wahuan: {
+    buy: [
+      { id: "clay", cost: 1 },
+      { id: "herb", cost: 3 },
+    ],
+    sell: [
+      { id: "salt", pay: 3 },
+      { id: "dew", pay: 2 },
+    ],
+  },
+};
+
 export type ArtDef = {
   id: string;
   name: string;
