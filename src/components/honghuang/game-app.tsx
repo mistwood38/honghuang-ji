@@ -3,7 +3,7 @@ import { sceneById } from "@/lib/honghuang/story";
 import { playChoice, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
 import { APP_NAME, NOVEL_NAME, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
-import { ART } from "@/lib/honghuang/visuals";
+import { ART, artForScene } from "@/lib/honghuang/visuals";
 import type { Screen } from "@/lib/honghuang/types";
 import { Artwork, Atmosphere } from "./art";
 import { CodexView } from "./codex-view";
@@ -12,6 +12,7 @@ import { NovelView } from "./novel-view";
 import { PlayView } from "./play-view";
 import { RestartButton } from "./restart-button";
 import { SelfView } from "./self-view";
+import "./cinematic.css";
 
 const DOCK: { id: Screen; label: string; mark: string; note: string }[] = [
   { id: "play", label: "入世", mark: "世", note: "一生因果" },
@@ -52,7 +53,21 @@ function Shell() {
 
   if (screen === "title") return <TitleScreen />;
   return (
-    <div className="shell">
+    <div className={`shell shell-${screen}`}>
+      <div className="world-backdrop" aria-hidden="true">
+        <Artwork
+          art={
+            screen === "codex"
+              ? ART.palace
+              : screen === "land"
+                ? ART.worldmap
+                : screen === "play" && scene
+                  ? artForScene(scene)
+                  : ART.mountain
+          }
+          decorative
+        />
+      </div>
       <a className="skip-link" href="#game-content">
         跳至正文
       </a>
@@ -68,9 +83,10 @@ function Shell() {
               洪
             </span>
             {APP_NAME}
-            <span className="brand-caption">天地一卷 · 众生一笔</span>
+            <span className="brand-caption">洪荒神话 · 沉浸叙事</span>
           </button>
           <div className="header-meta">
+            <span className="header-chapter">{DOCK.find((item) => item.id === screen)?.note}</span>
             <span className="header-identity">
               {started
                 ? `${name || "未名"} · ${scene?.ending?.name ?? realmOf(stats.dao).name}`

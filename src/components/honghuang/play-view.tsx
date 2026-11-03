@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { deltaHint, fill, meetsCond, visibleChoices } from "@/lib/honghuang/engine";
+import { fill, meetsCond, visibleChoices } from "@/lib/honghuang/engine";
 import { playChoice, unlockSound } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
 import { artForScene, moodForScene } from "@/lib/honghuang/visuals";
 import { Artwork, Atmosphere } from "./art";
-import { ORIGINS, placeById } from "@/lib/honghuang/world";
+import { portraitForOrigin } from "@/lib/honghuang/portrait";
+import type { StatKey } from "@/lib/honghuang/types";
+import { ORIGINS, STAT_LABEL, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
 import { RestartButton } from "./restart-button";
 import { StatList } from "./stats";
@@ -18,6 +20,7 @@ export function PlayView() {
   const sound = useSave((save) => save.sound);
   const scene = sceneById(state.sceneId);
   const [draft, setDraft] = useState("");
+  const portrait = portraitForOrigin(state.origin);
 
   useEffect(() => {
     document.querySelector<HTMLElement>(".scene-caption h1")?.focus({ preventScroll: true });
@@ -91,7 +94,11 @@ export function PlayView() {
 
   return (
     <section id="scene-top" className="page-wrap play-layout">
-      <article className={`scene-chapter scene-${moodForScene(scene)}`} key={scene.id}>
+      <article
+        className={`scene-chapter scene-${moodForScene(scene)}${scene.ending ? " is-ending" : ""}`}
+        data-ending={scene.ending ? scene.id : undefined}
+        key={scene.id}
+      >
         <div className="scene-hero">
           <Artwork art={artForScene(scene)} eager decorative />
           <Atmosphere mood={moodForScene(scene)} />
@@ -103,11 +110,27 @@ export function PlayView() {
             <h1 tabIndex={-1}>{scene.ending?.name ?? scene.title}</h1>
             <p className="scene-place-line">{place?.summary}</p>
           </div>
+          {scene.ending ? (
+            <span className="ending-hero-seal" aria-hidden="true">
+              {scene.ending.seal}
+            </span>
+          ) : null}
           <span className="scene-volume" aria-hidden="true">
             入世 · 第{String(state.log.length + 1).padStart(2, "0")}笔
           </span>
         </div>
-        <div className="scene-paper manuscript">
+        <div className="scene-paper scene-reading-panel">
+          {scene.ending ? (
+            <div className="ending-record">
+              <p className="eyebrow">此生已成卷</p>
+              <p className="ending-record-name">{state.name || "未名"}</p>
+              <div>
+                <span>{state.log.length} 段因果</span>
+                <span>{state.items.length} 件所携</span>
+                <span>{state.flags.length} 道印记</span>
+              </div>
+            </div>
+          ) : null}
           <div className="narrative-label">
             <span>因 果 正 文</span>
             {scene.ending ? (
@@ -145,20 +168,20 @@ export function PlayView() {
                 maxLength={8}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="不取则随根骨赐号"
-                className="mt-2 min-h-12 w-full border-0 border-b border-line bg-transparent py-2 font-serif text-lg text-fg outline-none placeholder:text-faint"
+                className="scene-name-input"
               />
             </label>
           ) : null}
 
           {scene.ending ? (
-            <div className="mt-8 flex flex-col items-start gap-4 border-t border-line pt-6">
+            <div className="ending-actions mt-8">
               <span className="seal" aria-hidden="true">
                 {scene.ending.seal}
               </span>
-              <p className="font-serif text-lg">归处 · {scene.ending.name}</p>
+              <p className="ending-signature">归处 · {scene.ending.name}</p>
               <div className="flex flex-wrap gap-3">
-                <RestartButton ink label="再入混沌" />
-                <LifeCopy ink />
+                <RestartButton label="再入混沌" />
+                <LifeCopy />
               </div>
             </div>
           ) : (
@@ -177,7 +200,9 @@ export function PlayView() {
               </div>
               {options.map((item) => {
                 const indexLabel = item.open ? String(++openIndex) : "—";
-                const hint = deltaHint(item.choice.delta);
+                const changes = Object.entries(item.choice.delta ?? {}).filter(
+                  ([, value]) => value !== 0,
+                );
                 return (
                   <button
                     key={item.choice.id}
@@ -193,8 +218,11 @@ export function PlayView() {
                       if (scene.id === "awaken") setDraft("");
                     }}
                   >
-                    <span className="choice-number">{indexLabel}</span>
-                    <span className="min-w-0">
+                    <span className={`choice-number${item.choice.setOrigin ? " choice-root" : ""}`}>
+                      {item.choice.setOrigin ? ORIGINS[item.choice.setOrigin].seal : indexLabel}
+                      <small>{item.choice.setOrigin ? indexLabel : ""}</small>
+                    </span>
+                    <span className="choice-copy min-w-0">
                       <span className="block font-serif text-lg leading-snug">
                         {item.choice.text}
                       </span>
@@ -203,14 +231,26 @@ export function PlayView() {
                           {item.choice.sub}
                         </span>
                       ) : null}
-                      {item.open && hint ? (
-                        <span className="mt-1 block text-xs tracking-wide text-cinnabar">
-                          {hint}
+                      {item.open && changes.length ? (
+                        <span className="choice-deltas">
+                          {changes.map(([key, value]) => (
+                            <span
+                              className={value! < 0 ? "delta-cost" : "delta-gain"}
+                              data-stat={key}
+                              key={key}
+                            >
+                              {STAT_LABEL[key as StatKey]} {value! > 0 ? "+" : ""}
+                              {value}
+                            </span>
+                          ))}
                         </span>
                       ) : null}
                       {!item.open && item.reason ? (
                         <span className="mt-1 block text-xs">{item.reason}</span>
                       ) : null}
+                    </span>
+                    <span className="choice-arrow" aria-hidden="true">
+                      ⟶
                     </span>
                   </button>
                 );
@@ -223,14 +263,8 @@ export function PlayView() {
       <aside className="play-sidebar">
         <div className="identity-card bronze-panel">
           <picture className="identity-portrait">
-            <source media="(max-width: 640px)" srcSet="/art/pilgrim-small.webp" />
-            <img
-              src="/art/pilgrim.webp"
-              width={1000}
-              height={1500}
-              loading="lazy"
-              alt="身披青衣的无名灵识，立于云气之间"
-            />
+            <source media="(max-width: 640px)" srcSet={portrait.small} />
+            <img src={portrait.src} width={1000} height={1500} loading="lazy" alt={portrait.alt} />
           </picture>
           <div className="identity-content">
             <p className="eyebrow">此 世 · 灵 识</p>

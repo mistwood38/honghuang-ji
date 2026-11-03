@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { portraitForOrigin } from "@/lib/honghuang/portrait";
 import { flagLabel } from "@/lib/honghuang/engine";
 import { playChoice, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
 import { ITEMS, ORIGINS, realmOf } from "@/lib/honghuang/world";
 import { PageHeading, SectionHeading } from "./art";
+import { ItemArt } from "./item-art";
 import { LifeCopy } from "./life-copy";
 import { RestartButton } from "./restart-button";
 import { StatList } from "./stats";
@@ -17,6 +19,7 @@ export function SelfView() {
   const [renamed, setRenamed] = useState(false);
   const origin = state.origin ? ORIGINS[state.origin] : null;
   const realm = realmOf(state.stats.dao);
+  const portrait = portraitForOrigin(state.origin);
 
   return (
     <section className={`page-wrap self-page self-origin-${state.origin ?? "unknown"}`}>
@@ -26,32 +29,50 @@ export function SelfView() {
       <div className="self-overview bronze-panel">
         <div className="self-portrait">
           <picture>
-            <source media="(max-width: 640px)" srcSet="/art/pilgrim-small.webp" />
+            <source media="(max-width: 640px)" srcSet={portrait.small} />
             <img
-              src="/art/pilgrim.webp"
-              alt="青玉色衣袍的无名灵识立于云雾，背影融入远古山河"
-              width={1024}
-              height={1536}
+              src={portrait.src}
+              alt={portrait.alt}
+              width={1000}
+              height={1500}
               loading="eager"
               decoding="async"
             />
           </picture>
           <div className="self-portrait-shade" aria-hidden="true" />
+          <span className="self-portrait-edition" aria-hidden="true">
+            此身 · 一念成形
+          </span>
           <div className="self-portrait-caption">
             <span className="self-origin-seal">{origin?.seal ?? "灵"}</span>
-            <span>不肯散的那一缕</span>
+            <div>
+              <p>
+                {origin?.name ?? "混沌灵"} · {state.started ? realm.name : "尚未入世"}
+              </p>
+              <h2>{state.name || "未名"}</h2>
+              <span>不肯散的那一缕</span>
+            </div>
           </div>
         </div>
         <div className="self-identity">
-          <p className="eyebrow">此生道号</p>
-          <h2>{state.name || "未名"}</h2>
+          <div className="self-dossier-heading">
+            <div>
+              <p className="eyebrow">此 生 · 灵 识 六 相</p>
+              <h3>观照此身</h3>
+            </div>
+            <span className="self-dossier-mark" aria-hidden="true">
+              命
+            </span>
+          </div>
           <p className="self-origin-line">
             {origin ? `${origin.name} · ${origin.line}` : "尚未应答混沌。"}
           </p>
           <div className="self-realm">
-            <span>境界</span>
-            <strong>{state.started ? realm.name : "尚未入世"}</strong>
-            <span>{state.log.length} 段因果</span>
+            <span>此生留痕</span>
+            <strong>{state.log.length} 段因果</strong>
+            <span>
+              {state.items.length} 物 · {state.flags.length} 印
+            </span>
           </div>
           <div className="self-stats">
             <StatList stats={state.stats} />
@@ -110,13 +131,11 @@ export function SelfView() {
               </p>
             ) : (
               <ul className="self-items">
-                {state.items.map((id, index) => {
+                {state.items.map((id) => {
                   const item = ITEMS[id];
                   return (
                     <li key={id}>
-                      <span className="self-item-number" aria-hidden="true">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
+                      <ItemArt id={id} />
                       <div>
                         <h3>{item?.name ?? id}</h3>
                         <p>{item?.lore}</p>
@@ -128,7 +147,7 @@ export function SelfView() {
             )}
           </div>
         </section>
-        <section className="self-karma manuscript">
+        <section className="self-karma bronze-panel">
           <SectionHeading>
             因果 <small>{state.flags.length} 印</small>
           </SectionHeading>

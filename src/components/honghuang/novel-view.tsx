@@ -20,7 +20,7 @@ const CHAPTER_ART: ArtKey[] = [
   "nuwa",
   "nuwa",
   "tribes",
-  "palace",
+  "fengshen",
   "mountain",
 ];
 
@@ -63,7 +63,11 @@ export function NovelView() {
 
   function chapterDirectory() {
     return VOLUMES.map((volume) => (
-      <div className="reader-volume" key={volume}>
+      <div
+        className="reader-volume"
+        key={volume}
+        data-current={volume === chapter.volume ? "true" : undefined}
+      >
         <p className="reader-volume-label">{volume}</p>
         <ol>
           {CHAPTERS.map((item, itemIndex) =>
@@ -78,7 +82,7 @@ export function NovelView() {
                   <span className="reader-chapter-number">
                     {String(itemIndex + 1).padStart(2, "0")}
                   </span>
-                  <span>{item.title}</span>
+                  <span className="reader-chapter-name">{item.title}</span>
                   {itemIndex === safe ? (
                     <span className="reader-reading-mark" aria-label="正在阅读">
                       读
@@ -144,6 +148,11 @@ export function NovelView() {
               <Artwork art={ART[CHAPTER_ART[safe] ?? "mountain"]} eager />
               <span aria-hidden="true" className="reader-art-inscription">
                 {chapter.volume}
+              </span>
+              <span className="reader-leaf-number" aria-hidden="true">
+                <span>本纪</span>
+                <b>{String(safe + 1).padStart(2, "0")}</b>
+                <i> / {CHAPTERS.length}</i>
               </span>
             </div>
             <div className="reader-leaf-body" key={chapter.id}>

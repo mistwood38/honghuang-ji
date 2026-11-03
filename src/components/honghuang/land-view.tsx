@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
-import { ART, artForPlace } from "@/lib/honghuang/visuals";
+import { artForPlace } from "@/lib/honghuang/visuals";
 import { LAYERS, PLACES } from "@/lib/honghuang/world";
 import { Artwork, PageHeading, SectionHeading } from "./art";
 import "./world-views.css";
@@ -40,13 +40,26 @@ export function LandView() {
       </PageHeading>
       <div className="atlas-layout">
         <div className="atlas-map" aria-label="洪荒山河意象图">
-          <Artwork art={ART.mountain} eager decorative />
+          <picture className="artwork atlas-world-art">
+            <source media="(max-width: 640px)" srcSet="/art/world-atlas-small.webp" />
+            <img
+              src="/art/world-atlas.webp"
+              width={1440}
+              height={960}
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
+          </picture>
           <div className="atlas-map-shade" aria-hidden="true" />
           <div className="atlas-map-inscription" aria-hidden="true">
             <span>洪荒</span>
             <small>山河一卷&#12288;天地万重</small>
           </div>
-          <p className="atlas-map-note">山河意象 · 点地名阅地志</p>
+          <div className="atlas-map-note">
+            <span>天 地 舆 图</span>
+            <p>山河意象 · 点地名阅地志</p>
+          </div>
           {MAP_PLACES.map((id) => {
             const place = PLACES.find((item) => item.id === id)!;
             return (
@@ -86,7 +99,7 @@ export function LandView() {
           </div>
           <div className="atlas-detail-copy" aria-live="polite" aria-atomic="true">
             <p className="eyebrow">
-              地志 / {String(PLACES.indexOf(selected) + 1).padStart(2, "0")}
+              地志 · 藏卷 {String(PLACES.indexOf(selected) + 1).padStart(2, "0")} / {PLACES.length}
             </p>
             <div className="atlas-detail-title">
               <h2>{selected.name}</h2>
@@ -133,22 +146,28 @@ export function LandView() {
               aria-pressed={selected.id === place.id}
               onClick={() => selectPlace(place.id, true)}
             >
-              <span className="atlas-place-top">
-                <span className="atlas-place-name">{place.name}</span>
-                <span
-                  className={
-                    started && currentPlace === place.id
-                      ? "atlas-status is-current"
-                      : "atlas-status"
-                  }
-                >
-                  {placeStatus(place.id)}
-                </span>
+              <span className="atlas-card-landscape">
+                <Artwork art={artForPlace(place.id)} decorative />
+                <span className="atlas-card-shade" />
               </span>
-              <span className="atlas-place-summary">{place.summary}</span>
-              <span className="atlas-place-link">
-                {place.region} <span aria-hidden="true">·</span> 阅地志{" "}
-                <span aria-hidden="true">↗</span>
+              <span className="atlas-card-body">
+                <span className="atlas-place-top">
+                  <span className="atlas-place-name">{place.name}</span>
+                  <span
+                    className={
+                      started && currentPlace === place.id
+                        ? "atlas-status is-current"
+                        : "atlas-status"
+                    }
+                  >
+                    {placeStatus(place.id)}
+                  </span>
+                </span>
+                <span className="atlas-place-summary">{place.summary}</span>
+                <span className="atlas-place-link">
+                  {place.region} <span aria-hidden="true">·</span> 阅地志{" "}
+                  <span aria-hidden="true">↗</span>
+                </span>
               </span>
             </button>
           ))}

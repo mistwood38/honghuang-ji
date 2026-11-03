@@ -11,7 +11,9 @@ export type ArtKey =
   | "tribes"
   | "nuwa"
   | "penglai"
-  | "youming";
+  | "youming"
+  | "worldmap"
+  | "fengshen";
 export type SceneMood = "mist" | "radiance" | "calamity" | "still" | "embers" | "tide";
 export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = {
   chaos: {
@@ -64,6 +66,16 @@ export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = 
     small: "/art/youming-small.webp",
     alt: "幽冥地底，暗玉色河流穿过沉默的石根与古老岩层",
   },
+  worldmap: {
+    src: "/art/world-atlas.webp",
+    small: "/art/world-atlas-small.webp",
+    alt: "洪荒天地分层意象舆图：云上天宫、大地山海与幽冥静河",
+  },
+  fengshen: {
+    src: "/art/fengshen.webp",
+    small: "/art/fengshen-small.webp",
+    alt: "古老封神台上，一卷未落名字的金色长卷悬于天地之间",
+  },
 };
 
 const PLACE_ART: Record<string, ArtKey> = {
@@ -80,7 +92,7 @@ const PLACE_ART: Record<string, ArtKey> = {
   youming: "youming",
   penglai: "penglai",
   tribes: "tribes",
-  board: "palace",
+  board: "fengshen",
 };
 export function artForPlace(place: string) {
   return ART[PLACE_ART[place] ?? "mountain"];
@@ -88,6 +100,8 @@ export function artForPlace(place: string) {
 export function artForScene(scene: Scene) {
   if (["collapse", "war"].includes(scene.id)) return ART.calamity;
   if (scene.id === "mend") return ART.nuwa;
+  if (scene.id === "end-dao") return ART.palace;
+  if (scene.id === "end-hidden") return ART.penglai;
   if (scene.id === "cleave") return ART.chaos;
   return artForPlace(scene.place);
 }

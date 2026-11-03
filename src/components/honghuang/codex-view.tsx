@@ -215,7 +215,7 @@ export function CodexView() {
                   >
                     <summary>
                       <span className="codex-entry-mark" aria-hidden="true">
-                        简
+                        {String(CODEX.indexOf(entry) + 1).padStart(2, "0")}
                       </span>
                       <h3>{highlightMatches(entry.title, query.trim())}</h3>
                       <span className="codex-entry-toggle">

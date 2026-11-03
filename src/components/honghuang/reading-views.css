@@ -783,3 +783,394 @@
     margin-bottom: 0.625rem;
   }
 }
+
+/* Bound paper and engraved jade: visual materials share the same reading controls. */
+.reader-directory.bronze-panel,
+.codex-directory.bronze-panel {
+  border-color: color-mix(in srgb, var(--color-gold) 34%, var(--color-line-dark));
+  background: color-mix(in srgb, var(--color-raised) 95%, var(--color-ink));
+  box-shadow:
+    inset 0 0 0 4px var(--color-ink),
+    inset 0 0 0 5px #bda26a16,
+    0 16px 40px #0003;
+}
+.reader-directory-heading {
+  position: relative;
+}
+.reader-directory-heading::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.65rem;
+  height: 1px;
+  background: linear-gradient(90deg, #c7ac7250, transparent);
+}
+.reader-directory-heading .seal {
+  color: var(--color-gold);
+  border-color: #b99b5c80;
+  background: #c7ac7208;
+  box-shadow: inset 0 0 0 3px var(--color-raised);
+}
+.reader-volume-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #a5ae9b;
+}
+.reader-volume-label::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: #bfa16a24;
+}
+.reader-volume[data-current="true"] > .reader-volume-label {
+  color: var(--color-gold);
+}
+.reader-chapter-link {
+  border-left: 1px solid #b9a26b22;
+  padding-left: 0.8rem;
+}
+.reader-chapter-link[aria-current="page"] {
+  border-left-color: var(--color-gold);
+  background: #c7ac7210;
+  box-shadow: inset 1px 0 #d3bb8280;
+}
+.reader-chapter-link[aria-current="page"] .reader-chapter-number {
+  color: #e5cf9b;
+  opacity: 1;
+}
+.reader-chapter-name {
+  flex: 1;
+}
+.reader-reading-mark {
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid #c7ac7255;
+  font-size: 0.6rem;
+}
+.reader-mobile-directory.bronze-panel,
+.reader-preface.bronze-panel {
+  border-color: #aa965b45;
+  background: #102324ed;
+  box-shadow:
+    inset 0 0 0 3px #081718,
+    inset 0 0 0 4px #c7ac7210;
+}
+.reader-mobile-directory[open] > summary,
+.reader-preface[open] > summary {
+  border-bottom: 1px solid #c7ac7230;
+  color: var(--color-gold);
+}
+.reader-manuscript.manuscript {
+  border: 1px solid #a99873;
+  border-top: 2px solid #c7ac72;
+  box-shadow:
+    0 24px 60px #0004,
+    4px 4px 0 #a79972,
+    6px 6px 0 #4b5141;
+}
+.reader-manuscript::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+  z-index: 2;
+  background: linear-gradient(90deg, #76623965, #94784018, transparent);
+  pointer-events: none;
+}
+.reader-manuscript::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 4px;
+  border-left: 1px solid #b8a77f66;
+  background: repeating-linear-gradient(
+    0deg,
+    #ad9b7544 0,
+    #ad9b7544 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  pointer-events: none;
+}
+.reader-leaf-art {
+  border-bottom: 1px solid #ad9561;
+}
+.reader-leaf-art img {
+  opacity: 0.9;
+}
+.reader-leaf-art::after {
+  background: linear-gradient(0deg, #0718199c, transparent 75%);
+  box-shadow: inset 0 0 0 5px #d9c58b12;
+}
+.reader-art-inscription {
+  top: 0.75rem;
+  right: 1rem;
+  padding: 0.5rem 0.3rem;
+  border-block: 1px solid #d4c18f60;
+  text-shadow: 0 2px 8px #000;
+}
+.reader-leaf-number {
+  position: absolute;
+  z-index: 1;
+  left: 1.4rem;
+  bottom: 0.8rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  color: #e7d7ab;
+  font-family: var(--font-serif);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 2px 6px #0008;
+}
+.reader-leaf-number > span {
+  padding-right: 0.6rem;
+  border-right: 1px solid #c7ac7280;
+}
+.reader-leaf-number b {
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1;
+}
+.reader-leaf-number i {
+  font-style: normal;
+  opacity: 0.7;
+}
+.reader-leaf-body::before {
+  border-inline: 1px solid #9c835333;
+}
+.reader-chapter-meta > p {
+  border-left: 2px solid #a35c39;
+  padding-left: 0.6rem;
+  color: #794c33;
+}
+.reader-chapter-meta > button {
+  background: #f3e8cd44;
+  border-color: #a4946c80;
+  box-shadow: inset 0 0 0 3px #e7dcc0;
+}
+.reader-chapter-meta > button:hover {
+  color: var(--color-cinnabar);
+  border-color: var(--color-cinnabar);
+}
+.reader-chapter-title {
+  color: #34372c;
+  font-weight: 400;
+}
+.reader-chapter-order {
+  color: #6b583a;
+  letter-spacing: 0.35em;
+}
+.reader-chapter-ornament > span {
+  width: 4rem;
+  background: #a0865660;
+}
+.reader-pagination {
+  border-top: 3px double #a38d6166;
+}
+.reader-pagination > button {
+  border-color: #95805b;
+  box-shadow:
+    inset 0 0 0 3px #e7dcc0,
+    inset 0 0 0 4px #a08d6522;
+}
+.reader-page-number {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: #705f40;
+}
+.codex-cover.bronze-panel {
+  border-color: #b99c604d;
+  box-shadow:
+    inset 0 0 0 6px #071819,
+    inset 0 0 0 7px #c7ac7240,
+    0 20px 60px #0003;
+}
+.codex-cover.bronze-panel::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 8px;
+  border: 1px solid #c7ac7226;
+  pointer-events: none;
+}
+.codex-cover-seal {
+  background: #10232470;
+  box-shadow: inset 0 0 0 3px #c7ac721a;
+  text-shadow: 0 2px 6px #071819;
+}
+.codex-category-link {
+  border: 1px solid #c7ac721a;
+  background: #081b1b55;
+  box-shadow: inset 0 1px #d6c38d08;
+}
+.codex-category-link:hover {
+  border-color: #c7ac7260;
+  background: #c7ac7208;
+}
+.codex-category-link[aria-pressed="true"] {
+  background: #c7ac7214;
+  border-color: #c7ac7273;
+  box-shadow:
+    inset 0 0 0 3px #102526,
+    inset 0 0 0 4px #c7ac7220;
+  color: #e2c68a;
+}
+.codex-tools.bronze-panel {
+  border-color: #a38e584a;
+  box-shadow: inset 0 0 0 4px #071819;
+  background: #102324f2;
+}
+.codex-search > span {
+  writing-mode: vertical-rl;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  padding: 0.25rem;
+  border: 1px solid #c7ac7240;
+  color: #d3bd86;
+}
+.codex-search > input {
+  padding-inline: 0.35rem;
+  border-bottom-color: #b79b5c4d;
+}
+.codex-results {
+  padding-top: 0.3rem;
+}
+.codex-results > button {
+  font-family: var(--font-serif);
+  letter-spacing: 0.08em;
+  padding-left: 0.75rem;
+}
+.codex-section + .codex-section {
+  margin-top: 2.5rem;
+}
+.codex-section-heading {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #c7ac7229;
+  margin-bottom: 0.75rem;
+}
+.codex-section-heading .artwork {
+  border-color: #b09b6666;
+  padding: 3px;
+  background: #071819;
+  box-shadow:
+    0 0 0 1px #102526,
+    0 0 0 2px #c7ac7220;
+}
+.codex-section-count {
+  color: #c7ac7280;
+  font-size: 2.2rem;
+}
+.codex-entry {
+  padding-inline: 1rem;
+  margin-bottom: 0.65rem;
+  border: 1px solid #a5a57f24;
+  background: #102324e8;
+  box-shadow: inset 0 1px #d7c48d08;
+}
+.codex-entry > summary {
+  min-height: 4.2rem;
+}
+.codex-entry-mark {
+  width: 1.7rem;
+  height: 2rem;
+  border-color: #b99c6055;
+  color: #c7ac72b3;
+  font-size: 0.65rem;
+  background: #081b1b99;
+}
+.codex-entry[open] {
+  border-color: #b49a5d5c;
+  box-shadow:
+    inset 3px 0 #b19a5c50,
+    0 8px 24px #0001;
+}
+.codex-entry[open] > summary {
+  border-bottom: 1px solid #c7ac7224;
+}
+.copy.codex-entry-copy {
+  padding-top: 1rem;
+}
+.copy.codex-entry-copy p {
+  color: #bcc8bb;
+}
+.codex-entry-toggle {
+  font-family: var(--font-serif);
+}
+.codex-entry[open] .codex-entry-mark {
+  color: #dfc58d;
+  border-color: #c7ac7299;
+}
+.codex-search-match {
+  background: #d2b87a;
+  color: #122322;
+  padding-inline: 0.16em;
+}
+@media (min-width: 1000px) {
+  .reader-directory.bronze-panel {
+    padding-top: 1.5rem;
+  }
+  .reader-manuscript.manuscript {
+    box-shadow:
+      0 28px 64px #0005,
+      5px 5px 0 #a79972,
+      8px 8px 0 #34463c;
+  }
+  .codex-directory.bronze-panel {
+    padding: 1.5rem 1.25rem;
+  }
+  .codex-category-link {
+    min-height: 3rem;
+  }
+  .codex-entry {
+    padding-inline: 1.25rem;
+  }
+}
+@media (max-width: 639px) {
+  .reader-manuscript.manuscript {
+    box-shadow:
+      0 12px 32px #0003,
+      2px 2px 0 #a79972;
+  }
+  .reader-manuscript::before {
+    width: 5px;
+  }
+  .reader-leaf-number {
+    left: 1.1rem;
+    bottom: 0.65rem;
+  }
+  .reader-leaf-number b {
+    font-size: 1.2rem;
+  }
+  .reader-leaf-number > span {
+    font-size: 0.55rem;
+  }
+  .reader-art-inscription {
+    right: 0.85rem;
+    font-size: 0.65rem;
+  }
+  .reader-chapter-ornament > span {
+    width: 3rem;
+  }
+  .codex-entry {
+    padding-inline: 0.75rem;
+  }
+  .codex-entry > summary {
+    gap: 0.6rem;
+  }
+  .codex-entry > summary > h3 {
+    font-size: 1rem;
+  }
+  .copy.codex-entry-copy {
+    padding-inline: 0.1rem;
+  }
+  .codex-section-heading {
+    gap: 0.8rem;
+  }
+  .codex-section-count {
+    font-size: 1.8rem;
+  }
+}
