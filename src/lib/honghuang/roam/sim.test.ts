@@ -196,14 +196,14 @@ test("farming a map fights by itself and banks the time you were away", () => {
   let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, rngFrom(8));
   assert.equal(save.world?.farm, "earth");
   const start = save.world!.lastTick;
-  save = applyRoam(save, { type: "idle", what: "fight", now: start + 1000 }, () => 0.1);
+  save = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.1);
   assert.ok((save.world?.farmLog.length ?? 0) >= 2);
   assert.ok((save.world?.xiuwei ?? 0) > 0);
   const before = save.world!.xiuwei;
-  const away = applyRoam(save, { type: "idle", what: "fight", now: start + 1000 + 2_500 * 40 }, () => 0.1);
+  const away = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 + 2_500 * 40 }, () => 0.1);
   assert.ok((away.world?.haul?.breaths ?? 0) >= 40);
   assert.equal(away.world?.xiuwei, before);
-  const claimed = applyRoam(away, { type: "idle", what: "claim", now: start + 1000 + 2_500 * 40 });
+  const claimed = applyRoam(away, { type: "idle", what: "claim", now: start + 2500 + 2_500 * 40 });
   assert.ok((claimed.world?.xiuwei ?? 0) > before);
 });
 
@@ -232,4 +232,30 @@ test("menu labels never preview exact gains", () => {
   assert.deepEqual(labelsLeakNumbers(labels), []);
   const acts: RoamAct[] = legalActs(save);
   assert.ok(acts.length > 0);
+});
+
+test("farm ticks do not award fights twice inside 2.5 seconds", () => {
+  const start = 1_700_000_000_000;
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.1);
+  save.world!.lastTick = start;
+  for (const elapsed of [0, 0, 1, 1000, 2499]) {
+    const early = applyRoam(save, { type: "idle", what: "fight", now: start + elapsed }, () => 0.5);
+    assert.deepEqual(early, save);
+  }
+  const fought = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.ok(fought.world!.xiuwei > save.world!.xiuwei);
+  const repeated = applyRoam(fought, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.deepEqual(repeated, fought);
+});
+
+test("idle clocks recover from a clock rollback without awarding the missing time", () => {
+  const start = 1_700_000_000_000;
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.1);
+  save.world!.lastTick = start;
+  for (const what of ["fight", "sync"] as const) {
+    const rolledBack = applyRoam(save, { type: "idle", what, now: start - 3_600_000 }, () => 0.5);
+    assert.equal(rolledBack.world!.lastTick, start - 3_600_000);
+    assert.equal(rolledBack.world!.xiuwei, save.world!.xiuwei);
+    assert.equal(rolledBack.world!.haul, null);
+  }
 });
