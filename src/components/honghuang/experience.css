@@ -1,6 +1,9 @@
 /* Choice press, revealed consequences, and per-relic motion. */
 .scene-reading-panel .choice {
   overflow: hidden;
+  color: #f7f3e6;
+  background: #0e2420;
+  border-color: #e3d2a4;
   transition:
     transform 140ms ease,
     background 140ms ease,
@@ -404,6 +407,26 @@
 }
 .music-credits p {
   margin-top: 8px;
+}
+.scene-reading-panel .choice-copy > .text-lg {
+  color: #fff8e8;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+}
+.scene-reading-panel .choice-copy > .text-sm {
+  color: #f0e6cf;
+  font-size: 15px;
+  line-height: 1.55;
+}
+@media (max-width: 860px) {
+  .scene-reading-panel .choice-copy > .text-lg {
+    font-size: 18px;
+  }
+  .scene-reading-panel .choice-copy > .text-sm {
+    color: #f0e6cf;
+    font-size: 15px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .scene-reading-panel .choice,

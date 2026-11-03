@@ -167,6 +167,13 @@ export type RoamState = {
   farmLog: string[];
   /** Cultivation past a full bar, spent on the next breakthrough. */
   spare: number;
+  /** Stage inside the current realm, 1 through 9. The ninth is the realm gate. */
+  layer: number;
+  /** Best protective gear found while farming, 0 through 8. */
+  gear: number;
+  /** Secret-realm entries left today. */
+  riftLeft: number;
+  riftDay: number;
   eraSkew: number;
   eraSeen: string[];
 };
@@ -188,7 +195,7 @@ export type RoamAct =
   | { type: "sect"; what: "join" | "task" | "leave" | "learn" }
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
-  | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm"; now?: number; place?: PlaceId }
+  | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm" | "rift"; now?: number; place?: PlaceId }
   | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };

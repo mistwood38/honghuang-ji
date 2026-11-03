@@ -9,6 +9,8 @@ import {
   CHAINS,
   eraName,
   farmChoices,
+  farmOutlook,
+  layerName,
   GOODS,
   menuActs,
   ROAM_PLACES,
@@ -213,13 +215,16 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
   return (
     <div className="farm-desk">
       <div className="farm-head">
-        <p className="eyebrow">{realm.name}{next ? ` → ${next.name}` : " · 此生已到檐下"}</p>
+        <p className="farm-realm">
+          {realm.name} · {layerName(world.layer)}
+          {next ? ` · 大关 ${next.name}` : ""}
+        </p>
         <div className="farm-bar" aria-label="修为">
           <span style={{ width: `${Math.max(4, Math.min(100, world.xiuwei))}%` }} />
         </div>
         <p className="farm-bar-note">
-          {world.xiuwei >= 100 ? "火候已满，可以突破" : "挂机中，修为自己在涨"}
-          {world.spare >= 1 ? " · 还有存下的火候" : ""}
+          {world.xiuwei >= 100 ? (world.layer >= 9 ? "大关已满，可以破境" : "这一层已满，可以突破") : "挂机中，修为条自己在涨"}
+          {world.gear > 0 ? ` · 护身 ${world.gear} 档` : ""}
         </p>
       </div>
       <div className="roam-tabs">
@@ -247,7 +252,8 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
                 className={place === (world.farm ?? world.place) ? "is-on" : ""}
                 onClick={() => onAct({ type: "idle", what: "farm", place })}
               >
-                {ROAM_PLACES[place].name}
+                <strong>{ROAM_PLACES[place].name}</strong>
+                <small>{farmOutlook(save, place)}</small>
               </button>
             ))}
           </div>
@@ -258,8 +264,17 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
           </ol>
           <div className="roam-actions">
             {world.xiuwei >= 100 ? (
-              <button type="button" onClick={() => onAct({ type: "breakthrough", pill: false })}>突破</button>
-            ) : null}
+              <button type="button" className="farm-break" onClick={() => onAct({ type: "breakthrough", pill: false })}>
+                {world.layer >= 9 ? "破开大境界" : "突破这一层"}
+              </button>
+            ) : (
+              <button type="button" className="farm-break" disabled>
+                火候未满
+              </button>
+            )}
+            <button type="button" onClick={() => onAct({ type: "idle", what: "rift" })}>
+              {world.riftLeft > 0 ? `闯秘境 · 还剩 ${world.riftLeft} 次` : "秘境今日已尽"}
+            </button>
             {(world.bag["pill-break"] ?? 0) > 0 && world.xiuwei >= 100 ? (
               <button type="button" onClick={() => onAct({ type: "breakthrough", pill: true })}>服丹突破</button>
             ) : null}

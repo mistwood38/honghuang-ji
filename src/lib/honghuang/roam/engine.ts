@@ -93,6 +93,10 @@ export function createRoam(): RoamState {
     farm: null,
     farmLog: [],
     spare: 0,
+    layer: 1,
+    gear: 0,
+    riftLeft: 3,
+    riftDay: 1,
     eraSkew: 0,
     eraSeen: ["chaos"],
   };
@@ -138,6 +142,10 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     farm: body.farm && body.farm in ROAM_PLACES ? body.farm : null,
     farmLog: Array.isArray(body.farmLog) ? body.farmLog.filter((line) => typeof line === "string").slice(-12) : [],
     spare: clamp(Number(body.spare) || 0, 0, 300),
+    layer: clamp(Number(body.layer) || 1, 1, 9),
+    gear: clamp(Number(body.gear) || 0, 0, 8),
+    riftLeft: clamp(Number(body.riftLeft ?? 3), 0, 3),
+    riftDay: Math.max(1, Number(body.riftDay) || 1),
   };
 }
 
@@ -237,6 +245,10 @@ function openEvent(world: RoamState, event: RoamEvent, lead: string[] = []) {
 function spend(world: RoamState, days: number) {
   const before = eraOf(world.day + world.eraSkew).id;
   world.day += days;
+  if (world.day > world.riftDay) {
+    world.riftLeft = 3;
+    world.riftDay = world.day;
+  }
   const after = eraOf(world.day + world.eraSkew).id;
   if (before === after) return;
   if (!world.eraSeen.includes(after)) world.eraSeen.push(after);
@@ -379,7 +391,7 @@ function startBattle(world: RoamState, id: string, rng: () => number) {
 function powerOf(save: SaveData, world: RoamState) {
   const art = world.equipped ? ARTS[world.equipped] : undefined;
   const bond = world.beast ? Math.floor(world.beast.bond / 25) : 0;
-  return 6 + realmIndex(save.stats.dao) * 3 + Math.floor(save.stats.kill / 10) + (art?.combat ?? 0) + bond;
+  return 6 + realmIndex(save.stats.dao) * 3 + Math.floor((world.layer - 1) / 2) + world.gear * 2 + Math.floor(save.stats.kill / 10) + (art?.combat ?? 0) + bond;
 }
 
 function finishBattle(save: SaveData, world: RoamState, win: boolean) {
@@ -682,8 +694,31 @@ function breakthrough(save: SaveData, world: RoamState, pill: boolean, rng: () =
   chance -= (save.stats.demon / 100) * 0.15;
   chance = clamp(chance, 0.08, 0.92);
   spend(world, 1);
+  if ((world.layer ?? 1) < 9) {
+    if (rng() < 0.82 + world.wuxing * 0.01) {
+      world.layer += 1;
+      save.stats.dao = clamp(save.stats.dao + 1, 0, CAP.dao);
+      world.xiuwei = Math.min(100, world.spare);
+      world.spare = Math.max(0, world.spare - world.xiuwei);
+      const realm = REALMS[realmIndex(save.stats.dao)] ?? REALMS[0]!;
+      world.report = {
+        title: `${realm.name} · ${LAYER_NAME[world.layer - 1]}`,
+        paragraphs: ["这一层开了。火候重新开始攒，挂机不会停。"],
+        changes: [`升到${LAYER_NAME[world.layer - 1]}`],
+      };
+      return;
+    }
+    world.xiuwei = 72;
+    world.report = {
+      title: "这一层没稳住",
+      paragraphs: ["气息散了一截。挂机继续，过一会儿还能再撞这一层。"],
+      changes: ["火候回落"],
+    };
+    return;
+  }
   if (rng() < chance) {
     save.stats.dao = clamp(Math.max(save.stats.dao, next.min), 0, CAP.dao);
+    world.layer = 1;
     world.xiuwei = Math.min(100, world.spare);
     world.spare = Math.max(0, world.spare - world.xiuwei);
     save.stats.life = clamp(save.stats.life + 8, 0, CAP.life);
@@ -693,6 +728,7 @@ function breakthrough(save: SaveData, world: RoamState, pill: boolean, rng: () =
       paragraphs: [
         next.line,
         usedPill ? "丹在关口上替你扛了一下，然后碎了。碎得干净。" : "没有外物。是你自己的气息把那道缝撑开的。",
+        "大境界打开了。层数从头再数。挂机仍在。",
       ],
       changes: [`境界至${next.name}`, "道躯 +8"],
     };
@@ -1271,6 +1307,10 @@ function idleAct(save: SaveData, world: RoamState, act: Extract<RoamAct, { type:
     fightTick(save, world, now, rng);
     return;
   }
+  if (what === "rift") {
+    openRift(save, world, rng);
+    return;
+  }
   if (what === "sync") {
     accrueIdle(world, now);
     return;
@@ -1327,6 +1367,8 @@ function addXiu(world: RoamState, amount: number) {
   world.spare = clamp(world.spare + (amount - room), 0, 300);
 }
 
+const LAYER_NAME = ["一层", "二层", "三层", "四层", "五层", "六层", "七层", "八层", "九层"] as const;
+
 const FOE: Record<PlaceId, { name: string; need: number }> = {
   chaos: { name: "未散的气团", need: 6 },
   earth: { name: "土精", need: 6 },
@@ -1370,10 +1412,14 @@ function strikeOnce(save: SaveData, world: RoamState, rng: () => number) {
     addXiu(world, 0.12);
     return `${foe.name}把你逼退。这张图还压不住。`;
   }
-  addXiu(world, 0.85 + place.spirit * 0.12);
-  world.lingqi = clamp(world.lingqi + 0.15, 0, 80);
+  addXiu(world, 2.4 + place.spirit * 0.35 + world.gear * 0.15);
+  world.lingqi = clamp(world.lingqi + 0.2, 0, 80);
   const roll = rng();
-  if (roll < 0.42) {
+  if (roll < 0.08 && world.gear < 8) {
+    world.gear += 1;
+    return `斩了${foe.name}。护身之物更好了一档。`;
+  }
+  if (roll < 0.45) {
     world.bag[place.good] = (world.bag[place.good] ?? 0) + 1;
     return `斩了${foe.name}。修为有所积累，${GOODS[place.good]} +1`;
   }
@@ -1392,7 +1438,7 @@ function bankFights(world: RoamState, save: SaveData, fights: number, rng: () =>
   const win = powerOf(save, world) >= foe.need;
   haul.breaths += fights;
   if (win) {
-    haul.xiu += fights * (0.85 + place.spirit * 0.12);
+    haul.xiu += fights * (2.4 + place.spirit * 0.35 + world.gear * 0.15);
     haul.ling += fights * 0.15;
     const goods = Math.floor(fights * 0.42);
     if (goods > 0) haul.goods[place.good] = (haul.goods[place.good] ?? 0) + goods;
@@ -1642,8 +1688,53 @@ export function menuActs(save: SaveData): MenuAct[] {
   return acts;
 }
 
+function openRift(save: SaveData, world: RoamState, rng: () => number) {
+  if (world.riftLeft <= 0) {
+    world.report = { title: "秘境今日已尽", paragraphs: ["一日三次。日子走到明天，次数会回来。"], changes: [] };
+    return;
+  }
+  world.riftLeft -= 1;
+  const placeId = world.farm ?? world.place;
+  const place = ROAM_PLACES[placeId];
+  const foe = FOE[placeId];
+  if (powerOf(save, world) < foe.need) {
+    world.wound = clamp(world.wound + 1, 0, 6);
+    world.report = {
+      title: "秘境把你推出来",
+      paragraphs: [`${foe.name}守在门口。先把外面这张图挂熟，再进来。`],
+      changes: ["伤势加重"],
+    };
+    return;
+  }
+  addXiu(world, 28);
+  world.stones += 4;
+  world.bag[place.good] = (world.bag[place.good] ?? 0) + 3;
+  if (rng() < 0.35 && world.gear < 8) world.gear += 1;
+  world.report = {
+    title: "秘境回来",
+    paragraphs: [`你在${place.name}的秘境里走了一遭，出来时手里是满的。`],
+    changes: ["修为有所积累", "灵石 +4", `${GOODS[place.good]} +3`],
+  };
+  remember(world, "秘境", world.report.paragraphs[0] ?? "");
+}
+
 export function farmChoices(save: SaveData): PlaceId[] {
   return travelOptions(save);
+}
+
+export function farmOutlook(save: SaveData, place: PlaceId) {
+  const world = save.world;
+  if (!world) return "未知";
+  const power = powerOf(save, world);
+  const need = FOE[place].need;
+  if (power >= need + 2) return "能挂";
+  if (power >= need) return "刚好";
+  if (power + 2 >= need) return "勉强";
+  return "会吃亏";
+}
+
+export function layerName(layer: number) {
+  return LAYER_NAME[clamp(layer, 1, 9) - 1] ?? "一层";
 }
 
 export function legalActs(save: SaveData): RoamAct[] {

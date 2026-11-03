@@ -46,10 +46,13 @@
 .roam-origins button,
 .roam-tabs button {
   min-height: 48px;
-  border: 1px solid rgba(201, 166, 107, 0.45);
-  background: rgba(16, 28, 26, 0.72);
-  color: inherit;
+  border: 1px solid #e3d2a4;
+  background: #102824;
+  color: #f6f1e2;
   font: inherit;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
   padding: 0.55rem 0.7rem;
 }
 .roam-tabs {
@@ -84,7 +87,9 @@
   display: block;
   margin-top: 0.25rem;
   line-height: 1.55;
-  opacity: 0.86;
+  color: #f0e6cf;
+  font-size: 15px;
+  opacity: 1;
 }
 .roam-name {
   display: grid;
@@ -139,10 +144,10 @@
   gap: 0.75rem;
 }
 .farm-bar {
-  height: 0.7rem;
-  margin-top: 0.45rem;
-  border: 1px solid rgba(201, 166, 107, 0.45);
-  background: rgba(8, 16, 15, 0.55);
+  height: 14px;
+  margin-top: 0.55rem;
+  border: 1px solid #e3d2a4;
+  background: #081412;
 }
 .farm-bar span {
   display: block;
@@ -151,8 +156,10 @@
 }
 .farm-bar-note,
 .farm-map-label {
-  margin: 0.35rem 0 0;
-  letter-spacing: 0.06em;
+  margin: 0.4rem 0 0;
+  color: #f6f1e2;
+  font-size: 15px;
+  letter-spacing: 0.04em;
 }
 .farm-maps {
   display: flex;
@@ -160,12 +167,52 @@
   overflow-x: auto;
 }
 .farm-maps button {
-  min-height: 40px;
-  border: 1px solid rgba(201, 166, 107, 0.45);
-  background: rgba(16, 28, 26, 0.72);
-  color: inherit;
-  padding: 0.35rem 0.7rem;
+  min-height: 52px;
+  border: 1px solid #e3d2a4;
+  background: #102824;
+  color: #f6f1e2;
+  padding: 0.35rem 0.75rem;
   white-space: nowrap;
+  text-align: left;
+}
+.farm-maps button strong,
+.farm-maps button small {
+  display: block;
+  color: #fff8e8;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+.farm-maps button small {
+  color: #f0e2c4;
+  font-size: 13px;
+  margin-top: 0.15rem;
+}
+.farm-realm {
+  margin: 0;
+  color: #fff8e8;
+  font-family: var(--font-serif, serif);
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+.farm-break {
+  grid-column: 1 / -1;
+  min-height: 52px;
+  background: #3a2a12;
+  color: #fff6dd;
+  border-color: #f0d48a;
+  font-size: 18px;
+}
+.farm-break:disabled {
+  opacity: 1;
+  color: #d9d0bc;
+  background: #1a2420;
+}
+.farm-log li {
+  padding: 0.5rem 0.1rem;
+  border-bottom: 1px solid rgba(227, 210, 164, 0.28);
+  color: #f7f1e4;
+  font-size: 16px;
+  line-height: 1.55;
 }
 .farm-maps button.is-on {
   background: rgba(201, 166, 107, 0.22);
