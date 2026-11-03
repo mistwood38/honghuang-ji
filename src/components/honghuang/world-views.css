@@ -132,28 +132,28 @@
   box-shadow: 0 0 9px var(--color-gold);
 }
 .atlas-marker-zixiao {
-  left: 42%;
-  top: 23%;
+  left: 50%;
+  top: 16%;
 }
 .atlas-marker-kunlun {
-  left: 24%;
-  top: 44%;
+  left: 18%;
+  top: 34%;
 }
 .atlas-marker-east {
-  left: 75%;
-  top: 43%;
+  left: 81%;
+  top: 26%;
 }
 .atlas-marker-buzhou {
-  left: 49%;
-  top: 55%;
+  left: 50%;
+  top: 42%;
 }
 .atlas-marker-bloodsea {
-  left: 25%;
-  top: 76%;
+  left: 22%;
+  top: 70%;
 }
 .atlas-marker-wahuan {
-  left: 76%;
-  top: 73%;
+  left: 73%;
+  top: 64%;
 }
 .atlas-map-legend {
   position: absolute;

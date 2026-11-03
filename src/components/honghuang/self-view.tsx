@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { portraitForOrigin } from "@/lib/honghuang/portrait";
 import { flagLabel } from "@/lib/honghuang/engine";
-import { playChoice, unlockSound } from "@/lib/honghuang/sound";
+import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
 import { ITEMS, ORIGINS, realmOf } from "@/lib/honghuang/world";
 import { PageHeading, SectionHeading } from "./art";
@@ -224,6 +224,8 @@ export function SelfView() {
               if (!state.sound) {
                 unlockSound();
                 playChoice(true);
+              } else {
+                setAmbience(false);
               }
               setSound(!state.sound);
             }}

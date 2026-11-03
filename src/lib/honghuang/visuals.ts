@@ -120,7 +120,7 @@ export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = 
   },
 };
 
-export type WitnessKey = "pangu" | "hongjun" | "witch" | "dijun";
+export type WitnessKey = "pangu" | "hongjun" | "witch" | "dijun" | "yuanshi" | "tongtian";
 export const WITNESS: Record<WitnessKey, { src: string; small: string; name: string; alt: string }> = {
   pangu: {
     src: "/art/figure-pangu.webp",
@@ -145,6 +145,18 @@ export const WITNESS: Record<WitnessKey, { src: string; small: string; name: str
     small: "/art/figure-dijun-small.webp",
     name: "帝俊",
     alt: "羽氅与日轮的帝俊，立在扶桑之前",
+  },
+  yuanshi: {
+    src: "/art/figure-yuanshi.webp",
+    small: "/art/figure-yuanshi-small.webp",
+    name: "元始",
+    alt: "素净玉衣的元始，侧立在昆仑薄雾里，并不看人",
+  },
+  tongtian: {
+    src: "/art/figure-tongtian.webp",
+    small: "/art/figure-tongtian-small.webp",
+    name: "通天",
+    alt: "赤黑衣的通天，一手仍开着门，身后是血海",
   },
 };
 
@@ -181,6 +193,8 @@ const SCENE_WITNESS: Partial<Record<string, WitnessKey>> = {
   witch: "witch",
   yaoting: "dijun",
   "end-yao": "dijun",
+  kunlun: "yuanshi",
+  bloodsea: "tongtian",
 };
 export function artForPlace(place: string) {
   return ART[PLACE_ART[place] ?? "mountain"];

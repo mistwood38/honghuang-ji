@@ -1,6 +1,13 @@
 import type { SceneMood } from "./visuals";
 
 let ctx: AudioContext | null = null;
+let noiseBuffer: AudioBuffer | null = null;
+let bedMood: SceneMood | null = null;
+let bedStop: (() => void) | null = null;
+let wantEnabled = false;
+let wantMood: SceneMood = "mist";
+let listening = false;
+
 function context(): AudioContext | null {
   if (typeof window === "undefined" || !window.AudioContext) return null;
   try {
@@ -10,33 +17,41 @@ function context(): AudioContext | null {
     return null;
   }
 }
+function watchVisibility() {
+  if (listening || typeof document === "undefined") return;
+  listening = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopBed();
+    else if (wantEnabled) setAmbience(true, wantMood);
+  });
+}
 export function unlockSound() {
   const audio = context();
   if (audio?.state === "suspended") void audio.resume().catch(() => undefined);
 }
-/** Small synthesized bronze chimes; always called from a user gesture. No autoplay. */
-export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
-  if (!enabled) return;
-  const audio = context();
-  if (!audio) return;
-  if (audio.state === "suspended") void audio.resume().catch(() => undefined);
+function chime(audio: AudioContext, mood: SceneMood) {
   const now = audio.currentTime;
   const notes =
     mood === "calamity"
       ? [98, 146.83, 207.65]
       : mood === "radiance"
         ? [196, 293.66, 440]
-        : [392, 523.25];
-  const duration = mood === "calamity" || mood === "radiance" ? 1.3 : 0.5;
+        : mood === "tide"
+          ? [174.61, 261.63, 349.23]
+          : mood === "embers"
+            ? [146.83, 220, 329.63]
+            : mood === "still"
+              ? [110, 164.81]
+              : [392, 523.25];
+  const duration = mood === "calamity" || mood === "radiance" ? 1.15 : 0.55;
   notes.forEach((frequency, index) => {
     const osc = audio.createOscillator();
     const gain = audio.createGain();
-    const start = now + index * 0.045;
+    const start = now + index * 0.05;
     osc.type = "sine";
     osc.frequency.setValueAtTime(frequency, start);
-    osc.frequency.exponentialRampToValueAtTime(frequency * 0.995, start + duration);
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.025 / (index + 1), start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.022 / (index + 1), start + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     osc.connect(gain);
     gain.connect(audio.destination);
@@ -47,33 +62,110 @@ export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
     osc.start(start);
     osc.stop(start + duration + 0.05);
   });
-  swell(audio, now, mood);
 }
-
-/** A short synthesized air, not a recorded score. Still gated by the sound toggle and a user gesture. */
-function swell(audio: AudioContext, now: number, mood: SceneMood) {
-  const length = Math.floor(audio.sampleRate * 0.7);
-  const buffer = audio.createBuffer(1, length, audio.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+function stopBed() {
+  bedStop?.();
+  bedStop = null;
+  bedMood = null;
+}
+const BED: Record<SceneMood, { tones: number[]; noise: number; level: number }> = {
+  mist: { tones: [110, 164.81], noise: 500, level: 0.012 },
+  radiance: { tones: [196, 293.66], noise: 900, level: 0.011 },
+  calamity: { tones: [73.42, 110], noise: 220, level: 0.016 },
+  still: { tones: [98, 146.83], noise: 280, level: 0.008 },
+  embers: { tones: [130.81, 196], noise: 360, level: 0.012 },
+  tide: { tones: [146.83, 220], noise: 700, level: 0.011 },
+};
+function startBed(audio: AudioContext, mood: SceneMood) {
+  if (bedMood === mood && bedStop) return;
+  stopBed();
+  if (!noiseBuffer) {
+    noiseBuffer = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+  }
+  const spec = BED[mood];
+  const master = audio.createGain();
+  master.gain.value = 0.0001;
+  master.connect(audio.destination);
+  const nodes: AudioNode[] = [master];
+  spec.tones.forEach((frequency, index) => {
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "sine";
+    osc.frequency.value = frequency;
+    gain.gain.value = index === 0 ? 0.7 : 0.35;
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start();
+    nodes.push(osc, gain);
+  });
   const noise = audio.createBufferSource();
-  noise.buffer = buffer;
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
   const filter = audio.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.value = mood === "calamity" ? 240 : mood === "still" ? 180 : 420;
-  const gain = audio.createGain();
-  const peak = mood === "calamity" ? 0.035 : mood === "still" || mood === "tide" ? 0.018 : 0.01;
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(peak, now + 0.08);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+  filter.frequency.value = spec.noise;
+  const noiseGain = audio.createGain();
+  noiseGain.gain.value = 0.35;
   noise.connect(filter);
-  filter.connect(gain);
-  gain.connect(audio.destination);
-  noise.onended = () => {
-    noise.disconnect();
-    filter.disconnect();
-    gain.disconnect();
+  filter.connect(noiseGain);
+  noiseGain.connect(master);
+  noise.start();
+  nodes.push(noise, filter, noiseGain);
+  master.gain.exponentialRampToValueAtTime(spec.level, audio.currentTime + 0.6);
+  bedMood = mood;
+  bedStop = () => {
+    const now = audio.currentTime;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), now);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+    window.setTimeout(() => {
+      nodes.forEach((node) => {
+        if (node instanceof OscillatorNode || node instanceof AudioBufferSourceNode) {
+          try {
+            node.stop();
+          } catch {
+            /* already stopped */
+          }
+        }
+        node.disconnect();
+      });
+    }, 280);
   };
-  noise.start(now);
-  noise.stop(now + 0.72);
+}
+/** Continuous synthesized air for the current scene. Not a recorded score. No autoplay: it starts only after a gesture has resumed the audio context. */
+export function setAmbience(enabled: boolean, mood: SceneMood = "mist") {
+  wantEnabled = enabled;
+  wantMood = mood;
+  watchVisibility();
+  const audio = context();
+  if (!audio || !enabled || document.hidden) {
+    stopBed();
+    return;
+  }
+  const go = () => {
+    if (!wantEnabled || wantMood !== mood || document.hidden) return;
+    startBed(audio, mood);
+  };
+  if (audio.state === "suspended") {
+    void audio.resume().then(go).catch(() => undefined);
+    return;
+  }
+  go();
+}
+/** Bronze chimes for a choice. Always called from a user gesture. */
+export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
+  if (!enabled) return;
+  const audio = context();
+  if (!audio) return;
+  const go = () => {
+    chime(audio, mood);
+    if (wantEnabled) setAmbience(true, mood);
+  };
+  if (audio.state === "suspended") {
+    void audio.resume().then(go).catch(() => undefined);
+    return;
+  }
+  go();
 }

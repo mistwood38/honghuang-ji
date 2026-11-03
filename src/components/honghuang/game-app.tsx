@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { sceneById } from "@/lib/honghuang/story";
-import { playChoice, unlockSound } from "@/lib/honghuang/sound";
+import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
 import { APP_NAME, NOVEL_NAME, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
 import { ART, artForScene } from "@/lib/honghuang/visuals";
@@ -156,6 +156,8 @@ function SoundButton() {
         if (!sound) {
           unlockSound();
           playChoice(true);
+        } else {
+          setAmbience(false);
         }
         setSound(!sound);
       }}

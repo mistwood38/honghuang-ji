@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fill, meetsCond, visibleChoices } from "@/lib/honghuang/engine";
-import { playChoice, unlockSound } from "@/lib/honghuang/sound";
+import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
 import { artForScene, moodForScene, witnessForScene } from "@/lib/honghuang/visuals";
@@ -21,6 +21,15 @@ export function PlayView() {
   const scene = sceneById(state.sceneId);
   const [draft, setDraft] = useState("");
   const portrait = portraitForOrigin(state.origin);
+
+  useEffect(() => {
+    if (!scene || !sound) {
+      setAmbience(false);
+      return;
+    }
+    setAmbience(sound, moodForScene(scene));
+    return () => setAmbience(false);
+  }, [scene, sound]);
 
   useEffect(() => {
     document.querySelector<HTMLElement>(".scene-caption h1")?.focus({ preventScroll: true });
