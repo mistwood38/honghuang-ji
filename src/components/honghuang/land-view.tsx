@@ -20,6 +20,8 @@ export function LandView() {
   const selected = PLACES.find((place) => place.id === selectedId) ?? PLACES[0]!;
   const visited = new Set(seen.map((id) => sceneById(id)?.place).filter(Boolean));
   const places = PLACES.filter((place) => region === "全部" || place.region === region);
+  const here = currentPlace ? PLACES.find((place) => place.id === currentPlace) : null;
+  const hereOnMap = Boolean(here && MAP_PLACES.includes(here.id));
 
   function selectPlace(id: string, scroll = false) {
     setSelectedId(id);
@@ -77,10 +79,23 @@ export function LandView() {
             );
           })}
           <div className="atlas-map-legend">
-            <span>
-              <i className="atlas-legend-current" />
-              此生所在
-            </span>
+            {started && here && !hereOnMap ? (
+              <button
+                type="button"
+                className="atlas-elsewhere"
+                onClick={() =>
+                  selectPlace(here.id, window.matchMedia("(max-width: 959px)").matches)
+                }
+              >
+                <i className="atlas-legend-current" />
+                你在{here.name}
+              </button>
+            ) : (
+              <span>
+                <i className="atlas-legend-current" />
+                此生所在
+              </span>
+            )}
             <span>
               <i />
               可阅地志

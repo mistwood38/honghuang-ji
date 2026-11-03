@@ -3,12 +3,13 @@ import { fill, meetsCond, visibleChoices } from "@/lib/honghuang/engine";
 import { playChoice, setAmbience, unlockSound } from "@/lib/honghuang/sound";
 import { sceneById } from "@/lib/honghuang/story";
 import { useSave } from "@/lib/honghuang/store";
-import { artForScene, moodForScene, witnessForScene } from "@/lib/honghuang/visuals";
+import { WITNESS, artForScene, moodForScene, witnessForScene } from "@/lib/honghuang/visuals";
 import { Artwork, Atmosphere } from "./art";
 import { portraitForOrigin } from "@/lib/honghuang/portrait";
 import type { StatKey } from "@/lib/honghuang/types";
 import { ORIGINS, STAT_LABEL, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
+import { Modal } from "./modal";
 import { RestartButton } from "./restart-button";
 import { StatList } from "./stats";
 import "./play-navigation.css";
@@ -138,6 +139,7 @@ export function PlayView() {
             </figure>
           ) : null}
         </div>
+        {witness ? <WitnessLook witness={witness} /> : null}
         <div className="scene-paper scene-reading-panel">
           {scene.ending ? (
             <div className="ending-record">
@@ -313,6 +315,35 @@ export function PlayView() {
         </div>
       </aside>
     </section>
+  );
+}
+
+function WitnessLook({ witness }: { witness: (typeof WITNESS)[keyof typeof WITNESS] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="scene-witness-open">
+      <Modal
+        open={open}
+        onOpenChange={setOpen}
+        title={witness.name}
+        titleId="witness-title"
+        description={witness.alt}
+        trigger={
+          <button type="button" className="scene-witness-button">
+            <span>此间有人</span>
+            <span>见{witness.name}</span>
+          </button>
+        }
+      >
+        <img
+          className="witness-sheet"
+          src={witness.src}
+          alt={witness.alt}
+          width={768}
+          height={1152}
+        />
+      </Modal>
+    </div>
   );
 }
 

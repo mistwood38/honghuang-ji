@@ -8,7 +8,8 @@ let wantEnabled = false;
 let wantMood: SceneMood = "mist";
 let listening = false;
 
-function context(): AudioContext | null {
+/** Create a context only after a user gesture. Muted paths must never call this. */
+function createContext(): AudioContext | null {
   if (typeof window === "undefined" || !window.AudioContext) return null;
   try {
     if (!ctx) ctx = new window.AudioContext();
@@ -17,17 +18,43 @@ function context(): AudioContext | null {
     return null;
   }
 }
+function stopBed() {
+  const stop = bedStop;
+  bedStop = null;
+  bedMood = null;
+  stop?.();
+}
+function settle() {
+  const audio = ctx;
+  if (!audio || !wantEnabled || document.hidden || audio.state !== "running") {
+    if (!wantEnabled || document.hidden) stopBed();
+    return;
+  }
+  startBed(audio, wantMood);
+}
 function watchVisibility() {
   if (listening || typeof document === "undefined") return;
   listening = true;
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stopBed();
-    else if (wantEnabled) setAmbience(true, wantMood);
+    if (document.hidden || !wantEnabled) {
+      stopBed();
+      return;
+    }
+    const audio = ctx;
+    if (!audio) return;
+    if (audio.state === "suspended") {
+      void audio.resume().then(settle).catch(() => undefined);
+      return;
+    }
+    settle();
   });
 }
+/** Gesture-only. Does nothing if the context cannot be created. */
 export function unlockSound() {
-  const audio = context();
-  if (audio?.state === "suspended") void audio.resume().catch(() => undefined);
+  const audio = createContext();
+  if (!audio) return;
+  if (audio.state === "suspended") void audio.resume().then(settle).catch(() => undefined);
+  else settle();
 }
 function chime(audio: AudioContext, mood: SceneMood) {
   const now = audio.currentTime;
@@ -62,11 +89,6 @@ function chime(audio: AudioContext, mood: SceneMood) {
     osc.start(start);
     osc.stop(start + duration + 0.05);
   });
-}
-function stopBed() {
-  bedStop?.();
-  bedStop = null;
-  bedMood = null;
 }
 const BED: Record<SceneMood, { tones: number[]; noise: number; level: number }> = {
   mist: { tones: [110, 164.81], noise: 500, level: 0.012 },
@@ -107,61 +129,63 @@ function startBed(audio: AudioContext, mood: SceneMood) {
   filter.type = "lowpass";
   filter.frequency.value = spec.noise;
   const noiseGain = audio.createGain();
-  noiseGain.gain.value = 0.35;
+  noiseGain.gain.value = 0.22;
   noise.connect(filter);
   filter.connect(noiseGain);
   noiseGain.connect(master);
   noise.start();
   nodes.push(noise, filter, noiseGain);
-  master.gain.exponentialRampToValueAtTime(spec.level, audio.currentTime + 0.6);
+  const begun = audio.currentTime;
+  master.gain.exponentialRampToValueAtTime(spec.level, begun + 0.4);
   bedMood = mood;
   bedStop = () => {
     const now = audio.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), now);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-    window.setTimeout(() => {
-      nodes.forEach((node) => {
-        if (node instanceof OscillatorNode || node instanceof AudioBufferSourceNode) {
-          try {
-            node.stop();
-          } catch {
-            /* already stopped */
-          }
+    try {
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(0.0001, now);
+    } catch {
+      /* context already closed */
+    }
+    nodes.forEach((node) => {
+      if (node instanceof OscillatorNode || node instanceof AudioBufferSourceNode) {
+        try {
+          node.stop();
+        } catch {
+          /* already stopped */
         }
+      }
+      try {
         node.disconnect();
-      });
-    }, 280);
+      } catch {
+        /* already disconnected */
+      }
+    });
   };
 }
-/** Continuous synthesized air for the current scene. Not a recorded score. No autoplay: it starts only after a gesture has resumed the audio context. */
+/** Remember the wanted bed. Never constructs an AudioContext; a muted life therefore stays silent. */
 export function setAmbience(enabled: boolean, mood: SceneMood = "mist") {
   wantEnabled = enabled;
   wantMood = mood;
   watchVisibility();
-  const audio = context();
-  if (!audio || !enabled || document.hidden) {
+  if (!enabled || typeof document === "undefined" || document.hidden) {
     stopBed();
     return;
   }
-  const go = () => {
-    if (!wantEnabled || wantMood !== mood || document.hidden) return;
-    startBed(audio, mood);
-  };
-  if (audio.state === "suspended") {
-    void audio.resume().then(go).catch(() => undefined);
-    return;
-  }
-  go();
+  if (!ctx || ctx.state !== "running") return;
+  startBed(ctx, mood);
 }
-/** Bronze chimes for a choice. Always called from a user gesture. */
+/** Bronze chime from a user gesture. Refuses to run, and to create a context, when sound is off. */
 export function playChoice(enabled: boolean, mood: SceneMood = "mist") {
   if (!enabled) return;
-  const audio = context();
+  const audio = createContext();
   if (!audio) return;
   const go = () => {
+    if (audio.state !== "running") return;
     chime(audio, mood);
-    if (wantEnabled) setAmbience(true, mood);
+    if (wantEnabled && !document.hidden) {
+      wantMood = mood;
+      startBed(audio, mood);
+    }
   };
   if (audio.state === "suspended") {
     void audio.resume().then(go).catch(() => undefined);

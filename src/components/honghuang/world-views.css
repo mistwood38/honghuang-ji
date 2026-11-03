@@ -157,16 +157,30 @@
 }
 .atlas-map-legend {
   position: absolute;
-  bottom: 24px;
-  left: 22px;
-  right: 22px;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   color: #ddd9bd;
   font-size: 10px;
   letter-spacing: 0.08em;
-  z-index: 3;
+  z-index: 4;
+}
+.atlas-elsewhere {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  max-width: 70%;
+  padding: 0 10px;
+  border: 1px solid #c7ac7288;
+  background: #091d1df2;
+  color: #efe3bd;
+  font: inherit;
+  letter-spacing: 0.06em;
 }
 .atlas-map-legend > span {
   display: flex;

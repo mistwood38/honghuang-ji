@@ -311,6 +311,46 @@
     display: none;
   }
 }
+.scene-witness-open {
+  display: none;
+}
+.scene-witness-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 18px;
+  border: 0;
+  border-bottom: 1px solid #8d794a55;
+  background: #0c1c1b;
+  color: #e7d7ae;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+.witness-sheet {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin: 16px auto 0;
+}
+.hh-modal-content:has(.witness-sheet) {
+  background: #10201f;
+  color: #e7d7ae;
+  opacity: 1;
+  animation: none;
+}
+.hh-modal-content:has(.witness-sheet) .hh-modal-title,
+.hh-modal-content:has(.witness-sheet) .hh-modal-description,
+.hh-modal-content:has(.witness-sheet) .hh-modal-close {
+  color: #e7d7ae;
+}
+@media (max-width: 860px) {
+  .scene-witness-open {
+    display: block;
+  }
+}
 .scene-chapter .scene-reading-panel {
   background: #10201ff2;
   color: #d4d9c8;
