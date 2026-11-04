@@ -8,6 +8,7 @@ import {
   contentStats,
   labelsLeakNumbers,
   legalActs,
+  MARKETS,
   menuActs,
   visibleChoices,
 } from "./engine.ts";
@@ -257,5 +258,69 @@ test("idle clocks recover from a clock rollback without awarding the missing tim
     assert.equal(rolledBack.world!.lastTick, start - 3_600_000);
     assert.equal(rolledBack.world!.xiuwei, save.world!.xiuwei);
     assert.equal(rolledBack.world!.haul, null);
+  }
+});
+
+test("stopped farming stays stopped through ticks, reload and offline sync", () => {
+  const start = 1_700_000_000_000;
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.5);
+  save.world!.lastTick = start;
+  save = applyRoam(save, { type: "idle", what: "stop", now: start });
+  save = readImportedSave(JSON.stringify(save));
+  const stopped = structuredClone(save);
+  for (const now of [start + 2500, start + 10_000, start + 600_000]) {
+    save = applyRoam(save, { type: "idle", what: "fight", now }, () => 0.5);
+    save = applyRoam(save, { type: "idle", what: "sync", now }, () => 0.5);
+    assert.deepEqual(save, stopped);
+  }
+});
+
+test("farming ticks do not turn seated cultivation into a fight", () => {
+  const start = 1_700_000_000_000;
+  const save = applyRoam(applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }), {
+    type: "idle",
+    what: "sit",
+    now: start,
+  });
+  const ticked = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.deepEqual(ticked, save);
+});
+
+test("manual travel pauses farming and resuming uses the new place", () => {
+  const start = 1_700_000_000_000;
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.5);
+  save.world!.lastTick = start;
+  save = applyRoam(save, { type: "travel", place: "tribes" }, () => 0.5);
+  assert.equal(save.world!.place, "tribes");
+  assert.equal(save.world!.idle, null);
+  const arrived = structuredClone(save);
+  save = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.deepEqual(save, arrived);
+  save = applyRoam(save, { type: "idle", what: "wander", now: start + 5000 }, () => 0.5);
+  assert.equal(save.world!.farm, "tribes");
+  assert.deepEqual(save.world!.idle, { kind: "wander" });
+});
+
+test("market labels disclose the same prices that transactions settle", () => {
+  for (const [place, market] of Object.entries(MARKETS)) {
+    let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" });
+    save.world!.place = place as NonNullable<typeof save.world>["place"];
+    save.world!.stones = 100;
+    for (const offer of market.buy) {
+      const item = menuActs(save).find((item) => item.id === `buy-${offer.id}`)!;
+      assert.ok(item.label.includes(`${offer.cost} 灵石`), item.label);
+      const before = save.world!.stones;
+      save = applyRoam(save, item.act);
+      assert.equal(save.world!.stones, before - offer.cost);
+    }
+    for (const offer of market.sell) {
+      save.world!.bag[offer.id] = 1;
+      const item = menuActs(save).find((item) => item.id === `sell-${offer.id}`)!;
+      assert.ok(item.label.includes(`${offer.pay} 灵石`), item.label);
+      const before = save.world!.stones;
+      save = applyRoam(save, item.act);
+      assert.equal(save.world!.stones, before + offer.pay);
+      assert.equal(save.world!.bag[offer.id] ?? 0, 0);
+    }
   }
 });

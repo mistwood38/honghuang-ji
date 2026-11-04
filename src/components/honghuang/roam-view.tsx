@@ -36,11 +36,14 @@ export function RoamView() {
   const save = useSave();
   const roam = useSave((state) => state.roam);
   const world = save.world;
+  const phase = world?.phase;
+  const retreat = Boolean(world?.retreat);
+  const idleKind = world?.idle?.kind;
   const [sheet, setSheet] = useState<"move" | "make" | "sect" | null>(null);
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
-    if (!world || world.phase !== "free" || world.retreat) return;
+    if (phase !== "free" || retreat || idleKind !== "wander") return;
     const tick = () => {
       if (document.visibilityState === "hidden") return;
       roam({ type: "idle", what: "fight" });
@@ -55,7 +58,7 @@ export function RoamView() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [roam, world?.phase, world?.retreat]);
+  }, [roam, phase, retreat, idleKind]);
 
   useEffect(() => {
     const target = document.getElementById("roam-now");
@@ -105,17 +108,13 @@ export function RoamView() {
 
         {world.phase !== "origin" ? (
           <div className="roam-body" id="roam-now">
-            {world.phase === "free" && !world.retreat ? (
-              <FarmDesk onAct={act} />
-            ) : (
-              <div className="copy roam-prose">
-                <h2>{world.report?.title ?? place.name}</h2>
-                {(world.report?.paragraphs ?? place.intro).map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-            )}
-            {world.report && world.report.changes.length > 0 && world.phase === "free" && world.retreat ? (
+            <div className="copy roam-prose" aria-label={world.phase === "free" ? "行动结果" : undefined}>
+              <h2>{world.report?.title ?? place.name}</h2>
+              {(world.report?.paragraphs ?? place.intro).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+            {world.report && world.report.changes.length > 0 && world.phase === "free" ? (
               <div className="roam-after" aria-label="已经发生的变化">
                 <p>已然</p>
                 <ul>
@@ -125,6 +124,8 @@ export function RoamView() {
                 </ul>
               </div>
             ) : null}
+
+            {world.phase === "free" && !world.retreat ? <FarmDesk onAct={act} /> : null}
 
             {world.phase === "event" && event ? (
               <div className="choice-list">
@@ -205,7 +206,7 @@ export function RoamView() {
 function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
   const save = useSave();
   const world = save.world;
-  const [tab, setTab] = useState<"farm" | "bag" | "beast" | "home">("farm");
+  const [tab, setTab] = useState<"farm" | "travel" | "bag" | "beast" | "home">("farm");
   if (!world) return null;
   const realm = realmOf(save.stats.dao);
   const next = nextRealm(save.stats.dao);
@@ -223,7 +224,7 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
           <span style={{ width: `${Math.max(4, Math.min(100, world.xiuwei))}%` }} />
         </div>
         <p className="farm-bar-note">
-          {world.xiuwei >= 100 ? (world.layer >= 9 ? "大关已满，可以破境" : "这一层已满，可以突破") : "挂机中，修为条自己在涨"}
+          {world.xiuwei >= 100 ? (world.layer >= 9 ? "大关已满，可以破境" : "这一层已满，可以突破") : world.idle ? (world.idle.kind === "sit" ? "打坐挂机中" : "挂机中，修为条自己在涨") : "挂机已停止，可自行修炼或游历"}
           {world.gear > 0 ? ` · 护身 ${world.gear} 档` : ""}
         </p>
       </div>
@@ -231,6 +232,7 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
         {(
           [
             ["farm", "挂机"],
+            ["travel", "游历"],
             ["bag", "储物"],
             ["beast", "灵兽"],
             ["home", "洞府"],
@@ -243,7 +245,7 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
       </div>
       {tab === "farm" ? (
         <>
-          <p className="farm-map-label">当前图 · {ROAM_PLACES[world.farm ?? world.place].name}</p>
+          <p className="farm-map-label">挂机地点 · {ROAM_PLACES[world.farm ?? world.place].name}</p>
           <div className="farm-maps">
             {maps.map((place) => (
               <button
@@ -284,18 +286,20 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
             <button type="button" onClick={() => onAct({ type: "explore" })}>撞一场奇遇</button>
             <button type="button" onClick={() => onAct({ type: "rest" })}>调息</button>
             <button type="button" onClick={() => onAct({ type: "retreat", what: "enter" })}>入定</button>
+            {acts
+              .filter((item) => ["cultivate", "gather", "idle-sit", "idle-stop"].includes(item.id) || (!world.idle && item.id === "idle-wander"))
+              .map((item) => (
+                <button key={item.id} type="button" onClick={() => onAct(item.act)}>{item.label}</button>
+              ))}
           </div>
-          {world.report && world.report.changes.length > 0 ? (
-            <div className="roam-after" aria-label="已经发生的变化">
-              <p>已然</p>
-              <ul>
-                {world.report.changes.map((change) => (
-                  <li key={change}>{change}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </>
+      ) : null}
+      {tab === "travel" ? (
+        <div className="roam-actions">
+          {acts.filter((item) => item.id.startsWith("go-")).map((item) => (
+            <button key={item.id} type="button" onClick={() => onAct(item.act)}>{item.label}</button>
+          ))}
+        </div>
       ) : null}
       {tab === "bag" ? (
         <div className="roam-actions">
