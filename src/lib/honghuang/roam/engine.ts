@@ -574,7 +574,7 @@ export function applyRoam(save: SaveData, act: RoamAct, rng: () => number = Math
     const now = act.now ?? Date.now();
     const world = save.world;
     if (!world?.idle || world.phase !== "free") return save;
-    if (now - (world.lastTick || now) < 20_000) return save;
+    if (now >= world.lastTick && now - (world.lastTick || now) < 20_000) return save;
   }
   const next = cloneSave(save);
   next.world = next.world ?? createRoam();
@@ -777,6 +777,8 @@ function travel(save: SaveData, world: RoamState, place: PlaceId, rng: () => num
     return;
   }
   if (interrupt(world)) return;
+  // A manual journey must not be undone by the previous map's next farm tick.
+  world.idle = null;
   world.place = place;
   if (!world.known.includes(place)) world.known.push(place);
   spend(world, 1);
@@ -1142,7 +1144,7 @@ function trade(save: SaveData, world: RoamState, what: "buy" | "sell", id: GoodI
     world.bag[id] = (world.bag[id] ?? 0) + 1;
     world.report = {
       title: "换取",
-      paragraphs: [`你在${ROAM_PLACES[world.place].name}换到${GOODS[id]}。价钱是当面说的，不是事先写在袖子上的。`],
+      paragraphs: [`你在${ROAM_PLACES[world.place].name}换到${GOODS[id]}。`],
       changes: [`灵石 -${offer.cost}`, `${GOODS[id]} +1`],
     };
     return;
@@ -1339,6 +1341,7 @@ function idleAct(save: SaveData, world: RoamState, act: Extract<RoamAct, { type:
   }
   accrueIdle(world, now);
   world.idle = { kind: what };
+  if (what === "wander") world.farm = world.place;
   world.lastTick = now;
   world.report = {
     title: what === "sit" ? "打坐挂机" : "游历挂机",
@@ -1386,9 +1389,15 @@ const FOE: Record<PlaceId, { name: string; need: number }> = {
 };
 
 function fightTick(save: SaveData, world: RoamState, now: number, rng: () => number) {
-  if (world.retreat || world.phase !== "free") return;
+  if (world.retreat || world.phase !== "free" || world.idle?.kind !== "wander") return;
   if (!world.farm) world.farm = world.place;
   const gap = world.lastTick ? now - world.lastTick : 0;
+  if (world.lastTick && gap < 2_500) {
+    // Mount/visibility callbacks share the same clock as the interval.
+    // Re-anchor a clock rollback without awarding a fight for it.
+    if (gap < 0) world.lastTick = now;
+    return;
+  }
   if (world.lastTick && gap >= 8_000) {
     const fights = Math.min(480, Math.floor(gap / 2_500));
     if (fights > 0) bankFights(world, save, fights, rng);
@@ -1662,12 +1671,12 @@ export function menuActs(save: SaveData): MenuAct[] {
   if (market) {
     for (const offer of market.buy) {
       if (world.stones >= offer.cost) {
-        acts.push({ id: `buy-${offer.id}`, label: `换取${GOODS[offer.id]}`, act: { type: "trade", what: "buy", id: offer.id } });
+        acts.push({ id: `buy-${offer.id}`, label: `换取${GOODS[offer.id]} · ${offer.cost} 灵石`, act: { type: "trade", what: "buy", id: offer.id } });
       }
     }
     for (const offer of market.sell) {
       if ((world.bag[offer.id] ?? 0) > 0) {
-        acts.push({ id: `sell-${offer.id}`, label: `售出${GOODS[offer.id]}`, act: { type: "trade", what: "sell", id: offer.id } });
+        acts.push({ id: `sell-${offer.id}`, label: `售出${GOODS[offer.id]} · ${offer.pay} 灵石`, act: { type: "trade", what: "sell", id: offer.id } });
       }
     }
   }

@@ -1,0 +1,50 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "results": [
+    {
+      "name": "choice-result",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "choice-result",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "choice-result",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 412,
+      "ok": true
+    }
+  ]
+}
