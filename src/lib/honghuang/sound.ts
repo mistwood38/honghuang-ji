@@ -1,6 +1,9 @@
+import { DEFAULT_MIX, normalizeMix, type AudioMix } from "./audio-settings.ts";
 import { MUSIC, type MusicCue } from "./music.ts";
 
-export type UiSound = "tap" | "confirm";
+export type UiSound = "tap" | "confirm" | "tab" | "panel" | "item" | "skill";
+let mix: AudioMix = { ...DEFAULT_MIX };
+let lastUiAt = -Infinity;
 
 let ctx: AudioContext | null = null;
 let wantEnabled = false;
@@ -8,9 +11,22 @@ let wantCue: MusicCue = "title";
 let listening = false;
 let token = 0;
 let pendingCue: MusicCue | null = null;
-let bed: { cue: MusicCue; stop: (at: number) => void } | null = null;
+let bed: { cue: MusicCue; gain: GainNode; stop: (at: number) => void } | null = null;
 let cached: { src: string; buffer: AudioBuffer } | null = null;
 const uiCache: Partial<Record<UiSound, AudioBuffer>> = {};
+const positions = new Map<string, number>();
+const activeUi = new Set<AudioBufferSourceNode>();
+
+function stopUi() {
+  for (const source of activeUi) {
+    try {
+      source.stop();
+    } catch {
+      /* already ended */
+    }
+  }
+  activeUi.clear();
+}
 
 /** Create a context only after a user gesture. Muted paths must never call this. */
 function createContext(): AudioContext | null {
@@ -38,6 +54,7 @@ function stopBed(fade = 0.2) {
 }
 
 function settle() {
+  if (typeof document === "undefined") return;
   const audio = ctx;
   if (!audio || !wantEnabled || document.hidden || audio.state !== "running") {
     if (!wantEnabled || document.hidden) stopBed(0.15);
@@ -52,12 +69,16 @@ function watchVisibility() {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden || !wantEnabled) {
       stopBed(0.12);
+      stopUi();
       return;
     }
     const audio = ctx;
     if (!audio) return;
     if (audio.state === "suspended") {
-      void audio.resume().then(settle).catch(() => undefined);
+      void audio
+        .resume()
+        .then(settle)
+        .catch(() => undefined);
       return;
     }
     settle();
@@ -68,7 +89,11 @@ function watchVisibility() {
 export function unlockSound() {
   const audio = createContext();
   if (!audio) return;
-  if (audio.state === "suspended") void audio.resume().then(settle).catch(() => undefined);
+  if (audio.state === "suspended")
+    void audio
+      .resume()
+      .then(settle)
+      .catch(() => undefined);
   else settle();
 }
 
@@ -82,33 +107,54 @@ async function loadBuffer(audio: AudioContext, src: string) {
 }
 
 async function startBed(audio: AudioContext, cue: MusicCue) {
+  if (!mix.music || mix.musicVolume <= 0) return;
+  if (bed && MUSIC[bed.cue].src === MUSIC[cue].src) {
+    if (pendingCue) {
+      token += 1;
+      pendingCue = null;
+    }
+    bed.cue = cue;
+    bed.gain.gain.setTargetAtTime(MUSIC[cue].level * mix.musicVolume, audio.currentTime, 0.12);
+    return;
+  }
   if (bed?.cue === cue || pendingCue === cue) return;
   const mine = ++token;
   pendingCue = cue;
-  if (bed) {
-    const previous = bed;
-    bed = null;
-    previous.stop(audio.currentTime + 0.9);
-  }
   const spec = MUSIC[cue];
   try {
     const buffer = await loadBuffer(audio, spec.src);
-    if (mine !== token || !wantEnabled || wantCue !== cue || audio.state !== "running") return;
+    if (
+      mine !== token ||
+      !wantEnabled ||
+      !mix.music ||
+      mix.musicVolume <= 0 ||
+      wantCue !== cue ||
+      audio.state !== "running"
+    )
+      return;
     if (typeof document !== "undefined" && document.hidden) return;
+    if (bed) bed.stop(audio.currentTime + 0.9);
     const source = audio.createBufferSource();
     const gain = audio.createGain();
     source.buffer = buffer;
     source.loop = true;
     const now = audio.currentTime;
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(spec.level, now + 1.1);
+    gain.gain.exponentialRampToValueAtTime(spec.level * mix.musicVolume, now + 1.1);
     source.connect(gain);
     gain.connect(audio.destination);
-    source.start();
+    const offset = (positions.get(spec.src) ?? 0) % buffer.duration;
+    source.start(0, offset);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
     pendingCue = null;
     bed = {
       cue,
+      gain,
       stop: (at) => {
+        positions.set(spec.src, (offset + audio.currentTime - now) % buffer.duration);
         const when = Math.max(at, audio.currentTime);
         try {
           gain.gain.cancelScheduledValues(audio.currentTime);
@@ -133,6 +179,7 @@ export function setAmbience(enabled: boolean, cue: MusicCue = "mist") {
   watchVisibility();
   if (!enabled || typeof document === "undefined" || document.hidden) {
     stopBed(enabled ? 0.15 : 0.25);
+    stopUi();
     return;
   }
   if (!ctx || ctx.state !== "running") return;
@@ -140,21 +187,42 @@ export function setAmbience(enabled: boolean, cue: MusicCue = "mist") {
 }
 
 const UI_SRC: Record<UiSound, string> = {
-  tap: "/audio/ui-tap.ogg",
-  confirm: "/audio/ui-confirm.ogg",
+  tap: "/audio/ui-soft-tap.ogg",
+  confirm: "/audio/ui-soft-confirm.ogg",
+  tab: "/audio/ui-soft-tab.ogg",
+  panel: "/audio/ui-soft-panel.ogg",
+  item: "/audio/ui-soft-item.ogg",
+  skill: "/audio/ui-soft-skill.ogg",
 };
 
 /** Short interface sound. Call only from a gesture, and only when sound is on. */
+export function setAudioMix(value: AudioMix) {
+  mix = normalizeMix(value);
+  if (!mix.effects || mix.effectsVolume === 0) stopUi();
+  if (!mix.music || mix.musicVolume === 0) {
+    stopBed(0.2);
+    return;
+  }
+  if (bed && ctx)
+    bed.gain.gain.setTargetAtTime(MUSIC[bed.cue].level * mix.musicVolume, ctx.currentTime, 0.12);
+  else settle();
+}
+
 export function playUi(kind: UiSound) {
+  if (!mix.effects || mix.effectsVolume <= 0) return;
   const audio = createContext();
   if (!audio) return;
   const go = () => {
-    if (audio.state !== "running") return;
+    if (audio.state !== "running" || audio.currentTime - lastUiAt < 0.07) return;
+    lastUiAt = audio.currentTime;
     void playBuffer(audio, kind);
     if (wantEnabled && !document.hidden) void startBed(audio, wantCue);
   };
   if (audio.state === "suspended") {
-    void audio.resume().then(go).catch(() => undefined);
+    void audio
+      .resume()
+      .then(go)
+      .catch(() => undefined);
     return;
   }
   go();
@@ -169,12 +237,19 @@ async function playBuffer(audio: AudioContext, kind: UiSound) {
       buffer = await audio.decodeAudioData(await response.arrayBuffer());
       uiCache[kind] = buffer;
     }
+    if (!wantEnabled || !mix.effects || document.hidden) return;
     const source = audio.createBufferSource();
     const gain = audio.createGain();
     source.buffer = buffer;
-    gain.gain.value = kind === "confirm" ? 0.55 : 0.38;
+    gain.gain.value = mix.effectsVolume;
     source.connect(gain);
     gain.connect(audio.destination);
+    activeUi.add(source);
+    source.onended = () => {
+      activeUi.delete(source);
+      source.disconnect();
+      gain.disconnect();
+    };
     source.start();
   } catch {
     /* missing asset or closed context */
@@ -184,13 +259,17 @@ async function playBuffer(audio: AudioContext, kind: UiSound) {
 /** Stop the bed without forgetting that the player still wants sound, and without creating a context. */
 export function pauseAmbience() {
   stopBed(0.12);
+  stopUi();
 }
 
 /** Continue only if a gesture already created the context and sound is still wanted. */
 export function resumeAmbience() {
   if (!wantEnabled || !ctx || typeof document === "undefined" || document.hidden) return;
   if (ctx.state === "suspended") {
-    void ctx.resume().then(settle).catch(() => undefined);
+    void ctx
+      .resume()
+      .then(settle)
+      .catch(() => undefined);
     return;
   }
   settle();

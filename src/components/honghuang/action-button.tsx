@@ -55,6 +55,7 @@ export function ActionButton({
     <button
       {...props}
       type="button"
+      data-ui-sound={action?.type === "combat" ? "skill" : action?.type === "use" || action?.type === "alchemy" ? "item" : undefined}
       aria-label={props["aria-label"] ?? label}
       disabled={disabled || Boolean(pending)}
       aria-busy={selected || undefined}

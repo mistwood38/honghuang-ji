@@ -248,9 +248,7 @@ export function SelfView() {
       <details className="music-credits">
         <summary>乐声来处</summary>
         <p>
-          各界面是不同的长曲，不是同一段钟鸣。古琴为 Charlie Huang
-          的录音（CC BY 2.5 / CC BY-SA）。劫难场面用 MintoDog 的管弦曲 Hope（CC0，约七十秒循环，不是中国古乐）。按钮另有短促的击木与拨弦。全文见项目内
-          public/audio/CREDITS.txt。
+          现用六首原创器乐配乐：开天行、逐云、青岚入定、山海无涯、踏劫、墨间月。笛、拨弦、弦乐与轻鼓按场景变化，按钮使用柔和短音。编曲与渲染来源见游戏资源中的音乐说明；右上角“调音”可分别调整音乐与音效。
         </p>
       </details>
     </section>

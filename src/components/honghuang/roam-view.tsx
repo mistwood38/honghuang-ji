@@ -178,7 +178,7 @@ export function RoamView() {
                   <ActionButton label="法" hint="耗 4 灵气" action={{ type: "combat", move: "spell" }} onClick={() => act({ type: "combat", move: "spell" })} />
                   <ActionButton label="守" hint="卸下还击" action={{ type: "combat", move: "guard" }} onClick={() => act({ type: "combat", move: "guard" })} />
                   <ActionButton label="脱身" hint="尝试离开" action={{ type: "combat", move: "flee" }} onClick={() => act({ type: "combat", move: "flee" })} />
-                  {technique ? <ActionButton label={`${technique.name} · ${technique.cost} 灵气`} surface="plaque" className="technique-action" disabled={world.lingqi < technique.cost} onClick={() => act({ type: "combat", move: "technique" })} /> : null}
+                  {technique ? <ActionButton label={`${technique.name} · ${technique.cost} 灵气`} action={{ type: "combat", move: "technique" }} surface="plaque" className="technique-action" disabled={world.lingqi < technique.cost} onClick={() => act({ type: "combat", move: "technique" })} /> : null}
                 </div>
                 {technique ? <p className="roam-risk">{technique.detail}{world.lingqi < technique.cost ? " 当前灵气不足。" : ""}</p> : null}
               </div>

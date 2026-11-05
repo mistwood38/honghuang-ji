@@ -1,0 +1,42 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "洪荒纪",
+      "hasCanvas": false,
+      "bodyTextLen": 45,
+      "bodyTextHash": "e4fa096929ddb79d113a853a58f92d57ba388e41c491c502bbd9b079ec10f265",
+      "bodyTextPrefix": "天地将启 · 此生待续 洪荒纪 一念起，山海生。 正在展开你的山海 混沌本纪 · 洪荒神话",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/audio-renewal/smoke-production.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "洪荒纪",
+      "hasCanvas": false,
+      "bodyTextLen": 224,
+      "bodyTextHash": "cc1871653ea286813f3ad1c8fcfc178581ab9a2041086a5bd347c8ef11469452",
+      "bodyTextPrefix": "玄 始 道 生 东方神话 · 文字叙事 乐声开 调音 混 沌 初 醒 · 万 象 未 名 洪荒纪 天地 初开 混沌本纪 ◇ 斧声",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/audio-renewal/smoke-production-mobile.png"
+    }
+  },
+  "brandWarnings": [
+    "BRAND NOTE: no custom public/og.jpg — the platform will serve the og.grok.me placeholder. Custom cards are the default for games of every kind (DOM board/word games included), whimsical apps, creative tools, and brand-forward pages — only plain utilities (converters, CRUD trackers, admin dashboards) keep the placeholder. If this app is not a plain utility, finish the brand-asset pass per /workspace/.grok/skills/og/SKILL.md."
+  ],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/audio-renewal/smoke-production.json",
+  "divergesFromBaseline": true,
+  "baselineReasons": [
+    "desktop: body text collapsed (248 -> 45 chars)"
+  ]
+}
