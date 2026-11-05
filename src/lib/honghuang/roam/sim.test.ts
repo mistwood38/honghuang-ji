@@ -8,10 +8,12 @@ import {
   contentStats,
   labelsLeakNumbers,
   legalActs,
+  MARKETS,
   menuActs,
   visibleChoices,
 } from "./engine.ts";
 import type { RoamAct } from "./state.ts";
+import { TECHNIQUES } from "./techniques.ts";
 
 function rngFrom(seed: number) {
   let state = seed >>> 0;
@@ -196,14 +198,14 @@ test("farming a map fights by itself and banks the time you were away", () => {
   let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, rngFrom(8));
   assert.equal(save.world?.farm, "earth");
   const start = save.world!.lastTick;
-  save = applyRoam(save, { type: "idle", what: "fight", now: start + 1000 }, () => 0.1);
+  save = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.1);
   assert.ok((save.world?.farmLog.length ?? 0) >= 2);
   assert.ok((save.world?.xiuwei ?? 0) > 0);
   const before = save.world!.xiuwei;
-  const away = applyRoam(save, { type: "idle", what: "fight", now: start + 1000 + 2_500 * 40 }, () => 0.1);
+  const away = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 + 2_500 * 40 }, () => 0.1);
   assert.ok((away.world?.haul?.breaths ?? 0) >= 40);
   assert.equal(away.world?.xiuwei, before);
-  const claimed = applyRoam(away, { type: "idle", what: "claim", now: start + 1000 + 2_500 * 40 });
+  const claimed = applyRoam(away, { type: "idle", what: "claim", now: start + 2500 + 2_500 * 40 });
   assert.ok((claimed.world?.xiuwei ?? 0) > before);
 });
 
@@ -232,4 +234,176 @@ test("menu labels never preview exact gains", () => {
   assert.deepEqual(labelsLeakNumbers(labels), []);
   const acts: RoamAct[] = legalActs(save);
   assert.ok(acts.length > 0);
+});
+
+test("farm ticks do not award fights twice inside 2.5 seconds", () => {
+  const start = 1_700_000_000_000;
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.1);
+  save.world!.lastTick = start;
+  for (const elapsed of [0, 0, 1, 1000, 2499]) {
+    const early = applyRoam(save, { type: "idle", what: "fight", now: start + elapsed }, () => 0.5);
+    assert.deepEqual(early, save);
+  }
+  const fought = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.ok(fought.world!.xiuwei > save.world!.xiuwei);
+  const repeated = applyRoam(fought, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.deepEqual(repeated, fought);
+});
+
+test("idle clocks recover from a clock rollback without awarding the missing time", () => {
+  const start = 1_700_000_000_000;
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.1);
+  save.world!.lastTick = start;
+  for (const what of ["fight", "sync"] as const) {
+    const rolledBack = applyRoam(save, { type: "idle", what, now: start - 3_600_000 }, () => 0.5);
+    assert.equal(rolledBack.world!.lastTick, start - 3_600_000);
+    assert.equal(rolledBack.world!.xiuwei, save.world!.xiuwei);
+    assert.equal(rolledBack.world!.haul, null);
+  }
+});
+
+test("stopped farming stays stopped through ticks, reload and offline sync", () => {
+  const start = 1_700_000_000_000;
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.5);
+  save.world!.lastTick = start;
+  save = applyRoam(save, { type: "idle", what: "stop", now: start });
+  save = readImportedSave(JSON.stringify(save));
+  const stopped = structuredClone(save);
+  for (const now of [start + 2500, start + 10_000, start + 600_000]) {
+    save = applyRoam(save, { type: "idle", what: "fight", now }, () => 0.5);
+    save = applyRoam(save, { type: "idle", what: "sync", now }, () => 0.5);
+    assert.deepEqual(save, stopped);
+  }
+});
+
+test("farming ticks do not turn seated cultivation into a fight", () => {
+  const start = 1_700_000_000_000;
+  const save = applyRoam(applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }), {
+    type: "idle",
+    what: "sit",
+    now: start,
+  });
+  const ticked = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.deepEqual(ticked, save);
+});
+
+test("manual travel pauses farming and resuming uses the new place", () => {
+  const start = 1_700_000_000_000;
+  let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.5);
+  save.world!.lastTick = start;
+  save = applyRoam(save, { type: "travel", place: "tribes" }, () => 0.5);
+  assert.equal(save.world!.place, "tribes");
+  assert.equal(save.world!.idle, null);
+  const arrived = structuredClone(save);
+  save = applyRoam(save, { type: "idle", what: "fight", now: start + 2500 }, () => 0.5);
+  assert.deepEqual(save, arrived);
+  save = applyRoam(save, { type: "idle", what: "wander", now: start + 5000 }, () => 0.5);
+  assert.equal(save.world!.farm, "tribes");
+  assert.deepEqual(save.world!.idle, { kind: "wander" });
+});
+
+test("market labels disclose the same prices that transactions settle", () => {
+  for (const [place, market] of Object.entries(MARKETS)) {
+    let save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" });
+    save.world!.place = place as NonNullable<typeof save.world>["place"];
+    save.world!.stones = 100;
+    for (const offer of market.buy) {
+      const item = menuActs(save).find((item) => item.id === `buy-${offer.id}`)!;
+      assert.ok(item.label.includes(`${offer.cost} 灵石`), item.label);
+      const before = save.world!.stones;
+      save = applyRoam(save, item.act);
+      assert.equal(save.world!.stones, before - offer.cost);
+    }
+    for (const offer of market.sell) {
+      save.world!.bag[offer.id] = 1;
+      const item = menuActs(save).find((item) => item.id === `sell-${offer.id}`)!;
+      assert.ok(item.label.includes(`${offer.pay} 灵石`), item.label);
+      const before = save.world!.stones;
+      save = applyRoam(save, item.act);
+      assert.equal(save.world!.stones, before + offer.pay);
+      assert.equal(save.world!.bag[offer.id] ?? 0, 0);
+    }
+  }
+});
+
+function cultivationSave() {
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.5);
+  save.world!.idle = null;
+  save.world!.arts = ["qingjing", "bone", "form", "yuxu"];
+  return save;
+}
+
+function practiceBattle(id: string) {
+  const save = cultivationSave();
+  save.world!.equipped = id;
+  save.world!.phase = "battle";
+  save.world!.battle = { id: "stone", name: "守石者", hp: 100, max: 100, atk: 10, def: 0, guard: 0, round: 1, log: [], win: [], lose: [], winText: ["胜"], loseText: ["退"] };
+  save.stats.life = 50;
+  return save;
+}
+
+test("learned main arts can be switched, retained on import, and change cultivation", () => {
+  const save = cultivationSave();
+  const changed = applyRoam(save, { type: "equip-art", artId: "bone" });
+  assert.equal(changed.world!.equipped, "bone");
+  assert.deepEqual(changed.world!.arts, save.world!.arts);
+  assert.equal(readImportedSave(JSON.stringify(changed)).world!.equipped, "bone");
+  const quiet = applyRoam(save, { type: "cultivate" }, () => 0.5);
+  const bone = applyRoam(changed, { type: "cultivate" }, () => 0.5);
+  assert.ok(quiet.world!.xiuwei > bone.world!.xiuwei);
+  const quietBattle = applyRoam(practiceBattle("qingjing"), { type: "combat", move: "strike" }, () => 0.5);
+  const boneBattle = applyRoam(practiceBattle("bone"), { type: "combat", move: "strike" }, () => 0.5);
+  assert.ok(boneBattle.world!.battle!.hp < quietBattle.world!.battle!.hp);
+});
+
+test("unlearned arts and mid-battle or seclusion switches are rejected", () => {
+  const save = cultivationSave();
+  for (const artId of ["zhuxian", "constructor", "absent"]) assert.deepEqual(applyRoam(save, { type: "equip-art", artId }), save);
+  const battle = practiceBattle("qingjing");
+  assert.deepEqual(applyRoam(battle, { type: "equip-art", artId: "bone" }), battle);
+  save.world!.retreat = { watch: 1 };
+  assert.deepEqual(applyRoam(save, { type: "equip-art", artId: "bone" }), save);
+});
+
+test("healing, guarding and binding techniques have distinct combat consequences", () => {
+  const normal = applyRoam(practiceBattle("qingjing"), { type: "combat", move: "strike" }, () => 0.5);
+  const healed = applyRoam(practiceBattle("qingjing"), { type: "combat", move: "technique" });
+  assert.ok(healed.stats.life > normal.stats.life);
+  assert.equal(healed.world!.battle!.hp, 100);
+  const guarded = applyRoam(practiceBattle("yuxu"), { type: "combat", move: "technique" });
+  assert.equal(guarded.stats.life, 49);
+  assert.ok(guarded.world!.battle!.hp < 100);
+  assert.equal(guarded.world!.battle!.guard, 0);
+  const bound = applyRoam(practiceBattle("form"), { type: "combat", move: "technique" });
+  assert.equal(bound.stats.life, 50);
+  assert.equal(bound.world!.battle!.round, 2);
+  assert.equal(bound.world!.lingqi, practiceBattle("form").world!.lingqi - TECHNIQUES.form!.cost);
+});
+
+test("techniques cannot spend missing spirit or act after a battle ends", () => {
+  const save = practiceBattle("form");
+  save.world!.lingqi = TECHNIQUES.form!.cost - 1;
+  assert.deepEqual(applyRoam(save, { type: "combat", move: "technique" }), save);
+  const finished = cultivationSave();
+  assert.deepEqual(applyRoam(finished, { type: "combat", move: "technique" }), finished);
+});
+
+test("a sect transmission can be learned, equipped and saved without losing history", () => {
+  let save = cultivationSave();
+  save.world!.arts = ["qingjing"];
+  save.world!.place = "kunlun";
+  save = applyRoam(save, { type: "sect", what: "join" });
+  for (let i = 0; i < 4; i++) save = applyRoam(save, { type: "sect", what: "task" }, () => 0.5);
+  assert.ok(save.world!.contrib >= 8);
+  save = applyRoam(save, { type: "sect", what: "learn" });
+  assert.ok(save.world!.arts.includes("yuxu"));
+  save = applyRoam(save, { type: "equip-art", artId: "yuxu" });
+  const restored = readImportedSave(JSON.stringify(save));
+  assert.equal(restored.world!.equipped, "yuxu");
+  assert.deepEqual(restored.items, save.items);
+  assert.deepEqual(restored.flags, save.flags);
+  assert.deepEqual(restored.world!.quests, save.world!.quests);
+  const forged = structuredClone(save);
+  forged.world!.equipped = "zhuxian";
+  assert.equal(readImportedSave(JSON.stringify(forged)).world!.equipped, "qingjing");
 });

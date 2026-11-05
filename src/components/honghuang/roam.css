@@ -7,14 +7,14 @@
   min-width: 0;
 }
 .roam-hero {
-  min-height: 11.5rem;
+  min-height: clamp(13rem, 29vw, 22rem);
 }
 .roam-realm {
   margin: 0.35rem 0 0;
   letter-spacing: 0.08em;
 }
 .roam-body {
-  padding: 1rem 0.9rem 1.2rem;
+  padding: clamp(1.1rem, 3vw, 2rem);
 }
 .roam-prose h2,
 .roam-body h2 {
@@ -46,12 +46,12 @@
 .roam-origins button,
 .roam-tabs button {
   min-height: 48px;
-  border: 1px solid #e3d2a4;
-  background: #102824;
+  border: 1px solid rgba(187, 162, 118, 0.36);
+  background: #102521;
   color: #f6f1e2;
   font: inherit;
-  font-size: 17px;
-  font-weight: 650;
+  font-size: 16px;
+  font-weight: 500;
   letter-spacing: 0.04em;
   padding: 0.55rem 0.7rem;
 }
@@ -142,11 +142,16 @@
 .farm-desk {
   display: grid;
   gap: 0.75rem;
+  margin-top: 1rem;
+}
+.farm-desk > .roam-tabs button {
+  min-width: 0;
+  padding-inline: 0.4rem;
 }
 .farm-bar {
   height: 14px;
   margin-top: 0.55rem;
-  border: 1px solid #e3d2a4;
+  border: 1px solid rgba(187, 162, 118, 0.36);
   background: #081412;
 }
 .farm-bar span {
@@ -168,8 +173,8 @@
 }
 .farm-maps button {
   min-height: 52px;
-  border: 1px solid #e3d2a4;
-  background: #102824;
+  border: 1px solid rgba(187, 162, 118, 0.36);
+  background: #102521;
   color: #f6f1e2;
   padding: 0.35rem 0.75rem;
   white-space: nowrap;
@@ -230,3 +235,83 @@
   padding: 0.45rem 0.15rem;
   border-bottom: 1px solid rgba(201, 166, 107, 0.18);
 }
+
+/* Cultivation folios: calm ink surfaces, local paintings, readable mobile controls. */
+.roam-stage { border: 1px solid rgba(187, 162, 118, .18); background: #0b1a19; }
+.roam-prose { padding-bottom: .5rem; }
+.roam-prose .roam-section-label { color: #bba276; font-size: .7rem; letter-spacing: .24em; margin: 0 0 .7rem; }
+.roam-prose > p:not(.roam-section-label) { color: #e5decc; line-height: 1.95; }
+.roam-after { border-left: 2px solid #bba276; border-top: 0; border-right: 0; border-bottom: 0; background: #11231f; }
+.roam-after ul { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; padding: 0; list-style: none; color: #c9d9bf; font-size: .9rem; }
+.roam-actions button, .art-scroll button, .library-study button { transition: border-color .18s ease, background-color .18s ease, transform .18s ease; }
+.roam-actions button:hover:not(:disabled), .art-scroll button:hover:not(:disabled), .library-study button:hover { border-color: #bba276; background-color: #1c332b; }
+.roam-actions button:active:not(:disabled), .travel-card:active { transform: translateY(1px); }
+.roam-page button:focus-visible, .farm-idle-panel summary:focus-visible { outline: 2px solid #d2b57e; outline-offset: 3px; }
+.roam-page button:disabled { cursor: default; opacity: .65; }
+.farm-head { padding: 1rem; border: 1px solid rgba(187, 162, 118, .2); background: #10211e; }
+.farm-realm { font-size: 1.15rem; }
+.farm-bar { height: 5px; border: 0; margin: .7rem 0; }
+.farm-bar span { background: #bca478; }
+.farm-bar-note { font-size: .78rem; color: #b9c5b8; line-height: 1.6; }
+.farm-desk > .roam-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-bottom: 1px solid #6b6149; overflow: visible; margin: .4rem 0; }
+.farm-desk > .roam-tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; min-height: 46px; color: #aab9ac; font-weight: 500; letter-spacing: .14em; }
+.farm-desk > .roam-tabs button.is-on { border-bottom-color: #cfb680; color: #eee0c0; background: rgba(187, 162, 118, .08); }
+.farm-idle-panel { border-top: 1px solid rgba(187, 162, 118, .22); padding-top: .5rem; margin-top: .4rem; }
+.farm-idle-panel summary { padding: .8rem 0; cursor: pointer; color: #d3c5a6; min-height: 48px; font-family: var(--font-serif); }
+.farm-idle-panel summary span { float: right; font: .75rem/1.6 var(--font-sans, sans-serif); color: #a5b7a8; padding-top: .2rem; }
+.farm-idle-panel .farm-maps { margin: .7rem 0; }
+.farm-log { max-height: 9rem; }
+.farm-log li { font-size: .85rem; color: #b3bfae; }
+.farm-break { background: #3a3020; border-color: #867047; }
+.roam-side { background: #0c1d1a; border: 1px solid rgba(187, 162, 118, .16); }
+.roam-side ul { list-style: none; padding: 0; display: grid; gap: .55rem; color: #cbd4c0; font-size: .9rem; }
+.roam-quests { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid rgba(187, 162, 118, .2); }
+.cultivation-hero { position: relative; isolation: isolate; overflow: hidden; min-height: 13rem; }
+.cultivation-hero picture { display: block; }
+.cultivation-hero img { display: block; width: 100%; height: clamp(13rem, 27vw, 22rem); object-fit: cover; }
+.cultivation-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 20, 22, .5), transparent 75%), linear-gradient(0deg, rgba(5, 20, 22, .8), transparent 65%); pointer-events: none; }
+.cultivation-hero > div { position: absolute; z-index: 1; left: 1.1rem; bottom: 1rem; max-width: 75%; }
+.cultivation-hero h2 { color: #f0e5ca; font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: .16em; }
+.cultivation-hero p { margin: .3rem 0; font-size: .8rem; color: #d7dfd1; }
+.library-guidance, .travel-heading > p:last-child { color: #acbdae; font-size: .85rem; line-height: 1.8; margin: 1rem 0 1.3rem; }
+.art-scrolls { display: grid; gap: 1.2rem; }
+.art-scroll { border: 1px solid #344b40; background: #10221e; overflow: hidden; }
+.art-scroll.is-equipped { border-color: #a78a53; box-shadow: inset 0 0 0 1px rgba(187, 162, 118, .16); }
+.art-scroll-cover { height: 9.5rem; position: relative; overflow: hidden; background: #081819; }
+.art-scroll-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, #10221e, transparent 100%); }
+.art-scroll-cover img { width: 100%; height: 100%; object-fit: cover; opacity: .8; }
+.art-scroll-cover h3 { position: absolute; bottom: .6rem; left: 1rem; z-index: 1; margin: 0; color: #eee4cd; font: 1.6rem var(--font-serif); letter-spacing: .13em; }
+.art-scroll-cover > span { position: absolute; top: .8rem; right: .8rem; z-index: 1; background: #713f30; color: #f1e1bb; padding: .4rem .35rem; writing-mode: vertical-rl; font: .75rem var(--font-serif); letter-spacing: .22em; }
+.art-scroll-copy { padding: 0 1rem 1rem; }
+.art-scroll-copy > p { color: #b8c4b2; font-size: .85rem; line-height: 1.8; min-height: 3rem; }
+.art-measures { display: grid; grid-template-columns: 1fr 1fr; border-block: 1px solid #34473a; padding: .8rem 0; gap: .75rem; }
+.art-measures > div { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; }
+.art-measures dt { color: #b2c0ae; font-size: .8rem; }
+.art-measures dd { color: #d7bb80; font: 1.2rem var(--font-serif); margin: 0; }
+.art-technique > p:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem; color: #e1d3af; font-size: .9rem; }
+.art-technique span { color: #a8c1ae; font-size: .75rem; }
+.art-technique > p:last-child { min-height: 3rem; font-size: .8rem; line-height: 1.8; color: #b7c7b9; }
+.art-scroll button, .library-study button { width: 100%; min-height: 46px; border: 1px solid #89784f; color: #e9dbb7; background: #152d25; padding: .7rem; font-family: var(--font-serif); letter-spacing: .1em; }
+.art-scroll button[aria-pressed="true"] { background: #34311f; opacity: 1; color: #cfbb87; }
+.library-study { margin-top: 1.5rem; border-top: 1px solid #34473a; padding-top: .8rem; }
+.library-study > p { font-size: .85rem; line-height: 1.8; color: #b4c3b1; }
+.travel-heading { padding: .5rem 0; }
+.travel-heading h2 { color: #e7d9b7; }
+.travel-cards { display: grid; gap: 1rem; }
+.travel-card { position: relative; min-width: 0; min-height: 16rem; overflow: hidden; text-align: left; border: 1px solid #455243; padding: 0; background: #112721; color: #ecdfc2; }
+.travel-card > img { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: cover; }
+.travel-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(7, 23, 20, .98), rgba(7, 23, 20, .28) 80%); }
+.travel-card-copy { position: relative; z-index: 1; display: grid; gap: .5rem; padding: 4.5rem 1rem 1rem; }
+.travel-card-copy > strong { font: 1.7rem var(--font-serif); letter-spacing: .12em; }
+.travel-card-copy > span { font-size: .8rem; line-height: 1.8; color: #ccd4c3; }
+.travel-card-copy > .travel-danger { color: #ddc89b; font-size: .7rem; letter-spacing: .15em; }
+.travel-card-copy > .travel-go { color: #e0c795; margin-top: .5rem; }
+.travel-card:hover { border-color: #bca478; }
+.battle-vitals { font-size: .9rem; color: #cdd6c4; }
+.technique-action { grid-column: 1 / -1; border-color: #a98b50 !important; }
+@media (min-width: 600px) {
+  .art-scrolls, .travel-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .farm-desk > .roam-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) { .roam-side { position: sticky; top: 8rem; } }
+@media (prefers-reduced-motion: reduce) { .roam-page button { transition: none; transform: none !important; } }
