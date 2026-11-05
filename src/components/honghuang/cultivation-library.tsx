@@ -3,6 +3,8 @@ import { ARTS, SECTS } from "@/lib/honghuang/roam/catalog";
 import { TECHNIQUES } from "@/lib/honghuang/roam/techniques";
 import type { RoamAct } from "@/lib/honghuang/roam/state";
 
+import { ActionButton } from "./action-button";
+
 const COVERS: Record<string, string> = {
   qingjing: "kunlun",
   bone: "buzhou",
@@ -87,15 +89,14 @@ export function CultivationLibrary({
                     <p>{technique.detail}</p>
                   </div>
                 ) : null}
-                <button
-                  type="button"
+                <ActionButton
+                  label={selected ? "此法正在运转" : "定为主修"}
+                  emblem="scroll"
                   aria-label={`主修${art.name}`}
                   aria-pressed={selected}
                   disabled={selected}
                   onClick={() => onAct({ type: "equip-art", artId: id })}
-                >
-                  {selected ? "此法正在运转" : "定为主修"}
-                </button>
+                />
               </div>
             </article>
           );

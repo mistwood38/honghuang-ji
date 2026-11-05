@@ -5,11 +5,14 @@ import { readImportedSave } from "../store.ts";
 import { EVENTS } from "./events.ts";
 import {
   applyRoam,
+  automaticMove,
   contentStats,
+  farmBattle,
   labelsLeakNumbers,
   legalActs,
   MARKETS,
   menuActs,
+  resolveFarmBattle,
   visibleChoices,
 } from "./engine.ts";
 import type { RoamAct } from "./state.ts";
@@ -73,7 +76,7 @@ test("a life can continue for dozens of days without an ending", () => {
 });
 
 test("many seeds stay playable", () => {
-  for (let seed = 1; seed <= 24; seed += 1) play(seed, 40);
+  for (let seed = 1; seed <= 24; seed += 1) play(seed, 120);
 });
 
 test("the same meeting can split, and a delayed debt comes back", () => {
@@ -332,6 +335,138 @@ function cultivationSave() {
   save.world!.arts = ["qingjing", "bone", "form", "yuxu"];
   return save;
 }
+
+test("farming spends actual technique qi and leaves the current story in place", () => {
+  const save = applyRoam(fresh(), { type: "origin", origin: "yao", name: "玄" });
+  save.world!.lastTick = 1_700_000_000_000;
+  const after = applyRoam(save, { type: "idle", what: "fight", now: save.world!.lastTick + 2500 }, () => 0.5);
+  assert.ok(after.world!.lingqi < save.world!.lingqi, "automatic battle must actually spend technique qi");
+  assert.match(after.world!.farmLog.at(-1)!, /借影缚形/);
+  assert.equal(after.world!.day, save.world!.day);
+  assert.deepEqual(after.world!.report, save.world!.report);
+  assert.equal(after.world!.battle, null);
+});
+
+test("offline sync and farm catch-up use one settlement clock and rule set", () => {
+  const save = applyRoam(fresh(), { type: "origin", origin: "yao", name: "玄" });
+  save.world!.lastTick = 1_700_000_000_000;
+  const now = save.world!.lastTick + 60_000;
+  const sync = applyRoam(save, { type: "idle", what: "sync", now }, () => 0.5);
+  const fight = applyRoam(save, { type: "idle", what: "fight", now }, () => 0.5);
+  assert.deepEqual(sync, fight);
+  assert.deepEqual(applyRoam(sync, { type: "idle", what: "fight", now }, () => 0.5), sync);
+});
+
+test("changing farming region settles the previous region before moving", () => {
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" });
+  save.world!.lastTick = 1_700_000_000_000;
+  const after = applyRoam(save, { type: "idle", what: "farm", place: "tribes", now: save.world!.lastTick + 60_000 }, () => 0.5);
+  assert.ok(after.world!.haul && after.world!.haul.breaths > 0, "elapsed work cannot disappear on region change");
+  assert.equal(after.world!.farm, "tribes");
+});
+
+test("automatic fights replay exactly through manual combat for every art and plan", () => {
+  for (const id of Object.keys(TECHNIQUES)) for (const plan of ["balanced", "assault", "reserve"] as const) {
+    const save = cultivationSave();
+    save.world!.arts = [id];
+    save.world!.equipped = id;
+    save.world!.battlePlan = plan;
+    save.world!.farm = "kunlun";
+    save.stats.life = 47;
+    const original = structuredClone(save);
+    const automatic = resolveFarmBattle(save, rngFrom(91));
+    assert.deepEqual(save, original, "forecast must not mutate input");
+    let manual = structuredClone(save);
+    manual.world!.phase = "battle";
+    manual.world!.battle = farmBattle("kunlun");
+    const rng = rngFrom(91);
+    let turns = 0;
+    while (manual.world!.phase === "battle" && turns < 8) {
+      manual = applyRoam(manual, { type: "combat", move: automaticMove(manual) }, rng);
+      turns++;
+    }
+    assert.equal(automatic.moves.length, turns, `${id}/${plan}`);
+    assert.equal(automatic.life, manual.stats.life, `${id}/${plan} life`);
+    assert.equal(automatic.lingqi, manual.world!.lingqi, `${id}/${plan} qi`);
+    assert.equal(automatic.wound, manual.world!.wound, `${id}/${plan} wound`);
+    assert.equal(automatic.win, manual.world!.report?.title === "这一场停了");
+  }
+});
+
+test("online rounds and offline catch-up settle identical combat and loot", () => {
+  const save = applyRoam(fresh(), { type: "origin", origin: "yao", name: "玄" });
+  const start = 1_700_000_000_000;
+  save.world!.lastTick = start;
+  let online = structuredClone(save);
+  const rng = rngFrom(24);
+  for (let i = 1; i <= 120; i++) online = applyRoam(online, { type: "idle", what: "fight", now: start + i * 2500 }, rng);
+  const banked = applyRoam(save, { type: "idle", what: "sync", now: start + 120 * 2500 }, rngFrom(24));
+  const offline = applyRoam(banked, { type: "idle", what: "claim", now: start + 120 * 2500 });
+  assert.deepEqual(online.stats, offline.stats);
+  for (const field of ["bag", "stones", "gear", "wound", "lingqi"] as const) assert.deepEqual(online.world![field], offline.world![field], field);
+  assert.ok(Math.abs(online.world!.xiuwei - offline.world!.xiuwei) < 1e-8);
+  assert.ok(Math.abs(online.world!.spare - offline.world!.spare) < 1e-8);
+  const repeated = applyRoam(offline, { type: "idle", what: "claim", now: start + 120 * 2500 });
+  assert.deepEqual(repeated.stats, offline.stats);
+  assert.deepEqual(repeated.world!.bag, offline.world!.bag);
+  assert.equal(repeated.world!.stones, offline.world!.stones);
+  assert.equal(repeated.world!.spare, offline.world!.spare);
+});
+
+test("automatic plans migrate safely and make different resource decisions", () => {
+  const legacy = cultivationSave();
+  legacy.items = ["purple-qi", "buzhou-stone"];
+  legacy.flags = ["heard-hongjun"];
+  const raw = JSON.parse(JSON.stringify(legacy));
+  delete raw.world.battlePlan;
+  const migrated = readImportedSave(JSON.stringify(raw));
+  assert.equal(migrated.world!.battlePlan, "balanced");
+  assert.deepEqual(migrated.items, legacy.items);
+  assert.deepEqual(migrated.flags, legacy.flags);
+  migrated.world!.phase = "battle";
+  migrated.world!.battle = farmBattle("kunlun");
+  migrated.world!.equipped = "form";
+  migrated.world!.battlePlan = "reserve";
+  assert.equal(automaticMove(migrated), "strike");
+  migrated.world!.battlePlan = "assault";
+  assert.equal(automaticMove(migrated), "technique");
+  const imported = readImportedSave(JSON.stringify(migrated));
+  assert.equal(imported.world!.battlePlan, "assault");
+  raw.world.battlePlan = "constructor";
+  assert.equal(readImportedSave(JSON.stringify(raw)).world!.battlePlan, "balanced");
+});
+
+test("offline storage cap and stopping cannot erase or duplicate unclaimed rounds", () => {
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" });
+  const start = 1_700_000_000_000;
+  save.world!.lastTick = start;
+  const banked = applyRoam(save, { type: "idle", what: "sync", now: start + 86_400_000 }, () => .5);
+  assert.equal(banked.world!.haul?.breaths, 480);
+  const capped = applyRoam(banked, { type: "idle", what: "sync", now: start + 2 * 86_400_000 }, () => .5);
+  assert.deepEqual(capped.world!.haul, banked.world!.haul);
+  assert.deepEqual(capped.stats, banked.stats);
+  const stopped = applyRoam(capped, { type: "idle", what: "stop", now: start + 2 * 86_400_000 }, () => .5);
+  assert.equal(stopped.world!.haul, null);
+  assert.equal(stopped.world!.idle, null);
+  assert.ok(stopped.world!.xiuwei > save.world!.xiuwei);
+  assert.ok(stopped.world!.report!.changes.length > 0, "collection result remains readable");
+});
+
+test("rifts require a real battle and award their original loot only after victory", () => {
+  let save = cultivationSave();
+  save.stats.dao = 300;
+  const before = structuredClone(save);
+  save = applyRoam(save, { type: "idle", what: "rift" }, () => .5);
+  assert.equal(save.world!.phase, "battle");
+  assert.equal(save.world!.riftLeft, before.world!.riftLeft - 1);
+  assert.equal(save.world!.stones, before.world!.stones);
+  assert.equal(save.world!.idle, null);
+  for (let i = 0; i < 8 && save.world!.phase === "battle"; i++) save = applyRoam(save, { type: "combat", move: "strike" }, () => .5);
+  assert.equal(save.world!.stones, before.world!.stones + 4);
+  assert.equal(save.world!.bag.herb, (before.world!.bag.herb ?? 0) + 3);
+  const again = applyRoam(save, { type: "combat", move: "strike" }, () => .5);
+  assert.deepEqual(again, save);
+});
 
 function practiceBattle(id: string) {
   const save = cultivationSave();

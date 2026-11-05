@@ -13,11 +13,18 @@ import { ITEMS, ORIGINS, STAT_LABEL, placeById } from "@/lib/honghuang/world";
 import { LifeCopy } from "./life-copy";
 import { Modal } from "./modal";
 import { RestartButton } from "./restart-button";
+import { ActionButton } from "./action-button";
+import { ActionFeedback, useActionFeedback } from "./action-feedback";
 import { RoamView } from "./roam-view";
 import { StatList } from "./stats";
 import "./play-navigation.css";
 
 export function PlayView() {
+  return <ActionFeedback><PlayContent /></ActionFeedback>;
+}
+
+function PlayContent() {
+  const feedback = useActionFeedback();
   const state = useSave();
   const choose = useSave((save) => save.choose);
   const begin = useSave((save) => save.begin);
@@ -74,6 +81,7 @@ export function PlayView() {
       )
         return;
       const live = useSave.getState();
+      if (live.world) return;
       if (!state.started || !live.started || live.screen !== "play" || live.sceneId !== scene?.id)
         return;
       if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
@@ -89,11 +97,11 @@ export function PlayView() {
       const pick = options[index];
       if (!pick) return;
       event.preventDefault();
-      takeRef.current(pick.choice, true);
+      feedback.run(pick.choice.id, () => takeRef.current(pick.choice, true));
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [scene, state]);
+  }, [scene, state, feedback]);
 
   if (state.world) return <RoamView />;
 
@@ -279,7 +287,10 @@ export function PlayView() {
               {options.map((item) => {
                 const indexLabel = item.open ? String(++openIndex) : "—";
                 return (
-                  <button
+                  <ActionButton
+                    label={item.choice.text}
+                    surface="plaque"
+                    actionId={item.choice.id}
                     key={item.choice.id}
                     type="button"
                     className="choice"
@@ -309,7 +320,7 @@ export function PlayView() {
                     <span className="choice-arrow" aria-hidden="true">
                       ⟶
                     </span>
-                  </button>
+                  </ActionButton>
                 );
               })}
               <p className="hidden text-xs text-faint md:block">数字键亦可抉择</p>
