@@ -8,8 +8,9 @@ import { checkedUrl } from "./browser-guard.mjs";
 
 // Run against a running app: node --experimental-strip-types scripts/roam-feedback.browser.mjs
 const url = checkedUrl(process.argv[2] ?? "http://127.0.0.1:8080/");
-const widths = process.argv.includes("--quick") ? [360] : [320, 360, 412];
-const output = "/workspace/screenshots/roam-feedback";
+const widths = process.argv.includes("--quick") ? [360] : [320, 360, 412, 1280];
+const onlyCase = process.argv.find((arg) => arg.startsWith("--case="))?.slice(7);
+const output = "/workspace/screenshots/cultivation-codex";
 mkdirSync(output, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
@@ -30,10 +31,11 @@ async function world(page) {
 }
 
 async function check(name, width, save, run) {
+  if (onlyCase && onlyCase !== name) return;
   const page = await browser.newPage({
     viewport: { width, height: 844 },
-    isMobile: true,
-    hasTouch: true,
+    isMobile: width < 600,
+    hasTouch: width < 600,
   });
   page.setDefaultTimeout(10_000);
   const errors = [];
@@ -43,7 +45,10 @@ async function check(name, width, save, run) {
   });
   try {
     await page.addInitScript(
-      ({ key, save }) => localStorage.setItem(key, JSON.stringify({ state: save, version: 1 })),
+      ({ key, save }) => {
+        if (!localStorage.getItem(key))
+          localStorage.setItem(key, JSON.stringify({ state: save, version: 1 }));
+      },
       { key, save },
     );
     await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -55,8 +60,11 @@ async function check(name, width, save, run) {
       "horizontal overflow",
     );
     assert.deepEqual(errors, [], "browser errors");
-    if (width === 360)
+    if (width === 360 || width === 1280) {
+      await page.waitForTimeout(800);
       await page.screenshot({ path: `${output}/${name}-${width}.png` });
+
+    }
     results.push({ name, width, ok: true });
   } catch (error) {
     results.push({ name, width, ok: false, error: error.message });
@@ -104,6 +112,66 @@ try {
       );
     });
 
+    await check("learn-and-equip", width, fixture(), async (page) => {
+      await page.getByRole("button", { name: "游历", exact: true }).click();
+      const travel = menuActs(fixture()).find((item) => item.id === "go-kunlun");
+      await page.getByRole("button", { name: travel.label, exact: true }).click();
+      await page.getByRole("button", { name: "洞府", exact: true }).click();
+      await page.getByRole("button", { name: "拜见玉虚", exact: true }).click();
+      for (let i = 0; i < 4; i++)
+        await page.getByRole("button", { name: "做一桩门中事", exact: true }).click();
+      await page.getByRole("button", { name: "请教师传", exact: true }).click();
+      await page.getByRole("button", { name: "功法", exact: true }).click();
+      await page.getByRole("button", { name: "主修玉虚戒", exact: true }).click();
+      assert.equal((await world(page)).equipped, "yuxu");
+      assert.equal(
+        await page
+          .getByRole("button", { name: "主修玉虚戒", exact: true })
+          .getAttribute("aria-pressed"),
+        "true",
+      );
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.locator(".farm-desk").waitFor();
+      assert.equal((await world(page)).equipped, "yuxu", "main art survives actual reload");
+      await page.getByRole("button", { name: "功法", exact: true }).click();
+      await page.locator(".cultivation-hero").scrollIntoViewIfNeeded();
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll(".cultivation-library img")]
+          .filter((img) => img.getBoundingClientRect().top < innerHeight)
+          .every((img) => img.complete && img.naturalWidth > 0),
+      );
+    });
+
+    const battling = fixture();
+    battling.world.arts = ["qingjing", "form"];
+    battling.world.equipped = "form";
+    battling.world.phase = "battle";
+    battling.world.report = { title: "山道遇敌", paragraphs: ["守石者拦住了你。"], changes: [] };
+    battling.world.battle = {
+      id: "stone",
+      name: "守石者",
+      hp: 100,
+      max: 100,
+      atk: 10,
+      def: 0,
+      guard: 0,
+      round: 1,
+      log: [],
+      win: [],
+      lose: [],
+      winText: ["胜"],
+      loseText: ["退"],
+    };
+    await check("battle-technique", width, battling, async (page) => {
+      const before = await world(page);
+      await page.getByRole("button", { name: "借影缚形 · 6 灵气", exact: true }).click();
+      const after = await world(page);
+      assert.equal(after.lingqi, before.lingqi - 6);
+      assert.equal(after.battle.round, 2);
+      assert.ok(after.battle.hp < before.battle.hp);
+      assert.ok(after.battle.log.some((line) => line.includes("未能还击")));
+    });
+
     const active = fixture();
     await check("controls", width, active, async (page) => {
       await page.getByRole("button", { name: "停下挂机", exact: true }).click();
@@ -122,12 +190,17 @@ try {
       await page.getByRole("button", { name: "闭关一日", exact: true }).click();
       assert.ok((await world(page)).day > gathered.day);
       await page.getByRole("button", { name: "游历", exact: true }).click();
+      if (width === 360 || width === 1280) {
+        await page.locator(".travel-card").first().scrollIntoViewIfNeeded();
+        await page.waitForTimeout(800);
+        await page.screenshot({ path: `${output}/travel-${width}.png` });
+      }
       const travel = menuActs(active).find((item) => item.id === "go-tribes");
       assert.ok(travel, "reachable destination");
       await page.getByRole("button", { name: travel.label, exact: true }).click();
       assert.equal((await world(page)).place, "tribes");
       assert.equal((await world(page)).idle, null);
-      await page.getByRole("button", { name: "挂机", exact: true }).click();
+      await page.getByRole("button", { name: "修行", exact: true }).click();
       await page.getByRole("button", { name: "在此游历挂机", exact: true }).click();
       assert.equal((await world(page)).farm, "tribes");
       if (width === 360) {

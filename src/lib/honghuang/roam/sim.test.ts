@@ -13,6 +13,7 @@ import {
   visibleChoices,
 } from "./engine.ts";
 import type { RoamAct } from "./state.ts";
+import { TECHNIQUES } from "./techniques.ts";
 
 function rngFrom(seed: number) {
   let state = seed >>> 0;
@@ -323,4 +324,86 @@ test("market labels disclose the same prices that transactions settle", () => {
       assert.equal(save.world!.bag[offer.id] ?? 0, 0);
     }
   }
+});
+
+function cultivationSave() {
+  const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "玄" }, () => 0.5);
+  save.world!.idle = null;
+  save.world!.arts = ["qingjing", "bone", "form", "yuxu"];
+  return save;
+}
+
+function practiceBattle(id: string) {
+  const save = cultivationSave();
+  save.world!.equipped = id;
+  save.world!.phase = "battle";
+  save.world!.battle = { id: "stone", name: "守石者", hp: 100, max: 100, atk: 10, def: 0, guard: 0, round: 1, log: [], win: [], lose: [], winText: ["胜"], loseText: ["退"] };
+  save.stats.life = 50;
+  return save;
+}
+
+test("learned main arts can be switched, retained on import, and change cultivation", () => {
+  const save = cultivationSave();
+  const changed = applyRoam(save, { type: "equip-art", artId: "bone" });
+  assert.equal(changed.world!.equipped, "bone");
+  assert.deepEqual(changed.world!.arts, save.world!.arts);
+  assert.equal(readImportedSave(JSON.stringify(changed)).world!.equipped, "bone");
+  const quiet = applyRoam(save, { type: "cultivate" }, () => 0.5);
+  const bone = applyRoam(changed, { type: "cultivate" }, () => 0.5);
+  assert.ok(quiet.world!.xiuwei > bone.world!.xiuwei);
+  const quietBattle = applyRoam(practiceBattle("qingjing"), { type: "combat", move: "strike" }, () => 0.5);
+  const boneBattle = applyRoam(practiceBattle("bone"), { type: "combat", move: "strike" }, () => 0.5);
+  assert.ok(boneBattle.world!.battle!.hp < quietBattle.world!.battle!.hp);
+});
+
+test("unlearned arts and mid-battle or seclusion switches are rejected", () => {
+  const save = cultivationSave();
+  for (const artId of ["zhuxian", "constructor", "absent"]) assert.deepEqual(applyRoam(save, { type: "equip-art", artId }), save);
+  const battle = practiceBattle("qingjing");
+  assert.deepEqual(applyRoam(battle, { type: "equip-art", artId: "bone" }), battle);
+  save.world!.retreat = { watch: 1 };
+  assert.deepEqual(applyRoam(save, { type: "equip-art", artId: "bone" }), save);
+});
+
+test("healing, guarding and binding techniques have distinct combat consequences", () => {
+  const normal = applyRoam(practiceBattle("qingjing"), { type: "combat", move: "strike" }, () => 0.5);
+  const healed = applyRoam(practiceBattle("qingjing"), { type: "combat", move: "technique" });
+  assert.ok(healed.stats.life > normal.stats.life);
+  assert.equal(healed.world!.battle!.hp, 100);
+  const guarded = applyRoam(practiceBattle("yuxu"), { type: "combat", move: "technique" });
+  assert.equal(guarded.stats.life, 49);
+  assert.ok(guarded.world!.battle!.hp < 100);
+  assert.equal(guarded.world!.battle!.guard, 0);
+  const bound = applyRoam(practiceBattle("form"), { type: "combat", move: "technique" });
+  assert.equal(bound.stats.life, 50);
+  assert.equal(bound.world!.battle!.round, 2);
+  assert.equal(bound.world!.lingqi, practiceBattle("form").world!.lingqi - TECHNIQUES.form!.cost);
+});
+
+test("techniques cannot spend missing spirit or act after a battle ends", () => {
+  const save = practiceBattle("form");
+  save.world!.lingqi = TECHNIQUES.form!.cost - 1;
+  assert.deepEqual(applyRoam(save, { type: "combat", move: "technique" }), save);
+  const finished = cultivationSave();
+  assert.deepEqual(applyRoam(finished, { type: "combat", move: "technique" }), finished);
+});
+
+test("a sect transmission can be learned, equipped and saved without losing history", () => {
+  let save = cultivationSave();
+  save.world!.arts = ["qingjing"];
+  save.world!.place = "kunlun";
+  save = applyRoam(save, { type: "sect", what: "join" });
+  for (let i = 0; i < 4; i++) save = applyRoam(save, { type: "sect", what: "task" }, () => 0.5);
+  assert.ok(save.world!.contrib >= 8);
+  save = applyRoam(save, { type: "sect", what: "learn" });
+  assert.ok(save.world!.arts.includes("yuxu"));
+  save = applyRoam(save, { type: "equip-art", artId: "yuxu" });
+  const restored = readImportedSave(JSON.stringify(save));
+  assert.equal(restored.world!.equipped, "yuxu");
+  assert.deepEqual(restored.items, save.items);
+  assert.deepEqual(restored.flags, save.flags);
+  assert.deepEqual(restored.world!.quests, save.world!.quests);
+  const forged = structuredClone(save);
+  forged.world!.equipped = "zhuxian";
+  assert.equal(readImportedSave(JSON.stringify(forged)).world!.equipped, "qingjing");
 });

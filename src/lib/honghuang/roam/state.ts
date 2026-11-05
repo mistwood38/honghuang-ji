@@ -181,6 +181,7 @@ export type RoamState = {
 export type RoamAct =
   | { type: "origin"; origin: Origin; name: string }
   | { type: "cultivate" }
+  | { type: "equip-art"; artId: string }
   | { type: "breakthrough"; pill: boolean }
   | { type: "explore" }
   | { type: "choose"; choiceId: string }
@@ -196,6 +197,6 @@ export type RoamAct =
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
   | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm" | "rift"; now?: number; place?: PlaceId }
-  | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" }
+  | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" | "technique" }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };

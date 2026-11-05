@@ -18,6 +18,7 @@ import {
   eraOf,
 } from "./catalog.ts";
 import { CHAINS, EVENTS, eventById } from "./events.ts";
+import { TECHNIQUES } from "./techniques.ts";
 import type {
   Effect,
   EventChoice,
@@ -110,6 +111,7 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     return null;
   }
   const base = createRoam();
+  const learned = Array.isArray(body.arts) ? body.arts.filter((id) => typeof id === "string") : [];
   return {
     ...base,
     ...body,
@@ -117,7 +119,9 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     phase: body.phase,
     known: Array.isArray(body.known) ? body.known.filter((id): id is PlaceId => id in ROAM_PLACES) : base.known,
     bag: body.bag && typeof body.bag === "object" ? body.bag : {},
-    arts: Array.isArray(body.arts) ? body.arts.filter((id) => typeof id === "string") : [],
+    arts: learned,
+    equipped: body.equipped && learned.includes(body.equipped) && Object.hasOwn(ARTS, body.equipped)
+      ? body.equipped : learned.find((id) => Object.hasOwn(ARTS, id)) ?? null,
     spells: Array.isArray(body.spells) ? body.spells.filter((id) => typeof id === "string") : [],
     karma: Array.isArray(body.karma) ? body.karma.filter((id) => typeof id === "string") : [],
     seen: Array.isArray(body.seen) ? body.seen.filter((id) => typeof id === "string") : [],
@@ -601,6 +605,7 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
     return;
   }
   if (act.type === "cultivate") cultivate(save, world, rng);
+  else if (act.type === "equip-art") equipArt(world, act.artId);
   else if (act.type === "breakthrough") breakthrough(save, world, act.pill, rng);
   else if (act.type === "explore") explore(save, world, rng);
   else if (act.type === "travel") travel(save, world, act.place, rng);
@@ -617,6 +622,15 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
   else if (act.type === "idle") idleAct(save, world, act, rng);
   else if (act.type === "continue") continueChain(save, world, act.chainId);
   else if (act.type === "notice") notice(world, act.eventId);
+}
+
+function equipArt(world: RoamState, id: string) {
+  if (world.retreat || !world.arts.includes(id) || !Object.hasOwn(ARTS, id) || world.equipped === id) return;
+  // Settle seated cultivation using the previous art before changing its bonus.
+  accrueIdle(world, Date.now());
+  world.equipped = id;
+  world.report = { title: "转修", paragraphs: [`你将${ARTS[id]!.name}定为主修。旧日所学仍留在识海，不因这一念而散。`], changes: [`主修 · ${ARTS[id]!.name}`] };
+  remember(world, "转修", world.report.paragraphs[0]!);
 }
 
 function cultivate(save: SaveData, world: RoamState, rng: () => number) {
@@ -1513,10 +1527,28 @@ function choose(save: SaveData, world: RoamState, choiceId: string, rng: () => n
   remember(world, event.title, choice.result[0] ?? choice.text);
 }
 
-function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "guard" | "flee", rng: () => number) {
+function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "guard" | "flee" | "technique", rng: () => number) {
   const battle = world.battle;
   if (!battle) return;
   const art = world.equipped ? ARTS[world.equipped] : undefined;
+  if (move === "technique") {
+    const technique = world.equipped && world.arts.includes(world.equipped) && Object.hasOwn(TECHNIQUES, world.equipped)
+      ? TECHNIQUES[world.equipped] : undefined;
+    if (!technique || world.lingqi < technique.cost) return;
+    world.lingqi -= technique.cost;
+    battle.guard = technique.guard;
+    const healed = Math.min(technique.heal, CAP.life - save.stats.life);
+    save.stats.life += healed;
+    battle.log.push(`你使出${technique.name}。灵气 -${technique.cost}${healed ? `，道躯 +${healed}` : ""}。`);
+    if (technique.power > 0) strikeEnemy(save, world, Math.max(1, Math.round(powerOf(save, world) * technique.power) - battle.def));
+    if (world.phase !== "battle") return;
+    if (technique.bind) {
+      battle.log.push(`${battle.name}被牵制，这一回合未能还击。`);
+      battle.round += 1;
+      if (battle.round > 8) finishBattle(save, world, false);
+    } else enemyStrike(save, world);
+    return;
+  }
   if (move === "guard") {
     battle.guard = 4 + realmIndex(save.stats.dao);
     battle.log.push("你收势，准备把下一击卸开。");
@@ -1627,6 +1659,9 @@ export function menuActs(save: SaveData): MenuAct[] {
     { id: "idle-wander", label: world.idle?.kind === "wander" ? "继续游历挂机" : "在此游历挂机", act: { type: "idle", what: "wander" } },
   ];
   if (world.idle) acts.push({ id: "idle-stop", label: "停下挂机", act: { type: "idle", what: "stop" } });
+  for (const id of new Set(world.arts)) {
+    if (Object.hasOwn(ARTS, id) && id !== world.equipped) acts.push({ id: `equip-${id}`, label: `主修${ARTS[id]!.name}`, act: { type: "equip-art", artId: id } });
+  }
   if ((world.haul?.breaths ?? 0) > 0) acts.push({ id: "idle-claim", label: "收起这段修行", act: { type: "idle", what: "claim" } });
   if (world.xiuwei >= 100 && realmIndex(save.stats.dao) < REALMS.length - 1) {
     acts.push({ id: "break", label: "尝试突破", act: { type: "breakthrough", pill: false } });
@@ -1764,6 +1799,8 @@ export function legalActs(save: SaveData): RoamAct[] {
     ];
     const art = world.equipped ? ARTS[world.equipped] : undefined;
     if (art?.spell || world.spells.length) acts.push({ type: "combat", move: "spell" });
+    const technique = world.equipped && Object.hasOwn(TECHNIQUES, world.equipped) ? TECHNIQUES[world.equipped] : undefined;
+    if (technique && world.lingqi >= technique.cost) acts.push({ type: "combat", move: "technique" });
     return acts;
   }
   if (world.phase === "event") {

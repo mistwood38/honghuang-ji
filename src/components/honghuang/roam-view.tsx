@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { storyScrollTop } from "@/lib/honghuang/music";
 import { useSave } from "@/lib/honghuang/store";
 import { realmOf, nextRealm } from "@/lib/honghuang/world";
@@ -18,9 +18,11 @@ import {
   visibleChoices,
 } from "@/lib/honghuang/roam/engine";
 import { eventById } from "@/lib/honghuang/roam/events";
+import { TECHNIQUES } from "@/lib/honghuang/roam/techniques";
 import type { Origin } from "@/lib/honghuang/types";
 import type { PlaceId, RoamAct } from "@/lib/honghuang/roam/state";
 import { Artwork, Atmosphere } from "./art";
+import { CultivationLibrary } from "./cultivation-library";
 import "./roam.css";
 
 function moodForPlace(place: PlaceId): SceneMood {
@@ -81,6 +83,7 @@ export function RoamView() {
   const realm = realmOf(save.stats.dao);
   const art = artForPlace(world.place);
   const event = world.eventId ? eventById(world.eventId) : null;
+  const technique = world.equipped && Object.hasOwn(TECHNIQUES, world.equipped) ? TECHNIQUES[world.equipped] : undefined;
   const xiuLabel = world.xiuwei >= 100 ? "火候已至" : world.xiuwei >= 60 ? "将满" : world.xiuwei >= 25 ? "半途" : "初凝";
 
   return (
@@ -109,6 +112,7 @@ export function RoamView() {
         {world.phase !== "origin" ? (
           <div className="roam-body" id="roam-now">
             <div className="copy roam-prose" aria-label={world.phase === "free" ? "行动结果" : undefined}>
+              <p className="roam-section-label">{world.phase === "event" ? "路逢 · 此刻" : world.phase === "battle" ? "斗法 · 临阵" : "行记 · 已然"}</p>
               <h2>{world.report?.title ?? place.name}</h2>
               {(world.report?.paragraphs ?? place.intro).map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
@@ -144,6 +148,7 @@ export function RoamView() {
             {world.phase === "battle" && world.battle ? (
               <div className="roam-battle">
                 <p className="eyebrow">{world.battle.name}</p>
+                <p className="battle-vitals">道躯 {save.stats.life} / 100 · 灵气 {Math.floor(world.lingqi)} · 第 {world.battle.round} 回合</p>
                 <div className="roam-hp" aria-hidden="true">
                   <span style={{ width: `${Math.max(6, (world.battle.hp / world.battle.max) * 100)}%` }} />
                 </div>
@@ -157,7 +162,9 @@ export function RoamView() {
                   <button type="button" onClick={() => act({ type: "combat", move: "spell" })}>法</button>
                   <button type="button" onClick={() => act({ type: "combat", move: "guard" })}>守</button>
                   <button type="button" onClick={() => act({ type: "combat", move: "flee" })}>脱身</button>
+                  {technique ? <button type="button" className="technique-action" disabled={world.lingqi < technique.cost} onClick={() => act({ type: "combat", move: "technique" })}>{technique.name} · {technique.cost} 灵气</button> : null}
                 </div>
+                {technique ? <p className="roam-risk">{technique.detail}{world.lingqi < technique.cost ? " 当前灵气不足。" : ""}</p> : null}
               </div>
             ) : null}
 
@@ -206,7 +213,17 @@ export function RoamView() {
 function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
   const save = useSave();
   const world = save.world;
-  const [tab, setTab] = useState<"farm" | "travel" | "bag" | "beast" | "home">("farm");
+  const [tab, setTab] = useState<"farm" | "travel" | "arts" | "bag" | "beast" | "home">("farm");
+  const tabs = useRef<HTMLDivElement>(null);
+  function openTab(next: typeof tab) {
+    setTab(next);
+    // Only an explicit panel change navigates here; background ticks never do.
+    requestAnimationFrame(() => {
+      if (!tabs.current) return;
+      const header = document.querySelector(".game-header")?.getBoundingClientRect().height ?? 0;
+      window.scrollTo({ top: storyScrollTop(tabs.current.getBoundingClientRect().top, window.scrollY, header), behavior: "auto" });
+    });
+  }
   if (!world) return null;
   const realm = realmOf(save.stats.dao);
   const next = nextRealm(save.stats.dao);
@@ -228,42 +245,24 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
           {world.gear > 0 ? ` · 护身 ${world.gear} 档` : ""}
         </p>
       </div>
-      <div className="roam-tabs">
+      <div className="roam-tabs" ref={tabs}>
         {(
           [
-            ["farm", "挂机"],
+            ["farm", "修行"],
             ["travel", "游历"],
+            ["arts", "功法"],
             ["bag", "储物"],
             ["beast", "灵兽"],
             ["home", "洞府"],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} type="button" className={tab === id ? "is-on" : ""} onClick={() => setTab(id)}>
+          <button key={id} type="button" aria-pressed={tab === id} className={tab === id ? "is-on" : ""} onClick={() => openTab(id)}>
             {label}
           </button>
         ))}
       </div>
       {tab === "farm" ? (
         <>
-          <p className="farm-map-label">挂机地点 · {ROAM_PLACES[world.farm ?? world.place].name}</p>
-          <div className="farm-maps">
-            {maps.map((place) => (
-              <button
-                key={place}
-                type="button"
-                className={place === (world.farm ?? world.place) ? "is-on" : ""}
-                onClick={() => onAct({ type: "idle", what: "farm", place })}
-              >
-                <strong>{ROAM_PLACES[place].name}</strong>
-                <small>{farmOutlook(save, place)}</small>
-              </button>
-            ))}
-          </div>
-          <ol className="farm-log">
-            {(world.farmLog.length ? world.farmLog : ["挂机还没打出第一场。"]).map((line, index) => (
-              <li key={`${index}-${line}`}>{line}</li>
-            ))}
-          </ol>
           <div className="roam-actions">
             {world.xiuwei >= 100 ? (
               <button type="button" className="farm-break" onClick={() => onAct({ type: "breakthrough", pill: false })}>
@@ -292,14 +291,44 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
                 <button key={item.id} type="button" onClick={() => onAct(item.act)}>{item.label}</button>
               ))}
           </div>
+          <details className="farm-idle-panel"><summary>挂机行记 <span>{world.idle ? "正在修行" : "已停下"} · 展开查看</span></summary>
+          <p className="farm-map-label">挂机地点 · {ROAM_PLACES[world.farm ?? world.place].name}</p>
+          <div className="farm-maps">
+            {maps.map((place) => (
+              <button
+                key={place}
+                type="button"
+                className={place === (world.farm ?? world.place) ? "is-on" : ""}
+                onClick={() => onAct({ type: "idle", what: "farm", place })}
+              >
+                <strong>{ROAM_PLACES[place].name}</strong>
+                <small>{farmOutlook(save, place)}</small>
+              </button>
+            ))}
+          </div>
+          <ol className="farm-log">
+            {(world.farmLog.length ? world.farmLog : ["挂机还没打出第一场。"]).map((line, index) => (
+              <li key={`${index}-${line}`}>{line}</li>
+            ))}
+          </ol>
+          </details>
         </>
       ) : null}
+      {tab === "arts" ? <CultivationLibrary onAct={onAct} onStudy={() => openTab("home")} /> : null}
       {tab === "travel" ? (
-        <div className="roam-actions">
-          {acts.filter((item) => item.id.startsWith("go-")).map((item) => (
-            <button key={item.id} type="button" onClick={() => onAct(item.act)}>{item.label}</button>
-          ))}
-        </div>
+        <section className="travel-atlas" aria-label="可游历地点">
+          <div className="travel-heading"><p className="eyebrow">足下有路 · 天地无涯</p><h2>往何处去</h2><p>行路会暂歇挂机。越过险地之前，先看清山势。</p></div>
+          <div className="travel-cards">
+            {acts.filter((item) => item.act.type === "travel").map((item) => {
+              if (item.act.type !== "travel") return null;
+              const place = ROAM_PLACES[item.act.place];
+              return <button key={item.id} type="button" className="travel-card" aria-label={item.label} onClick={() => onAct(item.act)}>
+                <img src={artForPlace(place.id).small} alt="" loading="lazy" width="640" height="360" />
+                <span className="travel-card-copy"><span className="travel-danger">{place.danger >= 4 ? "险地" : place.danger >= 2 ? "须谨慎" : "风平"} · 灵气 {place.spirit}</span><strong>{place.name}</strong><span>{place.intro[0]}</span><span className="travel-go">前往此地 →</span></span>
+              </button>;
+            })}
+          </div>
+        </section>
       ) : null}
       {tab === "bag" ? (
         <div className="roam-actions">
