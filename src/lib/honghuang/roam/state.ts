@@ -108,6 +108,7 @@ export type RetreatState = { watch: number };
 export type PlotState = { ready: number };
 
 export type IdleKind = "sit" | "wander";
+export type BattlePlan = "balanced" | "assault" | "reserve";
 
 export type IdleState = { kind: IdleKind };
 
@@ -135,6 +136,8 @@ export type RoamState = {
   stones: number;
   arts: string[];
   equipped: string | null;
+  /** Automatic combat preference. Old saves default to balanced. */
+  battlePlan: BattlePlan;
   spells: string[];
   bag: Partial<Record<GoodId, number>>;
   relations: Record<string, number>;
@@ -181,6 +184,8 @@ export type RoamState = {
 export type RoamAct =
   | { type: "origin"; origin: Origin; name: string }
   | { type: "cultivate" }
+  | { type: "equip-art"; artId: string }
+  | { type: "battle-plan"; plan: BattlePlan }
   | { type: "breakthrough"; pill: boolean }
   | { type: "explore" }
   | { type: "choose"; choiceId: string }
@@ -196,6 +201,6 @@ export type RoamAct =
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
   | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm" | "rift"; now?: number; place?: PlaceId }
-  | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" }
+  | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" | "technique" }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };

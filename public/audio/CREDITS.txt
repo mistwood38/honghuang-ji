@@ -1,20 +1,21 @@
-洪荒纪乐声来处
-这些文件随游戏离线打包。转成 32 kHz 单声道 Vorbis 只为体积，曲目本身没有重编。
+洪荒纪 · 新国风器乐配乐（2026-11-05）
 
-古琴演奏：Charlie Huang，来自维基共享资源。
-- 佩兰 Pei Lan、孔子读易 Kongzi Duyi、流水 Liu Shui、平沙落雁 Pingsha Luoyan、秋风辞 Qiu Feng Ci、酒狂 Jiu Kuang
-  许可：Creative Commons Attribution 2.5
-  https://creativecommons.org/licenses/by/2.5/
-- 阳关三叠 Yangguan Sandie、醉渔唱晚 Zuiyu Changwan、即兴其一 Improvisation 1
-  许可：Creative Commons Attribution-ShareAlike 3.0
-  https://creativecommons.org/licenses/by-sa/3.0/
-- 神人畅 Shenren Chang
-  许可：Creative Commons Attribution-ShareAlike 2.5
-  https://creativecommons.org/licenses/by-sa/2.5/
-上述 BY-SA 曲目的转码文件仍以相同许可分发。游戏代码不是这些录音的演绎作品。
+六首原创编排：开天行、逐云、青岚入定、山海无涯、踏劫、墨间月。
+为本项目编写旋律、和声、分段与节奏，使用采样乐器离线渲染。
+没有提取《完美世界》或《荒》的录音、旋律、歌词、MIDI 或商业音效。
+参考的是用户希望的现代国风史诗氛围；本版是无歌词器乐，不是歌曲翻唱。
 
-劫难场面：Hope，MintoDog，2013–2023，OpenGameArt，CC0。
-https://opengameart.org/content/hopeorchestral-battle-music
-这是一段约七十秒、可循环的管弦战曲，不是中国古乐。没有找到可以合法随包分发的长篇洪荒战乐，因此只把它用在灾劫情绪，并在游戏内注明。
+采样音源：S. Christian Collins，GeneralUser GS 2.0.3。
+官方项目：https://github.com/mrbumpy409/GeneralUser-GS
+作者网站：https://www.schristiancollins.com/generaluser
+许可：GeneralUser GS License v2.0，允许使用音源创作并发布私人或商业音乐录音。
+完整许可（含作者对样本来源的说明）见 GeneralUser-LICENSE.txt。
+音源本体不随游戏分发，仅分发为项目渲染的录音。
 
-界面击键与抉择拨弦是本项目为按钮写的短音，可自由使用。
+复现脚本：scripts/audio/render-score.py（Python、numpy、FluidSynth、FFmpeg）。
+音源 SHA-256、时长及曲目信息见 score-manifest.json。
+六首各约 92–113 秒，立体声 Vorbis，含引子、主题、展开与回归。
+母带限制峰值并适度削减刺激频段；播放音量默认保守，用户可独立调整。
+六种柔和 UI 短音同样从采样乐器原创编排、独立渲染。
+
+旧版古琴独奏及 Hope 战曲已从当前配乐包移除，历史许可仍可在 Git 历史中查询。

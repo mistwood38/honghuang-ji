@@ -1,0 +1,87 @@
+import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import type { RoamAct } from "@/lib/honghuang/roam/state";
+import { useActionFeedback } from "./action-feedback";
+import "./action-art.css";
+
+type Emblem = "lotus" | "sword" | "mountain" | "cloud" | "censer" | "scroll";
+type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string;
+  emblem?: Emblem;
+  action?: RoamAct;
+  surface?: "seal" | "plaque" | "bare";
+  hint?: string;
+  actionId?: string;
+  children?: ReactNode;
+};
+
+function emblemFor(action?: RoamAct): Emblem {
+  if (!action) return "scroll";
+  if (["cultivate", "rest", "retreat", "breakthrough"].includes(action.type)) return "lotus";
+  if (["gather", "alchemy", "trade", "use", "plot"].includes(action.type)) return "censer";
+  if (["explore", "travel", "beast", "continue", "notice"].includes(action.type)) return "cloud";
+  if (action.type === "idle")
+    return action.what === "sit" ? "lotus" : action.what === "stop" ? "mountain" : "cloud";
+  if (action.type === "combat")
+    return action.move === "strike"
+      ? "sword"
+      : action.move === "guard"
+        ? "mountain"
+        : action.move === "flee"
+          ? "cloud"
+          : "scroll";
+  return "scroll";
+}
+
+export function ActionButton({
+  label,
+  emblem,
+  action,
+  surface = "seal",
+  hint,
+  actionId,
+  children,
+  className = "",
+  disabled,
+  onClick,
+  ...props
+}: Props) {
+  const uid = useId();
+  const id = actionId ?? uid;
+  const { pending, run } = useActionFeedback();
+  const selected = pending === id;
+  const [title, ...details] = label.split(" · ");
+  const note = hint ?? details.join(" · ");
+  return (
+    <button
+      {...props}
+      type="button"
+      data-ui-sound={action?.type === "combat" ? "skill" : action?.type === "use" || action?.type === "alchemy" ? "item" : undefined}
+      aria-label={props["aria-label"] ?? label}
+      disabled={disabled || Boolean(pending)}
+      aria-busy={selected || undefined}
+      data-selected={selected || undefined}
+      className={`game-action game-action--${surface} ${selected ? "is-committing" : ""} ${className}`}
+      onClick={(event) => run(id, () => onClick?.(event))}
+    >
+      {children ?? (
+        <>
+          {surface === "seal" ? (
+            <span
+              className={`action-emblem emblem-${emblem ?? emblemFor(action)}`}
+              aria-hidden="true"
+            />
+          ) : null}
+          <span className="action-copy">
+              <span>{title}</span>
+              {note ? <small>{note}</small> : null}
+          </span>
+        </>
+      )}
+      {surface !== "bare" ? (
+        <span className="action-stamp" aria-hidden="true">
+          定
+        </span>
+      ) : null}
+    </button>
+  );
+}

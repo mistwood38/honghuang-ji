@@ -1,0 +1,92 @@
+[
+  {
+    "name": "choice-art-lock",
+    "width": 320,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "action-art-and-plan",
+    "width": 320,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "rift-and-technique",
+    "width": 320,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "choice-art-lock",
+    "width": 360,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "action-art-and-plan",
+    "width": 360,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "rift-and-technique",
+    "width": 360,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "choice-art-lock",
+    "width": 412,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "action-art-and-plan",
+    "width": 412,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "rift-and-technique",
+    "width": 412,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "choice-art-lock",
+    "width": 1280,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "action-art-and-plan",
+    "width": 1280,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "rift-and-technique",
+    "width": 1280,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "twenty-choices",
+    "width": 360,
+    "reduced": false,
+    "ok": true
+  },
+  {
+    "name": "reduced-motion",
+    "width": 320,
+    "reduced": true,
+    "ok": true
+  },
+  {
+    "name": "legacy-choice-keyboard",
+    "width": 360,
+    "reduced": false,
+    "ok": true
+  }
+]
