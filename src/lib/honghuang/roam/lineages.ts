@@ -104,7 +104,7 @@ export function lineageOptions(save: SaveData): LineageOption[] {
       {
         act: { type: "lineage", what: "trial", chapter: progress.stage },
         label: "直面这一场",
-        hint: "进入斗法 · 可以脱身，养好伤再来",
+        hint: save.stats.life < 20 ? "道躯不足 20，先到修行页调息" : "进入斗法 · 可以脱身，养好伤再来",
         disabled: save.stats.life < 20,
       },
     ];

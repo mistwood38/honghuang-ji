@@ -181,3 +181,26 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.action-outcome {
+  margin: 1rem 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.action-outcome .outcome-selection {
+  color: #d3bd87;
+  font-size: 0.85rem;
+}
+.lineage-receipt > .game-action {
+  width: 100%;
+}
+.lineage-chapter:focus,
+.lineage-ending:focus,
+.action-outcome:focus {
+  outline: none;
+}
+.lineage-chapter:focus-visible,
+.lineage-ending:focus-visible,
+.action-outcome:focus-visible {
+  outline: 1px solid #d3bd87;
+  outline-offset: 4px;
+}

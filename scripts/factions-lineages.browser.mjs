@@ -111,9 +111,13 @@ try {
         await click(page, "攻");
       current = await read(page);
       assert.ok(current.world.karma.includes("lineage-trial-dao"));
-      await click(page, "回看族脉后续");
+      assert.equal(
+        await page.getByRole("button", { name: "族脉", exact: true }).getAttribute("aria-pressed"),
+        "true",
+      );
       await click(page, LINEAGES.dao.chapters[4].choices[0].text);
       assert.equal((await read(page)).world.lineages.dao.stage, 5);
+      await click(page, "续读下一章");
       // Travel through the actual UI; the final chapter is at Kunlun.
       for (let i = 0; i < 10 && (await read(page)).world.place !== "kunlun"; i++)
         await click(page, "循路往昆仑");
@@ -129,6 +133,7 @@ try {
       current = await read(page);
       assert.equal(current.world.lineages.dao.ending, "万灵有席");
       assert.ok(current.world.politics.truces["chan:jie"] > current.world.day);
+      await click(page, "查看此卷结局");
       await page.locator(".lineage-ending").scrollIntoViewIfNeeded();
       await page.screenshot({ path: `${out}/ending-${width}.png` });
       await click(page, "继续自己的修行");

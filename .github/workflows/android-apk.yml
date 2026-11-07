@@ -6,6 +6,7 @@ on:
     branches:
       - art/stage-two-cinematic
       - feat/factions-lineages
+      - fix/lineage-reading-flow
     paths-ignore:
       - "docs/**"
       - "screenshots/**"

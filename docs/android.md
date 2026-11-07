@@ -4,9 +4,9 @@
 
 ## 获取
 
-本次已成功生成：[下载新版测试包](https://github.com/mistwood38/honghuang-ji/actions/runs/42363847760/artifacts/13571255518)（2026-11-07，游戏代码 `fc44e5c`，约 21.9 MiB；下载产物保留至 2026-11-21）。
+本次已成功生成：[下载新版测试包](https://github.com/mistwood38/honghuang-ji/actions/runs/42373301492/artifacts/13573898977)（2026-11-07，游戏代码 `cc8252f`，约 21.9 MiB；下载产物保留至 2026-11-21）。
 
-也可以打开仓库的 [Android APK 工作流](https://github.com/mistwood38/honghuang-ji/actions/workflows/android-apk.yml)，选择 `feat/factions-lineages` 分支对应的成功记录，在底部下载 `honghuang-ji-debug`，解压得到 `app-debug.apk`。下载需要登录 GitHub，构建产物保留 14 天。
+也可以打开仓库的 [Android APK 工作流](https://github.com/mistwood38/honghuang-ji/actions/workflows/android-apk.yml)，选择 `fix/lineage-reading-flow` 分支对应的成功记录，在底部下载 `honghuang-ji-debug`，解压得到 `app-debug.apk`。下载需要登录 GitHub，构建产物保留 14 天。
 
 这是 debug 签名测试包，不是应用商店发布。没有合并 `main`。工作流在开发分支代码变更时构建，纯文档和截图更新不重复打包。
 
@@ -20,4 +20,4 @@
 
 ## 验证边界
 
-网页版与安卓离线资源构建已在本次开发中验证；最新原生 APK 构建结果见 [本次验收报告](reviews/factions-lineages.md)。手机尺寸浏览器测试覆盖 320、360、412 像素，但不等同于安卓真机测试。真机安装、飞行模式、系统后台恢复、实际听感均需单独验证，不将构建成功写成真机通过。
+网页版与安卓离线资源构建已在本次开发中验证；最新原生 APK 构建结果见 [本次验收报告](reviews/reading-flow.md)。手机尺寸浏览器测试覆盖 320、360、412 像素，但不等同于安卓真机测试。真机安装、飞行模式、系统后台恢复、实际听感均需单独验证，不将构建成功写成真机通过。
