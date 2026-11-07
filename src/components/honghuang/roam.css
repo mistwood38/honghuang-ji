@@ -315,3 +315,9 @@
 }
 @media (min-width: 960px) { .roam-side { position: sticky; top: 8rem; } }
 @media (prefers-reduced-motion: reduce) { .roam-page button { transition: none; transform: none !important; } }
+
+.prepared-loadout { display: grid; gap: 1rem; margin: 1rem 0 1.6rem; padding: 1rem; border: 1px solid #af95633d; background: #0b211c; }
+.prepared-loadout label { display: grid; gap: .5rem; color: #ccb782; font-family: var(--font-serif); min-width: 0; }
+.prepared-loadout select { width: 100%; min-width: 0; min-height: 48px; color: #ded9bc; background: #102c25; border: 1px solid #9b85434d; padding: .6rem; font: .9rem var(--font-serif); }
+.prepared-loadout p { font-size: .88rem; line-height: 1.8; color: #b8c8b4; }
+@media(min-width: 720px) { .prepared-loadout { grid-template-columns: 1fr 1fr; } .prepared-loadout > p { grid-column: 1 / -1; } }

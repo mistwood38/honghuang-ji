@@ -44,12 +44,38 @@ export function CultivationLibrary({
         <div>
           <p className="eyebrow">识海藏卷 · 已悟 {learned.length} 部</p>
           <h2>一念择道</h2>
-          <p>万法可学，此刻主修一途。</p>
+          <p>一途为本，两法相辅。</p>
         </div>
       </div>
       <p className="library-guidance">
-        主修影响闭关、打坐与战斗攻势，并决定可施展的招式。闲时可自由转修，旧日所学仍然保留。
+        主修影响闭关、打坐与战斗攻势；另可准备两门已悟招式，临阵自由选择。辅修不叠加被动数值，消耗仍按各招式结算。只能在战外调整，挂机也会使用准备好的招式。
       </p>
+      <div className="prepared-loadout" aria-label="行前备法">
+        {([0, 1] as const).map((slot) => (
+          <label key={slot}>
+            <span>辅修{slot === 0 ? "一" : "二"}</span>
+            <select
+              aria-label={`辅修${slot + 1}`}
+              value={world.prepared[slot] ?? ""}
+              onChange={(event) =>
+                onAct({ type: "prepare-art", slot, artId: event.target.value || null })
+              }
+            >
+              <option value="">留一处空位</option>
+              {learned
+                .filter((id) => id !== world.equipped && world.prepared[1 - slot] !== id)
+                .map((id) => (
+                  <option key={id} value={id}>
+                    {ARTS[id]!.name} · {TECHNIQUES[id]?.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        ))}
+        {world.report?.title === "行前备法" ? (
+          <p role="status">{world.report.paragraphs[0]}</p>
+        ) : null}
+      </div>
       <div className="art-scrolls">
         {learned.map((id) => {
           const art = ARTS[id]!;

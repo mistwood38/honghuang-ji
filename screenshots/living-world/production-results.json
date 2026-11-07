@@ -1,0 +1,62 @@
+[
+  {
+    "width": 320,
+    "name": "old-save-local-repair-delivery-return",
+    "ok": true
+  },
+  {
+    "width": 320,
+    "name": "idle-keeps-local-reading-position",
+    "ok": true
+  },
+  {
+    "width": 320,
+    "name": "prepared-loadout-persists-and-acts-in-battle",
+    "ok": true
+  },
+  {
+    "width": 360,
+    "name": "old-save-local-repair-delivery-return",
+    "ok": true
+  },
+  {
+    "width": 360,
+    "name": "idle-keeps-local-reading-position",
+    "ok": true
+  },
+  {
+    "width": 360,
+    "name": "prepared-loadout-persists-and-acts-in-battle",
+    "ok": true
+  },
+  {
+    "width": 412,
+    "name": "old-save-local-repair-delivery-return",
+    "ok": true
+  },
+  {
+    "width": 412,
+    "name": "idle-keeps-local-reading-position",
+    "ok": true
+  },
+  {
+    "width": 412,
+    "name": "prepared-loadout-persists-and-acts-in-battle",
+    "ok": true
+  },
+  {
+    "width": 1280,
+    "name": "old-save-local-repair-delivery-return",
+    "ok": true
+  },
+  {
+    "width": 1280,
+    "name": "idle-keeps-local-reading-position",
+    "ok": true
+  },
+  {
+    "width": 1280,
+    "name": "prepared-loadout-persists-and-acts-in-battle",
+    "ok": true
+  }
+]
