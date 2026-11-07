@@ -4,7 +4,9 @@
 
 ## 获取
 
-打开仓库的 [Android APK 工作流](https://github.com/mistwood38/honghuang-ji/actions/workflows/android-apk.yml)，选择 `feat/factions-lineages` 分支对应的成功记录，在底部下载 `honghuang-ji-debug`，解压得到 `app-debug.apk`。下载需要登录 GitHub，构建产物保留 14 天。
+本次已成功生成：[下载新版测试包](https://github.com/mistwood38/honghuang-ji/actions/runs/42363847760/artifacts/13571255518)（2026-11-07，游戏代码 `fc44e5c`，约 21.9 MiB；下载产物保留至 2026-11-21）。
+
+也可以打开仓库的 [Android APK 工作流](https://github.com/mistwood38/honghuang-ji/actions/workflows/android-apk.yml)，选择 `feat/factions-lineages` 分支对应的成功记录，在底部下载 `honghuang-ji-debug`，解压得到 `app-debug.apk`。下载需要登录 GitHub，构建产物保留 14 天。
 
 这是 debug 签名测试包，不是应用商店发布。没有合并 `main`。工作流在开发分支代码变更时构建，纯文档和截图更新不重复打包。
 

@@ -37,7 +37,13 @@
 
 ![桌面结局与继续修行](../../screenshots/factions-lineages/ending-1280.png)
 
-安卓原生打包：已为独立开发分支启用现有 GitHub Actions 工作流；具体结果以该分支对应运行记录为准。
+## 安卓测试包
+
+- 原生构建成功：[运行 42363847760](https://github.com/mistwood38/honghuang-ji/actions/runs/42363847760)，对应游戏代码提交 `fc44e5c17f93dcdb6a0f2e130b07b3cdc725fd79`。
+- [下载 honghuang-ji-debug](https://github.com/mistwood38/honghuang-ji/actions/runs/42363847760/artifacts/13571255518)，需登录 GitHub，产物保留至 2026-11-21。解压后为 `app-debug.apk`，APK 22,980,131 字节（约 21.9 MiB）。
+- 实际下载并打开 APK 检查：包含新版族脉代码、12 个本地音频文件（6 配乐 + 6 音效）和 76 个美术资源；音频内容与项目原文件逐一一致；没有配置远程网页作为客户端入口。
+- 下载的 artifact ZIP 摘要与 GitHub 返回值一致。APK SHA-256：`eb411584cc91fa6fc86d93507eece62080f9bf08a1be07604196ae4bd924c56d`。
+- 这是 debug 安装包，未进行真机安装、飞行模式、系统后台恢复或听感验收；以上仅为原生构建和包内资源验证。
 
 ## 范围与限制
 
