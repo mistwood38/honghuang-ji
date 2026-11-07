@@ -5,6 +5,14 @@ on:
   push:
     branches:
       - art/stage-two-cinematic
+      - feat/factions-lineages
+    paths-ignore:
+      - "docs/**"
+      - "screenshots/**"
+      - "**/*.md"
+
+permissions:
+  contents: read
 
 jobs:
   debug-apk:

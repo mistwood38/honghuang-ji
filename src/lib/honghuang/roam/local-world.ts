@@ -1,3 +1,4 @@
+import { advancePoliticsAt } from "./politics.ts";
 import type { Origin, SaveData } from "../types.ts";
 import { ARTS, GOODS, ROAM_PLACES, clamp } from "./catalog.ts";
 import type { GoodId, LivingWorld, LocalAct, PlaceId, RoamState, SiteState } from "./state.ts";
@@ -315,6 +316,7 @@ export function advanceLiving(world: RoamState) {
     const due = Math.min(
       ...pendingSites.map((site) => living.sites[site.id]!.ready),
       ...PEOPLE.map((person) => living.people[person.id]!.nextMove),
+      world.politics.nextDay,
     );
     if (due > world.day) break;
     for (const site of pendingSites) {
@@ -333,6 +335,7 @@ export function advanceLiving(world: RoamState) {
       const key = `restored-${site.id}`;
       if (!world.karma.includes(key)) world.karma.push(key);
     }
+    advancePoliticsAt(world, due);
     for (const person of PEOPLE) {
       const actor = living.people[person.id]!;
       if (actor.nextMove !== due) continue;

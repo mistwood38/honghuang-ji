@@ -25,6 +25,9 @@ import type { Origin } from "@/lib/honghuang/types";
 import type { BattlePlan, PlaceId, RoamAct } from "@/lib/honghuang/roam/state";
 import { Artwork, Atmosphere } from "./art";
 import { ActionButton } from "./action-button";
+import { LineageView } from "./lineage-view";
+import { WorldAffairs } from "./world-affairs";
+import { LINEAGES, trialProof } from "@/lib/honghuang/roam/lineages";
 import { LocalWorld } from "./local-world";
 import { CultivationLibrary } from "./cultivation-library";
 import "./roam.css";
@@ -171,8 +174,8 @@ export function RoamView() {
                   <span style={{ width: `${Math.max(6, (world.battle.hp / world.battle.max) * 100)}%` }} />
                 </div>
                 <div className="copy">
-                  {world.battle.log.slice(-4).map((line) => (
-                    <p key={line}>{line}</p>
+                  {world.battle.log.slice(-4).map((line, index) => (
+                    <p key={index}>{line}</p>
                   ))}
                 </div>
                 <div className="roam-actions">
@@ -234,7 +237,7 @@ export function RoamView() {
 function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
   const save = useSave();
   const world = save.world;
-  const [tab, setTab] = useState<"farm" | "travel" | "arts" | "bag" | "beast" | "home">("farm");
+  const [tab, setTab] = useState<"farm" | "travel" | "arts" | "bag" | "beast" | "home" | "lineage" | "affairs">("farm");
   const tabs = useRef<HTMLDivElement>(null);
   function openTab(next: typeof tab) {
     setTab(next);
@@ -275,6 +278,8 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
             ["bag", "储物"],
             ["beast", "灵兽"],
             ["home", "洞府"],
+            ["lineage", "族脉"],
+            ["affairs", "世局"],
           ] as const
         ).map(([id, label]) => (
           <button key={id} type="button" aria-pressed={tab === id} className={tab === id ? "is-on" : ""} onClick={() => openTab(id)}>
@@ -282,6 +287,21 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
           </button>
         ))}
       </div>
+      {tab === "lineage" ? (
+        <LineageView
+          onAct={onAct}
+          onExplore={() => openTab("travel")}
+          onAffairs={() => openTab("affairs")}
+          onPractice={() => openTab("farm")}
+        />
+      ) : null}
+      {tab === "affairs" ? <WorldAffairs onAct={onAct} /> : null}
+      {tab === "farm" &&
+      save.origin &&
+      world.lineages[save.origin]?.stage === 4 &&
+      world.karma.includes(trialProof(save.origin)) ? (
+        <ActionButton label="回看族脉后续" emblem="scroll" onClick={() => openTab("lineage")} />
+      ) : null}
       {tab === "farm" ? (
         <>
           <div className="roam-actions">
@@ -394,12 +414,19 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
 }
 
 function continuing(world: NonNullable<ReturnType<typeof useSave.getState>["world"]>) {
-  const stories = CHAINS.filter((chain) => world.quests[chain.id]?.status === "active").map((chain) => chain.name);
+  const stories = CHAINS.filter((chain) => world.quests[chain.id]?.status === "active").map(
+    (chain) => chain.name,
+  );
   const errands = PEOPLE.flatMap((person) => {
     const task = world.living.errands[person.id];
-    return task && task.stage !== "done" ? [`${person.name}所托${task.stage === "delivered" ? "（待复命）" : "（待送达）"}`] : [];
+    return task && task.stage !== "done"
+      ? [`${person.name}所托${task.stage === "delivered" ? "（待复命）" : "（待送达）"}`]
+      : [];
   });
-  return [...stories, ...errands].join("、");
+  const paths = Object.entries(world.lineages).flatMap(([origin, path]) =>
+    path && !path.ending ? [`${LINEAGES[origin as Origin].name}（第 ${path.stage + 1} 章）`] : [],
+  );
+  return [...stories, ...errands, ...paths].join("、");
 }
 
 function OriginGate({

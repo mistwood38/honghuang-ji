@@ -18,6 +18,8 @@ import {
   eraOf,
 } from "./catalog.ts";
 import { CHAINS, EVENTS, eventById } from "./events.ts";
+import { adjustFaction, affairsOptions, createPolitics, normalizePolitics, performAffairs } from "./politics.ts";
+import { lineageOptions, normalizeLineages, performLineage } from "./lineages.ts";
 import { BATTLE_PLANS } from "./battle-plans.ts";
 import { normalizePrepared, preparedTechniques, TECHNIQUES } from "./techniques.ts";
 import { advanceLiving, createLiving, localOptions, normalizeLiving, performLocal, sameLocalAct } from "./local-world.ts";
@@ -74,6 +76,8 @@ export function createRoam(): RoamState {
     prepared: [null, null],
     battlePlan: "balanced",
     living: createLiving(),
+    politics: createPolitics(),
+    lineages: {},
     spells: [],
     bag: {},
     relations: {},
@@ -133,6 +137,8 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     prepared: normalizePrepared(body.prepared, learned, main),
     battlePlan: body.battlePlan && Object.hasOwn(BATTLE_PLANS, body.battlePlan) ? body.battlePlan : "balanced",
     living: normalizeLiving(body.living, day),
+    politics: normalizePolitics(body.politics, day),
+    lineages: normalizeLineages(body.lineages),
     spells: Array.isArray(body.spells) ? body.spells.filter((id) => typeof id === "string") : [],
     karma: Array.isArray(body.karma) ? body.karma.filter((id) => typeof id === "string") : [],
     seen: Array.isArray(body.seen) ? body.seen.filter((id) => typeof id === "string") : [],
@@ -375,6 +381,11 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
       battleId = effect.id;
     } else if (effect.t === "skew") {
       world.eraSkew += effect.n;
+    } else if (effect.t === "faction") {
+      if (Object.hasOwn(world.politics.factions, effect.id)) {
+        adjustFaction(world, effect.id, effect.power, effect.supply);
+        changes.push("护路势力的声威与补给改变");
+      }
     } else if (effect.t === "place") {
       world.place = effect.id;
       if (!world.known.includes(effect.id)) world.known.push(effect.id);
@@ -602,6 +613,8 @@ export function applyRoam(save: SaveData, act: RoamAct, rng: () => number = Math
   next.world = next.world ?? createRoam();
   next.world.living ??= createLiving(next.world.day);
   next.world.prepared ??= [null, null];
+  next.world.politics ??= createPolitics(next.world.day);
+  next.world.lineages ??= {};
   dispatch(next, next.world, act, rng);
   advanceLiving(next.world);
   next.version = 2;
@@ -625,7 +638,38 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
     choose(save, world, act.choiceId, rng);
     return;
   }
-  if (act.type === "cultivate") cultivate(save, world, rng);
+  if (act.type === "affairs" || act.type === "lineage") {
+    const options = () => (act.type === "affairs" ? affairsOptions(save) : lineageOptions(save));
+    const same = (candidate: RoamAct) =>
+      candidate.type === act.type &&
+      candidate.what === act.what &&
+      (candidate.type === "affairs" && act.type === "affairs"
+        ? candidate.faction === act.faction
+        : candidate.type === "lineage" &&
+          act.type === "lineage" &&
+          candidate.chapter === act.chapter &&
+          candidate.choiceId === act.choiceId);
+    let option = options().find((item) => same(item.act));
+    if (!option || option.disabled) return;
+    if (!(act.type === "lineage" && act.what === "begin")) {
+      accrueIdle(save, world, Date.now(), rng);
+      world.idle = null;
+      option = options().find((item) => same(item.act));
+      if (!option || option.disabled) {
+        world.report = {
+          title: "先整顿行囊",
+          paragraphs: ["刚才那段修行已结算，如今的资源或道躯不足以继续。没有再扣除这一步的消耗。"],
+          changes: ["挂机已停下"],
+        };
+        return;
+      }
+    }
+    const apply = (effects: Effect[]) => applyEffects(save, world, effects, rng);
+    const days =
+      act.type === "affairs" ? performAffairs(save, act, apply) : performLineage(save, act, apply);
+    if (days) spend(world, days);
+    if (world.report) remember(world, world.report.title, world.report.paragraphs[0] ?? "");
+  } else if (act.type === "cultivate") cultivate(save, world, rng);
   else if (act.type === "local" || act.type === "person") {
     const option = localOptions(save).find((option) => sameLocalAct(option.act, act));
     if (!option || option.disabled) return;
@@ -1920,9 +1964,23 @@ export function legalActs(save: SaveData): RoamAct[] {
   if (world.phase === "event") {
     const event = world.eventId ? eventById(world.eventId) : null;
     if (!event) return [{ type: "choose", choiceId: "__leave" }];
-    return visibleChoices(world, event).map((choice) => ({ type: "choose" as const, choiceId: choice.id }));
+    return visibleChoices(world, event).map((choice) => ({
+      type: "choose" as const,
+      choiceId: choice.id,
+    }));
   }
-  return [...menuActs(save).map((item) => item.act), ...localOptions(save).filter((item) => !item.disabled).map((item) => item.act)];
+  return [
+    ...menuActs(save).map((item) => item.act),
+    ...localOptions(save)
+      .filter((item) => !item.disabled)
+      .map((item) => item.act),
+    ...affairsOptions(save)
+      .filter((item) => !item.disabled)
+      .map((item) => item.act),
+    ...lineageOptions(save)
+      .filter((item) => !item.disabled)
+      .map((item) => item.act),
+  ];
 }
 
 const LEAK = /道行\s*[+\-＋－]\s*\d|气运\s*[+\-＋－]\s*\d|心魔\s*[+\-＋－]\s*\d|仁德\s*[+\-＋－]\s*\d|杀伐\s*[+\-＋－]\s*\d|道躯\s*[+\-＋－]\s*\d/;

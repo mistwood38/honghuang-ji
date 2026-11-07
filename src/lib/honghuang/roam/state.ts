@@ -16,15 +16,30 @@ export type PlaceId =
   | "board";
 
 export type GoodId =
-  | "herb"
-  | "dew"
-  | "ore"
-  | "clay"
-  | "salt"
-  | "seed"
-  | "pill-qi"
-  | "pill-life"
-  | "pill-break";
+  "herb" | "dew" | "ore" | "clay" | "salt" | "seed" | "pill-qi" | "pill-life" | "pill-break";
+
+export type FactionId = "chan" | "jie" | "wu" | "yao" | "hearth";
+export type PoliticsState = {
+  nextDay: number;
+  cycle: number;
+  factions: Record<
+    FactionId,
+    { power: number; supply: number; lastAid: number; lastPatrol: number; lastTalk: number }
+  >;
+  relations: Record<string, number>;
+  truces: Record<string, number>;
+  control: Partial<Record<PlaceId, FactionId>>;
+  history: { day: number; text: string }[];
+};
+export type LineageProgress = {
+  stage: number;
+  nextDay: number;
+  history: { chapter: number; choice: string; day: number; title: string; text: string[] }[];
+  ending: string | null;
+};
+export type WorldAct =
+  | { type: "affairs"; faction: FactionId; what: "aid" | "mediate" | "patrol" }
+  | { type: "lineage"; what: "begin" | "choose" | "trial"; chapter?: number; choiceId?: string };
 
 export type Effect =
   | { t: "stat"; k: StatKey; n: number }
@@ -51,7 +66,8 @@ export type Effect =
   | { t: "item"; id: string }
   | { t: "battle"; id: string }
   | { t: "skew"; n: number }
-  | { t: "place"; id: PlaceId };
+  | { t: "place"; id: PlaceId }
+  | { t: "faction"; id: FactionId; power: number; supply: number };
 
 export type EventChoice = {
   id: string;
@@ -125,7 +141,11 @@ export type Haul = {
 export type RoamReport = { title: string; paragraphs: string[]; changes: string[] };
 
 export type LocalAct =
-  | { type: "local"; what: "survey" | "gather" | "restore" | "heritage" | "strip" | "rest" | "tend"; site: string }
+  | {
+      type: "local";
+      what: "survey" | "gather" | "restore" | "heritage" | "strip" | "rest" | "tend";
+      site: string;
+    }
   | { type: "person"; what: "talk" | "accept" | "deliver" | "finish"; id: string };
 export type SiteState = {
   visited: boolean;
@@ -139,7 +159,15 @@ export type LivingWorld = {
   sites: Record<string, SiteState>;
   regions: Record<string, { strain: number; prosperity: number }>;
   people: Record<string, { place: PlaceId; nextMove: number; journey: number; met: boolean }>;
-  errands: Record<string, { stage: "carrying" | "delivered" | "done"; destination: PlaceId; completed: number; count: number }>;
+  errands: Record<
+    string,
+    {
+      stage: "carrying" | "delivered" | "done";
+      destination: PlaceId;
+      completed: number;
+      count: number;
+    }
+  >;
   news: { day: number; place: PlaceId; text: string }[];
 };
 
@@ -161,6 +189,8 @@ export type RoamState = {
   battlePlan: BattlePlan;
   /** Local objects, inhabitants and their consequences; absent in older saves. */
   living: LivingWorld;
+  politics: PoliticsState;
+  lineages: Partial<Record<Origin, LineageProgress>>;
   spells: string[];
   bag: Partial<Record<GoodId, number>>;
   relations: Record<string, number>;
@@ -206,6 +236,7 @@ export type RoamState = {
 
 export type RoamAct =
   | LocalAct
+  | WorldAct
   | { type: "origin"; origin: Origin; name: string }
   | { type: "cultivate" }
   | { type: "equip-art"; artId: string }
@@ -225,7 +256,12 @@ export type RoamAct =
   | { type: "sect"; what: "join" | "task" | "leave" | "learn" }
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
-  | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm" | "rift"; now?: number; place?: PlaceId }
+  | {
+      type: "idle";
+      what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm" | "rift";
+      now?: number;
+      place?: PlaceId;
+    }
   | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" | "technique"; artId?: string }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };
