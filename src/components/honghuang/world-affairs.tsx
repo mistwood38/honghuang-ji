@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSave } from "@/lib/honghuang/store";
 import { ROAM_PLACES } from "@/lib/honghuang/roam/catalog";
 import {
@@ -9,16 +10,33 @@ import {
 } from "@/lib/honghuang/roam/politics";
 import { routeTo } from "@/lib/honghuang/roam/local-world";
 import { artForPlace } from "@/lib/honghuang/visuals";
-import type { RoamAct } from "@/lib/honghuang/roam/state";
+import type { RoamAct, RoamReport, FactionId } from "@/lib/honghuang/roam/state";
 import { ActionButton } from "./action-button";
+import { ActionOutcome } from "./action-outcome";
 import "./world-affairs.css";
 
 export function WorldAffairs({ onAct }: { onAct: (act: RoamAct) => void }) {
+  const [receipt, setReceipt] = useState<{
+    faction: FactionId;
+    what: string;
+    report: RoamReport;
+  } | null>(null);
   const save = useSave(),
     world = save.world;
   if (!world) return null;
   const politics = world.politics,
     options = affairsOptions(save);
+  function act(action: Extract<RoamAct, { type: "affairs" }>) {
+    const before = useSave.getState().world;
+    onAct(action);
+    const after = useSave.getState().world;
+    if (
+      after?.phase === "free" &&
+      after.report &&
+      (after.day !== before?.day || JSON.stringify(after.report) !== JSON.stringify(before?.report))
+    )
+      setReceipt({ faction: action.faction, what: action.what, report: after.report });
+  }
   return (
     <section className="world-affairs" aria-label="神魔世局">
       <div className="affairs-cover">
@@ -32,19 +50,6 @@ export function WorldAffairs({ onAct }: { onAct: (act: RoamAct) => void }) {
       <p className="affairs-intro">
         每八个游戏日，各方护地、整备或相争。你的支援与停战书会留下影响；不必加入门墙，散修也能改变一段路的命运。
       </p>
-      {world.report ? (
-        <div className="local-result" role="status" aria-label="世局行动结果">
-          <strong>{world.report.title}</strong>
-          {world.report.paragraphs.map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-          <ul>
-            {world.report.changes.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
       <div className="affairs-conflicts">
         {CONFLICTS.map((conflict) => {
           const key = relationKey(conflict.a, conflict.b),
@@ -127,9 +132,12 @@ export function WorldAffairs({ onAct }: { onAct: (act: RoamAct) => void }) {
                                 : "scroll"
                           }
                           disabled={option.disabled}
-                          onClick={() => onAct(option.act)}
+                          onClick={() => act(option.act)}
                         />
                         {option.disabled ? <p className="local-cost">{option.reason}</p> : null}
+                        {receipt?.faction === faction.id && receipt.what === option.act.what ? (
+                          <ActionOutcome report={receipt.report} label="世局行动结果" />
+                        ) : null}
                       </div>
                     ))}
                   {path[0] ? (

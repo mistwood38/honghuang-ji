@@ -278,3 +278,23 @@ test("chapter costs are validated in the engine, never pre-awarded or spent belo
   assert.equal(save.world!.bag.dew ?? 0, 0);
   assert.equal(save.world!.lineages.dao!.stage, 3);
 });
+
+test("a wounded lineage challenger sees the actual requirement and cannot enter early", () => {
+  const save = fixture();
+  save.stats.dao = 12;
+  save.stats.life = 19;
+  save.world!.place = "edge";
+  save.world!.lineages.dao = normalizeLineages({
+    dao: {
+      history: LINEAGES.dao.chapters
+        .slice(0, 4)
+        .map((ch, chapter) => ({ chapter, choice: ch.choices[0]!.id, day: 1 })),
+    },
+  }).dao!;
+  const trial = lineageOptions(save)[0]!;
+  assert.ok(trial.disabled);
+  assert.match(trial.hint!, /道躯不足 20.*调息/);
+  assert.deepEqual(act(save, trial.act), save);
+  save.stats.life = 20;
+  assert.equal(lineageOptions(save)[0]!.disabled, false);
+});

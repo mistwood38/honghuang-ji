@@ -1,10 +1,13 @@
+import { useRef, useState } from "react";
 import { useSave } from "@/lib/honghuang/store";
 import { LINEAGES, lineageOptions, lineageRequirement } from "@/lib/honghuang/roam/lineages";
 import { routeTo } from "@/lib/honghuang/roam/local-world";
 import { ROAM_PLACES } from "@/lib/honghuang/roam/catalog";
 import { artForPlace } from "@/lib/honghuang/visuals";
-import type { RoamAct } from "@/lib/honghuang/roam/state";
+import type { RoamAct, RoamReport } from "@/lib/honghuang/roam/state";
 import { ActionButton } from "./action-button";
+import { ActionOutcome } from "./action-outcome";
+import { focusReadingTarget } from "./reading-focus";
 import "./world-affairs.css";
 
 export function LineageView({
@@ -18,6 +21,12 @@ export function LineageView({
   onAffairs: () => void;
   onPractice: () => void;
 }) {
+  const [receipt, setReceipt] = useState<{
+    stage: number;
+    report: RoamReport;
+    selected: string;
+  } | null>(null);
+  const chapterTarget = useRef<HTMLElement>(null);
   const save = useSave(),
     world = save.world,
     origin = save.origin;
@@ -25,67 +34,88 @@ export function LineageView({
     return <p className="roam-empty">先在此生选定根骨，再展开属于你的长卷。</p>;
   const definition = LINEAGES[origin],
     progress = world.lineages[origin];
-  const chapter = definition.chapters[progress?.stage ?? 0];
+  const shownStage = receipt?.stage ?? progress?.stage ?? 0;
+  const chapter = definition.chapters[shownStage];
   const place = chapter?.place ?? definition.chapters[5]!.place;
   const path = routeTo(world, place),
     requirement = lineageRequirement(save);
   const options = lineageOptions(save);
+  function choose(action: RoamAct, selected: string) {
+    const stage = useSave.getState().world?.lineages[origin!]?.stage;
+    onAct(action);
+    const after = useSave.getState().world;
+    if (
+      action.type === "lineage" &&
+      action.what === "choose" &&
+      stage !== undefined &&
+      after?.lineages[origin!]?.stage === stage + 1 &&
+      after.report
+    )
+      setReceipt({ stage, selected, report: after.report });
+  }
+  function continueReading() {
+    setReceipt(null);
+    requestAnimationFrame(() => focusReadingTarget(chapterTarget.current));
+  }
   return (
     <section className="lineage-view" aria-label="族脉长卷">
       <div className="affairs-cover">
         <img src={artForPlace(place).small} alt="" width="640" height="360" loading="lazy" />
         <div>
           <p className="eyebrow">
-            此生可书 · {progress?.ending ? "六章已成" : `第 ${(progress?.stage ?? 0) + 1} / 6 章`}
+            此生可书 · {progress?.ending ? "六章已成" : `第 ${shownStage + 1} / 6 章`}
           </p>
           <h2>{definition.name}</h2>
           <p>{definition.subtitle}</p>
         </div>
       </div>
-      {world.report ? (
-        <div className="local-result" role="status" aria-label="族脉行动结果">
-          <strong>{world.report.title}</strong>
-          {world.report.paragraphs.map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-          <ul>
-            {world.report.changes.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {progress?.ending ? (
-        <div className="lineage-ending">
+      {progress?.ending && !receipt ? (
+        <article className="lineage-ending" ref={chapterTarget} tabIndex={-1}>
           <p className="eyebrow">此卷落款</p>
           <h3>{progress.ending}</h3>
           <p>
             这一卷已经写完，此生仍在继续。你留下的因果、停战之约和所学，会跟随之后的修炼与游历。
           </p>
           <ActionButton label="继续自己的修行" emblem="lotus" onClick={onPractice} />
-        </div>
+        </article>
       ) : (
-        <article className="lineage-chapter">
+        <article className="lineage-chapter" ref={chapterTarget} tabIndex={-1}>
           <p className="eyebrow">{ROAM_PLACES[place].name}</p>
           <h3>{chapter!.title}</h3>
           {chapter!.prose.map((line, i) => (
             <p key={i}>{line}</p>
           ))}
           <p className="lineage-objective">此章要做：{chapter!.objective}</p>
-          {requirement ? <p className="lineage-requirement">{requirement}</p> : null}
-          <div className="local-actions">
-            {options.map((option) => (
-              <ActionButton
-                key={option.act.choiceId ?? option.act.what}
-                label={option.label}
-                hint={option.hint}
-                surface="plaque"
-                disabled={option.disabled}
-                onClick={() => onAct(option.act)}
+          {requirement && !receipt ? <p className="lineage-requirement">{requirement}</p> : null}
+          {receipt ? (
+            <div className="lineage-receipt">
+              <ActionOutcome
+                report={receipt.report}
+                selected={receipt.selected}
+                label="族脉行动结果"
               />
-            ))}
-          </div>
-          {progress ? (
+              <ActionButton
+                label={progress?.ending ? "查看此卷结局" : "续读下一章"}
+                surface="plaque"
+                emblem="scroll"
+                onClick={continueReading}
+              />
+            </div>
+          ) : (
+            <div className="local-actions">
+              {options.map((option) => (
+                <ActionButton
+                  key={option.act.choiceId ?? option.act.what}
+                  label={option.label}
+                  hint={option.hint}
+                  surface="plaque"
+                  disabled={option.disabled}
+                  onClick={() => choose(option.act, option.label)}
+                />
+              ))}
+            </div>
+          )}
+          {progress && !receipt ? (
             <div className="lineage-navigation">
               {path[0] ? (
                 <ActionButton

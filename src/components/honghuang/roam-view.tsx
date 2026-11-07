@@ -41,6 +41,8 @@ function moodForPlace(place: PlaceId): SceneMood {
   return "mist";
 }
 
+type RoamTab = "farm" | "travel" | "arts" | "bag" | "beast" | "home" | "lineage" | "affairs";
+
 export function RoamView() {
   const save = useSave();
   const roam = useSave((state) => state.roam);
@@ -50,6 +52,10 @@ export function RoamView() {
   const idleKind = world?.idle?.kind;
   const [sheet, setSheet] = useState<"move" | "make" | "sect" | null>(null);
   const [draft, setDraft] = useState("");
+  const [tab, setTab] = useState<RoamTab>(() => {
+    const battleId = useSave.getState().world?.battle?.id;
+    return battleId?.startsWith("lineage-") ? "lineage" : battleId?.startsWith("patrol-") ? "affairs" : "farm";
+  });
 
   useEffect(() => {
     if (phase !== "free" || retreat || idleKind !== "wander") return;
@@ -81,6 +87,7 @@ export function RoamView() {
 
   function act(action: Parameters<typeof roam>[0]) {
     setSheet(null);
+    if (action.type === "origin") setTab("farm");
     const battleActions = document.querySelector(".roam-battle .roam-actions");
     const previousTop = battleActions?.getBoundingClientRect().top;
     const oldPhase = useSave.getState().world?.phase;
@@ -150,7 +157,7 @@ export function RoamView() {
               </div>
             ) : null}
 
-            {world.phase === "free" && !world.retreat ? <FarmDesk onAct={act} /> : null}
+            {world.phase === "free" && !world.retreat ? <FarmDesk onAct={act} tab={tab} onTabChange={setTab} /> : null}
 
             {world.phase === "event" && event ? (
               <div className="choice-list">
@@ -234,13 +241,12 @@ export function RoamView() {
   );
 }
 
-function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
+function FarmDesk({ onAct, tab, onTabChange }: { onAct: (act: RoamAct) => void; tab: RoamTab; onTabChange: (tab: RoamTab) => void }) {
   const save = useSave();
   const world = save.world;
-  const [tab, setTab] = useState<"farm" | "travel" | "arts" | "bag" | "beast" | "home" | "lineage" | "affairs">("farm");
   const tabs = useRef<HTMLDivElement>(null);
   function openTab(next: typeof tab) {
-    setTab(next);
+    onTabChange(next);
     // Only an explicit panel change navigates here; background ticks never do.
     requestAnimationFrame(() => {
       if (!tabs.current) return;
