@@ -41,4 +41,12 @@
 
 [修复前回归结果](../../screenshots/reading-flow/before-results.json) · [正式构建回归结果](../../screenshots/reading-flow/results.json)。
 
-安卓安装包由开发分支的现有工作流构建，结果见后续记录。真机安装、音频听感、飞行模式、系统后台恢复不包含在浏览器尺寸测试中。
+## 安卓包
+
+[构建 42373301492](https://github.com/mistwood38/honghuang-ji/actions/runs/42373301492) 已成功，对应游戏代码 `cc8252fbbf2cf2b48b60d808d0a181e6a8160c7e`。
+
+[下载最新测试包](https://github.com/mistwood38/honghuang-ji/actions/runs/42373301492/artifacts/13573898977)（需登录 GitHub，产物保留至 2026-11-21）。APK 大小 22,980,980 字节，约 21.9 MiB。
+
+已实际下载并核对包内包含新版续章代码、12 个音频文件及 76 个美术资源；音频与源文件逐一一致，无远程网页入口。下载 ZIP 的摘要与 GitHub 记录一致。APK SHA-256：`fd7b645d82752432da28b956362a6217eca8a3c3a86750352b07f54e6d7bead3`。
+
+真机安装、音频听感、飞行模式、系统后台恢复不包含在浏览器尺寸测试中。
