@@ -1,4 +1,32 @@
 /** Known costs and effects, shared by the rule engine and the technique cards. */
+import type { RoamState } from "./state.ts";
+
+export function normalizePrepared(
+  raw: unknown,
+  learned: string[],
+  main: string | null,
+): [string | null, string | null] {
+  const seen = new Set([main]);
+  const values = Array.isArray(raw) ? raw : [];
+  return [0, 1].map((slot) => {
+    const id: unknown = values[slot];
+    if (
+      typeof id !== "string" ||
+      !learned.includes(id) ||
+      !Object.hasOwn(TECHNIQUES, id) ||
+      seen.has(id)
+    )
+      return null;
+    seen.add(id);
+    return id;
+  }) as [string | null, string | null];
+}
+export function preparedTechniques(world: RoamState): string[] {
+  return [...new Set([world.equipped, ...(world.prepared ?? [])])].filter((id): id is string =>
+    Boolean(id && world.arts.includes(id) && Object.hasOwn(TECHNIQUES, id)),
+  );
+}
+
 export type Technique = {
   name: string;
   cost: number;

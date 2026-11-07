@@ -19,11 +19,13 @@ import {
 } from "@/lib/honghuang/roam/engine";
 import { eventById } from "@/lib/honghuang/roam/events";
 import { BATTLE_PLANS } from "@/lib/honghuang/roam/battle-plans";
-import { TECHNIQUES } from "@/lib/honghuang/roam/techniques";
+import { HERITAGES, PEOPLE } from "@/lib/honghuang/roam/local-world";
+import { preparedTechniques, TECHNIQUES } from "@/lib/honghuang/roam/techniques";
 import type { Origin } from "@/lib/honghuang/types";
 import type { BattlePlan, PlaceId, RoamAct } from "@/lib/honghuang/roam/state";
 import { Artwork, Atmosphere } from "./art";
 import { ActionButton } from "./action-button";
+import { LocalWorld } from "./local-world";
 import { CultivationLibrary } from "./cultivation-library";
 import "./roam.css";
 
@@ -98,7 +100,7 @@ export function RoamView() {
   const realm = realmOf(save.stats.dao);
   const art = artForPlace(world.place);
   const event = world.eventId ? eventById(world.eventId) : null;
-  const technique = world.equipped && Object.hasOwn(TECHNIQUES, world.equipped) ? TECHNIQUES[world.equipped] : undefined;
+  const techniques = preparedTechniques(world);
   const xiuLabel = world.xiuwei >= 100 ? "火候已至" : world.xiuwei >= 60 ? "将满" : world.xiuwei >= 25 ? "半途" : "初凝";
 
   return (
@@ -178,9 +180,12 @@ export function RoamView() {
                   <ActionButton label="法" hint="耗 4 灵气" action={{ type: "combat", move: "spell" }} onClick={() => act({ type: "combat", move: "spell" })} />
                   <ActionButton label="守" hint="卸下还击" action={{ type: "combat", move: "guard" }} onClick={() => act({ type: "combat", move: "guard" })} />
                   <ActionButton label="脱身" hint="尝试离开" action={{ type: "combat", move: "flee" }} onClick={() => act({ type: "combat", move: "flee" })} />
-                  {technique ? <ActionButton label={`${technique.name} · ${technique.cost} 灵气`} action={{ type: "combat", move: "technique" }} surface="plaque" className="technique-action" disabled={world.lingqi < technique.cost} onClick={() => act({ type: "combat", move: "technique" })} /> : null}
+                  {techniques.map((id) => {
+                    const technique = TECHNIQUES[id]!;
+                    return <ActionButton key={id} label={`${technique.name} · ${technique.cost} 灵气`} action={{ type: "combat", move: "technique", artId: id }} surface="plaque" className="technique-action" disabled={world.lingqi < technique.cost} onClick={() => act({ type: "combat", move: "technique", artId: id })} />;
+                  })}
                 </div>
-                {technique ? <p className="roam-risk">{technique.detail}{world.lingqi < technique.cost ? " 当前灵气不足。" : ""}</p> : null}
+                {techniques.map((id) => <p key={id} className="roam-risk"><strong>{TECHNIQUES[id]!.name}：</strong>{TECHNIQUES[id]!.detail}</p>)}
               </div>
             ) : null}
 
@@ -328,7 +333,7 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
               </ActionButton>
             ))}
           </div>
-          <p className="farm-map-label">战报 · 主修招式与手动斗法共用规则</p>
+          <p className="farm-map-label">战报 · 主辅招式与手动斗法共用规则</p>
           <ol className="farm-log">
             {(world.farmLog.length ? world.farmLog : ["挂机还没打出第一场。"]).map((line, index) => (
               <li key={`${index}-${line}`}>{line}</li>
@@ -340,6 +345,7 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
       {tab === "arts" ? <CultivationLibrary onAct={onAct} onStudy={() => openTab("home")} /> : null}
       {tab === "travel" ? (
         <section className="travel-atlas" aria-label="可游历地点">
+          <LocalWorld onAct={onAct} />
           <div className="travel-heading"><p className="eyebrow">足下有路 · 天地无涯</p><h2>往何处去</h2><p>行路会暂歇挂机。越过险地之前，先看清山势。</p></div>
           <div className="travel-cards">
             {acts.filter((item) => item.act.type === "travel").map((item) => {
@@ -388,9 +394,12 @@ function FarmDesk({ onAct }: { onAct: (act: RoamAct) => void }) {
 }
 
 function continuing(world: NonNullable<ReturnType<typeof useSave.getState>["world"]>) {
-  return CHAINS.filter((chain) => world.quests[chain.id]?.status === "active")
-    .map((chain) => chain.name)
-    .join("、");
+  const stories = CHAINS.filter((chain) => world.quests[chain.id]?.status === "active").map((chain) => chain.name);
+  const errands = PEOPLE.flatMap((person) => {
+    const task = world.living.errands[person.id];
+    return task && task.stage !== "done" ? [`${person.name}所托${task.stage === "delivered" ? "（待复命）" : "（待送达）"}`] : [];
+  });
+  return [...stories, ...errands].join("、");
 }
 
 function OriginGate({
@@ -417,7 +426,7 @@ function OriginGate({
           <ActionButton key={origin} label={ORIGINS[origin].name} surface="plaque" onClick={() => onPick(origin, draft)}>
             <span>
             <strong>{ORIGINS[origin].name}</strong>
-            <span>{ORIGINS[origin].line}</span>
+            <span>{ORIGINS[origin].line}</span><small>{HERITAGES[origin].name} · 探索解法：{HERITAGES[origin].action}</small>
             </span>
           </ActionButton>
         ))}

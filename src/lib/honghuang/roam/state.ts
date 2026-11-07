@@ -124,6 +124,25 @@ export type Haul = {
 
 export type RoamReport = { title: string; paragraphs: string[]; changes: string[] };
 
+export type LocalAct =
+  | { type: "local"; what: "survey" | "gather" | "restore" | "heritage" | "strip" | "rest" | "tend"; site: string }
+  | { type: "person"; what: "talk" | "accept" | "deliver" | "finish"; id: string };
+export type SiteState = {
+  visited: boolean;
+  state: "wild" | "mending" | "restored" | "stripped";
+  ready: number;
+  cooldown: number;
+  method: string;
+};
+export type LivingWorld = {
+  lastDay: number;
+  sites: Record<string, SiteState>;
+  regions: Record<string, { strain: number; prosperity: number }>;
+  people: Record<string, { place: PlaceId; nextMove: number; journey: number; met: boolean }>;
+  errands: Record<string, { stage: "carrying" | "delivered" | "done"; destination: PlaceId; completed: number; count: number }>;
+  news: { day: number; place: PlaceId; text: string }[];
+};
+
 export type RoamState = {
   phase: "origin" | "free" | "event" | "battle";
   day: number;
@@ -136,8 +155,12 @@ export type RoamState = {
   stones: number;
   arts: string[];
   equipped: string | null;
+  /** Additional learned techniques prepared outside combat. Passive bonuses stay on the main art. */
+  prepared: [string | null, string | null];
   /** Automatic combat preference. Old saves default to balanced. */
   battlePlan: BattlePlan;
+  /** Local objects, inhabitants and their consequences; absent in older saves. */
+  living: LivingWorld;
   spells: string[];
   bag: Partial<Record<GoodId, number>>;
   relations: Record<string, number>;
@@ -182,9 +205,11 @@ export type RoamState = {
 };
 
 export type RoamAct =
+  | LocalAct
   | { type: "origin"; origin: Origin; name: string }
   | { type: "cultivate" }
   | { type: "equip-art"; artId: string }
+  | { type: "prepare-art"; slot: 0 | 1; artId: string | null }
   | { type: "battle-plan"; plan: BattlePlan }
   | { type: "breakthrough"; pill: boolean }
   | { type: "explore" }
@@ -201,6 +226,6 @@ export type RoamAct =
   | { type: "trade"; what: "buy" | "sell"; id: GoodId }
   | { type: "beast"; what: "feed" | "release" | "train" }
   | { type: "idle"; what: "sit" | "wander" | "stop" | "sync" | "claim" | "fight" | "farm" | "rift"; now?: number; place?: PlaceId }
-  | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" | "technique" }
+  | { type: "combat"; move: "strike" | "spell" | "guard" | "flee" | "technique"; artId?: string }
   | { type: "continue"; chainId: string }
   | { type: "notice"; eventId: string };
