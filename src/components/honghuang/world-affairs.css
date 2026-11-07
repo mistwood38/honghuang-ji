@@ -1,0 +1,183 @@
+.world-affairs,
+.lineage-view {
+  min-width: 0;
+  --affairs-rule: #b59a5c47;
+}
+.affairs-cover {
+  position: relative;
+  isolation: isolate;
+  min-height: 220px;
+  display: flex;
+  align-items: end;
+  padding: 1.3rem;
+  overflow: hidden;
+}
+.affairs-cover > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.affairs-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(transparent, #081e19ed);
+}
+.affairs-cover h2 {
+  font: 1.6rem/1.5 var(--font-serif);
+  color: #efdfb9;
+  margin: 0.3rem 0;
+}
+.affairs-cover p:last-child {
+  font-size: 0.8rem;
+  line-height: 1.8;
+  color: #d0d3ba;
+}
+.affairs-intro,
+.affairs-faction-body > p,
+.affairs-conflicts p {
+  font-size: 0.88rem;
+  line-height: 1.9;
+  color: #bcc8b8;
+}
+.affairs-intro {
+  padding: 1rem 0;
+}
+.affairs-conflicts {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.affairs-conflicts article {
+  padding: 1rem;
+  border: 1px solid var(--affairs-rule);
+  background: #0c221c;
+}
+.affairs-conflicts h3 {
+  font: 1.2rem/1.6 var(--font-serif);
+  color: #dcca9b;
+}
+.affairs-conflicts small {
+  color: #bca876;
+}
+.affairs-faction {
+  border: 1px solid var(--affairs-rule);
+  margin: 0.8rem 0;
+  min-width: 0;
+}
+.affairs-faction > summary {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  min-height: 80px;
+  cursor: pointer;
+  padding: 0.65rem;
+  background: #0d241e;
+}
+.affairs-faction > summary img {
+  width: 58px;
+  height: 68px;
+  object-fit: cover;
+  border: 1px solid var(--affairs-rule);
+}
+.affairs-faction > summary span {
+  min-width: 0;
+}
+.affairs-faction > summary strong {
+  display: block;
+  font: 1.2rem/1.6 var(--font-serif);
+  color: #dbc595;
+}
+.affairs-faction > summary small {
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: #aebeaf;
+}
+.affairs-faction-body {
+  padding: 1rem;
+}
+.affairs-faction-body dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1rem 0;
+  gap: 0.5rem;
+}
+.affairs-faction-body dt {
+  font-size: 0.7rem;
+  color: #aa9b77;
+}
+.affairs-faction-body dd {
+  font: 1.1rem/1.8 var(--font-serif);
+  color: #e2d2a9;
+}
+.lineage-chapter,
+.lineage-ending {
+  padding: 1.1rem;
+  border: 1px solid var(--affairs-rule);
+  background: #10251d;
+}
+.lineage-chapter h3,
+.lineage-ending h3 {
+  font: 1.4rem/1.6 var(--font-serif);
+  color: #e2cf9e;
+  margin: 0.6rem 0 1rem;
+}
+.lineage-chapter > p,
+.lineage-ending p,
+.lineage-archive p {
+  font: 0.98rem/2 var(--font-serif);
+  color: #ccd2c0;
+  margin-bottom: 0.8rem;
+}
+.lineage-chapter .lineage-objective {
+  color: #c6ad72;
+  border-top: 1px solid var(--affairs-rule);
+  padding-top: 1rem;
+  font-size: 0.85rem;
+}
+.lineage-chapter .lineage-requirement {
+  color: #b5c7b6;
+  font-size: 0.82rem;
+}
+.lineage-chapter .local-actions {
+  grid-template-columns: 1fr;
+}
+.lineage-chapter .game-action--plaque {
+  min-height: 90px;
+}
+.lineage-navigation {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--affairs-rule);
+}
+.lineage-navigation .game-action {
+  width: 100%;
+}
+.lineage-archive summary {
+  min-height: 44px;
+  padding: 1rem 0;
+  color: #d3bd87;
+  cursor: pointer;
+}
+.lineage-archive article {
+  padding: 1rem;
+  border-bottom: 1px solid var(--affairs-rule);
+}
+.lineage-archive h4 {
+  color: #ddc99c;
+  font: 1.15rem/1.7 var(--font-serif);
+}
+@media (min-width: 720px) {
+  .affairs-conflicts {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lineage-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
