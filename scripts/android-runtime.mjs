@@ -27,7 +27,11 @@ async function connect() {
     try {
       const pid = adb("shell", "pidof", pkg).split(" ")[0];
       adb("forward", "tcp:9222", `localabstract:webview_devtools_remote_${pid}`);
-      browser = await chromium.connectOverCDP("http://127.0.0.1:9222", { timeout: 3000 });
+      // WebView has no browser download/context manager; preserve its native focus lifecycle too.
+      browser = await chromium.connectOverCDP("http://127.0.0.1:9222", {
+        timeout: 3000,
+        noDefaults: true,
+      });
       page = browser.contexts()[0].pages()[0];
       if (!page) throw new Error("WebView page not yet available");
       page.setDefaultTimeout(20000);
