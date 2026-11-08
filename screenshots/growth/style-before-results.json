@@ -1,0 +1,12 @@
+[
+  {
+    "width": 360,
+    "name": "legacy-possessions-nine-details-equip-switch-save",
+    "ok": true
+  },
+  {
+    "width": 360,
+    "ok": false,
+    "error": "主修清净吐纳 must retain its painted action surface"
+  }
+]
