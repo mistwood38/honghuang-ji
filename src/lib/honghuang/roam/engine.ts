@@ -1,6 +1,8 @@
 import type { Origin, SaveData, StatKey } from "../types.ts";
 import { cleanName } from "../engine.ts";
-import { REALMS } from "../world.ts";
+import { activeRelic, normalizeRelic, relicGuard, RELIC_USES } from "./relics.ts";
+import { INSIGHT_NAMES, INSIGHT_STEPS, insightLevel, insightRequirement, normalizeInsights, techniqueFor } from "./insight.ts";
+import { REALMS, ITEMS } from "../world.ts";
 import {
   ARTS,
   BEASTS,
@@ -73,6 +75,8 @@ export function createRoam(): RoamState {
     stones: 0,
     arts: [],
     equipped: null,
+    relic: null,
+    insights: {},
     prepared: [null, null],
     battlePlan: "balanced",
     living: createLiving(),
@@ -134,6 +138,8 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     bag: body.bag && typeof body.bag === "object" ? body.bag : {},
     arts: learned,
     equipped: main,
+    relic: normalizeRelic(body.relic),
+    insights: normalizeInsights(body.insights, learned),
     prepared: normalizePrepared(body.prepared, learned, main),
     battlePlan: body.battlePlan && Object.hasOwn(BATTLE_PLANS, body.battlePlan) ? body.battlePlan : "balanced",
     living: normalizeLiving(body.living, day),
@@ -316,6 +322,7 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
     } else if (effect.t === "drop") {
       world.karma = world.karma.filter((id) => id !== effect.id);
       save.items = save.items.filter((id) => id !== effect.id);
+      if (world.relic === effect.id) world.relic = null;
     } else if (effect.t === "rel") {
       world.relations[effect.id] = clamp((world.relations[effect.id] ?? 0) + effect.n, -100, 100);
       changes.push(effect.n >= 0 ? "有人记住了你的好" : "有人记住了你的拒绝");
@@ -420,7 +427,7 @@ function startBattle(world: RoamState, id: string, rng: () => number) {
 function powerOf(save: SaveData, world: RoamState) {
   const art = world.equipped ? ARTS[world.equipped] : undefined;
   const bond = world.beast ? Math.floor(world.beast.bond / 25) : 0;
-  return 6 + realmIndex(save.stats.dao) * 3 + Math.floor((world.layer - 1) / 2) + world.gear * 2 + Math.floor(save.stats.kill / 10) + (art?.combat ?? 0) + bond;
+  return 6 + realmIndex(save.stats.dao) * 3 + Math.floor((world.layer - 1) / 2) + world.gear * 2 + Math.floor(save.stats.kill / 10) + (art?.combat ?? 0) + bond + (activeRelic(save) === "zhuxian" ? 2 : 0);
 }
 
 function finishBattle(save: SaveData, world: RoamState, win: boolean, rng: () => number) {
@@ -437,6 +444,11 @@ function finishBattle(save: SaveData, world: RoamState, win: boolean, rng: () =>
     world.gear += 1;
     changes.push("护身之物更好了一档");
   }
+  if (win && activeRelic(save) === "incense") {
+    const healed = Math.min(4, CAP.life - save.stats.life);
+    save.stats.life += healed;
+    if (healed) changes.push(`人族香火护归 · 道躯 +${healed}`);
+  }
   world.report = { title: win ? "这一场停了" : "你退了下来", paragraphs, changes };
   remember(world, world.report.title, paragraphs[0] ?? "");
 }
@@ -452,9 +464,11 @@ function strikeEnemy(save: SaveData, world: RoamState, amount: number, rng: () =
 function enemyStrike(save: SaveData, world: RoamState, rng: () => number) {
   const battle = world.battle;
   if (!battle || world.phase !== "battle") return;
-  const reduced = battle.guard;
+  const relicProtection = relicGuard(save, battle.round);
+  const reduced = battle.guard + relicProtection;
   battle.guard = 0;
   const damage = Math.max(1, battle.atk - realmIndex(save.stats.dao) - reduced);
+  if (relicProtection && damage < Math.max(1, battle.atk - realmIndex(save.stats.dao) - reduced + relicProtection)) battle.log.push(`${ITEMS[activeRelic(save)!]!.name}为你承住一部分攻势。`);
   save.stats.life = clamp(save.stats.life - damage, 0, CAP.life);
   battle.log.push(`${battle.name}还击，你的道躯承了这一下。`);
   battle.round += 1;
@@ -615,6 +629,8 @@ export function applyRoam(save: SaveData, act: RoamAct, rng: () => number = Math
   next.world.prepared ??= [null, null];
   next.world.politics ??= createPolitics(next.world.day);
   next.world.lineages ??= {};
+  next.world.insights ??= {};
+  next.world.relic = activeRelic(next);
   dispatch(next, next.world, act, rng);
   advanceLiving(next.world);
   next.version = 2;
@@ -686,6 +702,26 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
     if (days) spend(world, days);
     if (world.report) remember(world, world.report.title, world.report.paragraphs[0] ?? "");
   }
+  else if (act.type === "equip-relic") {
+    if (world.retreat || act.id === world.relic || act.id !== null && (!Object.hasOwn(RELIC_USES, act.id) || !save.items.includes(act.id))) return;
+    accrueIdle(save, world, Date.now(), rng);
+    world.relic = act.id;
+    world.report = { title: "御器", paragraphs: [act.id ? `你将${ITEMS[act.id]!.name}引入周身气机。此物仍在行囊，不因御使而消失。` : "你收回了器物上的气机。收藏与旧有因缘仍然留着。"], changes: [act.id ? RELIC_USES[act.id]!.detail : "当前未御使器物"] };
+  }
+  else if (act.type === "comprehend-art") {
+    if (insightRequirement(save, act.artId, act.level)) return;
+    accrueIdle(save, world, Date.now(), rng);
+    world.idle = null;
+    const blocked = insightRequirement(save, act.artId, act.level);
+    if (blocked) { world.report = { title: "先整顿气息", paragraphs: [blocked, "挂机已结算并停下，没有扣除参悟费用。"], changes: [] }; return; }
+    const step = INSIGHT_STEPS[act.level - 1]!;
+    const effects: Effect[] = [{ t: "stone", n: -step.stones }, { t: "ling", n: -step.qi }, ...Object.entries(step.goods).map(([id, n]) => ({ t: "good" as const, id: id as GoodId, n: -n! }))];
+    const changes = applyEffects(save, world, effects, rng);
+    world.insights[act.artId] = act.level;
+    spend(world, 1);
+    world.report = { title: `${ARTS[act.artId]!.name} · ${INSIGHT_NAMES[act.level]}`, paragraphs: [act.level === 1 ? "你没有多背一篇口诀，只把熟悉的气息重新走了一遍。原来浪费的那一点，终于肯留在体内。" : "境界撑开了旧法的余地。招式仍是那一式，出手与收手之间却多了自己的分寸。", techniqueFor(world, act.artId)!.detail], changes: [...changes, `领悟至${INSIGHT_NAMES[act.level]}`, `招式现耗 ${techniqueFor(world, act.artId)!.cost} 灵气`] };
+    remember(world, world.report.title, world.report.paragraphs[0]!);
+  }
   else if (act.type === "equip-art") equipArt(save, world, act.artId, rng);
   else if (act.type === "prepare-art") {
     if (world.retreat || ![0, 1].includes(act.slot) || act.artId === world.equipped ||
@@ -740,9 +776,10 @@ function cultivate(save: SaveData, world: RoamState, rng: () => number) {
   const realm = REALMS[realmIndex(save.stats.dao)]!;
   const nextRealm = REALMS[realmIndex(save.stats.dao) + 1];
   const changes: string[] = [];
-  if (world.lingqi >= 2) {
-    world.lingqi -= 2;
-    changes.push("灵气 -2");
+  const cultivationCost = activeRelic(save) === "chaos-qi" ? 1 : 2;
+  if (world.lingqi >= cultivationCost) {
+    world.lingqi -= cultivationCost;
+    changes.push(`灵气 -${cultivationCost}${cultivationCost === 1 ? " · 混沌气含护" : ""}`);
   } else {
     gain *= 0.55;
     changes.push("灵气不足，这一日只进了一半");
@@ -801,6 +838,7 @@ function breakthrough(save: SaveData, world: RoamState, pill: boolean, rng: () =
   let chance = 0.4 + world.wuxing * 0.035 + (save.stats.qi / 160) * 0.16 - world.wound * 0.09;
   chance += usedPill ? 0.22 : 0;
   chance += world.cave * 0.04;
+  if (activeRelic(save) === "purple-qi") chance += 0.05;
   chance -= (save.stats.demon / 100) * 0.15;
   chance = clamp(chance, 0.08, 0.92);
   spend(world, 1);
@@ -926,7 +964,7 @@ function gather(save: SaveData, world: RoamState, rng: () => number) {
 
 function rest(save: SaveData, world: RoamState) {
   if (interrupt(world)) return;
-  const heal = 7 + world.cave * 2;
+  const heal = 7 + world.cave * 2 + (activeRelic(save) === "buzhou-stone" ? 3 : 0);
   const before = save.stats.life;
   save.stats.life = clamp(save.stats.life + heal, 0, CAP.life);
   world.wound = clamp(world.wound - 1, 0, 6);
@@ -1153,7 +1191,7 @@ function plotAct(save: SaveData, world: RoamState, what: "plant" | "harvest") {
   }
   if (interrupt(world)) return;
   world.plot = null;
-  const amount = world.cave > 0 ? 3 : 2;
+  const amount = (world.cave > 0 ? 3 : 2) + (activeRelic(save) === "xirang" ? 2 : 0);
   world.bag.herb = (world.bag.herb ?? 0) + amount;
   const changes = [`灵草 +${amount}`];
   if (world.cave > 1 || world.place === "wahuan") {
@@ -1543,15 +1581,15 @@ export function farmBattle(place: PlaceId): BattleState {
 export function automaticAction(save: SaveData): Extract<RoamAct, { type: "combat" }> {
   const world = save.world;
   if (!world?.battle) return { type: "combat", move: "strike" };
-  const available = preparedTechniques(world).filter((id) => world.lingqi >= TECHNIQUES[id]!.cost);
+  const available = preparedTechniques(world).filter((id) => world.lingqi >= techniqueFor(world, id)!.cost);
   let picked: string | undefined;
   if (save.stats.life <= 50) {
-    picked = available.find((id) => TECHNIQUES[id]!.heal > 0 && CAP.life - save.stats.life >= TECHNIQUES[id]!.heal);
-    if (!picked && world.battlePlan === "reserve") picked = available.find((id) => TECHNIQUES[id]!.guard > 0 || TECHNIQUES[id]!.bind);
+    picked = available.find((id) => techniqueFor(world, id)!.heal > 0 && CAP.life - save.stats.life >= techniqueFor(world, id)!.heal);
+    if (!picked && world.battlePlan === "reserve") picked = available.find((id) => techniqueFor(world, id)!.guard > 0 || techniqueFor(world, id)!.bind);
   }
   if (!picked && world.battlePlan !== "reserve") {
-    const attacks = available.filter((id) => TECHNIQUES[id]!.power > 0);
-    if (world.battlePlan === "assault") attacks.sort((a, b) => TECHNIQUES[b]!.power - TECHNIQUES[a]!.power);
+    const attacks = available.filter((id) => techniqueFor(world, id)!.power > 0);
+    if (world.battlePlan === "assault") attacks.sort((a, b) => techniqueFor(world, b)!.power - techniqueFor(world, a)!.power);
     if (world.battlePlan === "assault" || world.battle.round % 2 === 1) picked = attacks[0];
   }
   if (picked) return { type: "combat", move: "technique", artId: picked };
@@ -1693,7 +1731,7 @@ function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "gu
   const art = world.equipped ? ARTS[world.equipped] : undefined;
   if (move === "technique") {
     const id = artId ?? world.equipped;
-    const technique = id && preparedTechniques(world).includes(id) ? TECHNIQUES[id] : undefined;
+    const technique = id && preparedTechniques(world).includes(id) ? techniqueFor(world, id) : undefined;
     if (!technique || world.lingqi < technique.cost) return;
     world.lingqi -= technique.cost;
     battle.guard = technique.guard;
@@ -1957,7 +1995,7 @@ export function legalActs(save: SaveData): RoamAct[] {
     const art = world.equipped ? ARTS[world.equipped] : undefined;
     if (art?.spell || world.spells.length) acts.push({ type: "combat", move: "spell" });
     for (const id of preparedTechniques(world)) {
-      if (world.lingqi >= TECHNIQUES[id]!.cost) acts.push({ type: "combat", move: "technique", artId: id });
+      if (world.lingqi >= techniqueFor(world, id)!.cost) acts.push({ type: "combat", move: "technique", artId: id });
     }
     return acts;
   }
@@ -1971,6 +2009,8 @@ export function legalActs(save: SaveData): RoamAct[] {
   }
   return [
     ...menuActs(save).map((item) => item.act),
+    ...(!world.retreat ? save.items.filter((id) => Object.hasOwn(RELIC_USES, id) && id !== world.relic).map((id) => ({ type: "equip-relic" as const, id })) : []),
+    ...world.arts.flatMap((artId) => { const level = insightLevel(world, artId) + 1; return level <= 2 && !insightRequirement(save, artId, level) ? [{ type: "comprehend-art" as const, artId, level: level as 1 | 2 }] : []; }),
     ...localOptions(save)
       .filter((item) => !item.disabled)
       .map((item) => item.act),

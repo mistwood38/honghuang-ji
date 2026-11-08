@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { RELIC_USES } from "@/lib/honghuang/roam/relics";
 import { ITEMS } from "@/lib/honghuang/world";
 import { Modal } from "./modal";
 
@@ -89,7 +90,7 @@ function RelicCard({ id }: { id: string }) {
         </button>
       }
     >
-      {null}
+      {RELIC_USES[id] ? <p>开放游历中可在储物页御使：{RELIC_USES[id]!.detail}</p> : null}
     </Modal>
   );
 }

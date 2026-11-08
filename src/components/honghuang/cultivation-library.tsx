@@ -1,9 +1,20 @@
+import { useState } from "react";
 import { useSave } from "@/lib/honghuang/store";
 import { ARTS, SECTS } from "@/lib/honghuang/roam/catalog";
 import { TECHNIQUES } from "@/lib/honghuang/roam/techniques";
-import type { RoamAct } from "@/lib/honghuang/roam/state";
+import {
+  INSIGHT_NAMES,
+  INSIGHT_STEPS,
+  insightCost,
+  insightLevel,
+  insightRequirement,
+  techniqueFor,
+} from "@/lib/honghuang/roam/insight";
+import type { RoamAct, RoamReport } from "@/lib/honghuang/roam/state";
 
 import { ActionButton } from "./action-button";
+import { ActionOutcome } from "./action-outcome";
+import "./cultivation-growth.css";
 
 const COVERS: Record<string, string> = {
   qingjing: "kunlun",
@@ -24,7 +35,15 @@ export function CultivationLibrary({
   onAct: (act: RoamAct) => void;
   onStudy: () => void;
 }) {
-  const world = useSave((save) => save.world);
+  const save = useSave(),
+    world = save.world;
+  const [receipt, setReceipt] = useState<{ id: string; report: RoamReport } | null>(null);
+  function comprehend(id: string, level: 1 | 2) {
+    const before = useSave.getState().world?.report;
+    onAct({ type: "comprehend-art", artId: id, level });
+    const after = useSave.getState().world;
+    if (after?.report && after.report !== before) setReceipt({ id, report: after.report });
+  }
   if (!world) return null;
   const learned = [...new Set(world.arts)].filter((id) => Object.hasOwn(ARTS, id));
   const sect = SECTS.find((sect) => sect.id === world.sect);
@@ -79,7 +98,10 @@ export function CultivationLibrary({
       <div className="art-scrolls">
         {learned.map((id) => {
           const art = ARTS[id]!;
-          const technique = TECHNIQUES[id];
+          const technique = techniqueFor(world, id);
+          const level = insightLevel(world, id),
+            step = INSIGHT_STEPS[level];
+          const requirement = step ? insightRequirement(save, id, step.level) : null;
           const selected = world.equipped === id;
           return (
             <article key={id} className={`art-scroll ${selected ? "is-equipped" : ""}`}>
@@ -96,6 +118,7 @@ export function CultivationLibrary({
               </div>
               <div className="art-scroll-copy">
                 <p>{art.line}</p>
+                <p className="insight-status">领悟 · {INSIGHT_NAMES[level]}</p>
                 <dl className="art-measures">
                   <div>
                     <dt>修炼助益</dt>
@@ -123,6 +146,30 @@ export function CultivationLibrary({
                   disabled={selected}
                   onClick={() => onAct({ type: "equip-art", artId: id })}
                 />
+                <div className="insight-study">
+                  <h4>{step ? `参悟至${INSIGHT_NAMES[step.level]}` : "此卷已圆融"}</h4>
+                  {step ? (
+                    <>
+                      <p>{step.benefit}</p>
+                      <p>
+                        需 {step.realm}境 · {insightCost(step)}
+                      </p>
+                      {requirement ? <p className="local-cost">{requirement}</p> : null}
+                      <ActionButton
+                        label={`参悟${art.name}·${INSIGHT_NAMES[step.level]}`}
+                        surface="plaque"
+                        emblem="scroll"
+                        disabled={Boolean(requirement)}
+                        onClick={() => comprehend(id, step.level)}
+                      />
+                    </>
+                  ) : (
+                    <p>此门功法的两层体悟已成，主修与辅修招式都沿用当前领悟。</p>
+                  )}
+                  {receipt?.id === id ? (
+                    <ActionOutcome report={receipt.report} label="参悟结果" />
+                  ) : null}
+                </div>
               </div>
             </article>
           );

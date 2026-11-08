@@ -29,6 +29,8 @@ import { LineageView } from "./lineage-view";
 import { WorldAffairs } from "./world-affairs";
 import { LINEAGES, trialProof } from "@/lib/honghuang/roam/lineages";
 import { LocalWorld } from "./local-world";
+import { RelicLoadout } from "./relic-loadout";
+import { techniqueFor } from "@/lib/honghuang/roam/insight";
 import { CultivationLibrary } from "./cultivation-library";
 import "./roam.css";
 
@@ -191,11 +193,11 @@ export function RoamView() {
                   <ActionButton label="守" hint="卸下还击" action={{ type: "combat", move: "guard" }} onClick={() => act({ type: "combat", move: "guard" })} />
                   <ActionButton label="脱身" hint="尝试离开" action={{ type: "combat", move: "flee" }} onClick={() => act({ type: "combat", move: "flee" })} />
                   {techniques.map((id) => {
-                    const technique = TECHNIQUES[id]!;
+                    const technique = techniqueFor(world, id)!;
                     return <ActionButton key={id} label={`${technique.name} · ${technique.cost} 灵气`} action={{ type: "combat", move: "technique", artId: id }} surface="plaque" className="technique-action" disabled={world.lingqi < technique.cost} onClick={() => act({ type: "combat", move: "technique", artId: id })} />;
                   })}
                 </div>
-                {techniques.map((id) => <p key={id} className="roam-risk"><strong>{TECHNIQUES[id]!.name}：</strong>{TECHNIQUES[id]!.detail}</p>)}
+                {techniques.map((id) => <p key={id} className="roam-risk"><strong>{TECHNIQUES[id]!.name}：</strong>{techniqueFor(world, id)!.detail}</p>)}
               </div>
             ) : null}
 
@@ -386,14 +388,14 @@ function FarmDesk({ onAct, tab, onTabChange }: { onAct: (act: RoamAct) => void; 
         </section>
       ) : null}
       {tab === "bag" ? (
-        <div className="roam-actions">
+        <><div className="roam-actions">
           {acts
             .filter((item) => item.id.startsWith("alchemy") || item.id.startsWith("use-") || item.id.startsWith("buy") || item.id.startsWith("sell") || item.id.startsWith("plot"))
             .map((item) => (
               <ActionButton key={item.id} label={item.label} action={item.act} onClick={() => onAct(item.act)} />
             ))}
           {Object.entries(world.bag).length === 0 ? <p className="roam-empty">储物是空的。挂机打怪会掉材料。</p> : null}
-        </div>
+        </div><RelicLoadout onAct={onAct} /></>
       ) : null}
       {tab === "beast" ? (
         <div className="roam-actions">
