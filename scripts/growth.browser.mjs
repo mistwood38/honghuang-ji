@@ -37,7 +37,7 @@ async function load(page, save) {
   await page.locator(".farm-desk").waitFor();
 }
 try {
-  for (const width of [320, 360, 412, 1280]) {
+  for (const width of process.argv.includes("--quick") ? [360] : [320, 360, 412, 1280]) {
     const page = await browser.newPage({
       viewport: { width, height: 844 },
       isMobile: width < 600,
@@ -90,6 +90,20 @@ try {
       assert.equal((await read(page)).world.relic, null);
       results.push({ width, name: "legacy-possessions-nine-details-equip-switch-save", ok: true });
       await click(page, "功法");
+      for (const name of ["主修清净吐纳", "参悟清净吐纳·会通"]) {
+        assert.ok(
+          (
+            await page
+              .getByRole("button", { name, exact: true })
+              .evaluate((el) => getComputedStyle(el).backgroundImage)
+          ).includes("choice-bronze.webp"),
+          `${name} must retain its painted action surface`,
+        );
+      }
+      await page
+        .getByRole("button", { name: "参悟清净吐纳·会通", exact: true })
+        .scrollIntoViewIfNeeded();
+      await page.screenshot({ path: `${out}/study-choice-${width}.png` });
       await click(page, "参悟清净吐纳·会通");
       let current = await read(page);
       assert.equal(current.world.insights.qingjing, 1);

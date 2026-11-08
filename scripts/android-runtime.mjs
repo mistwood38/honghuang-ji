@@ -111,6 +111,20 @@ try {
   assert.deepEqual(current.items, save.items);
   assert.ok(current.flags.includes("old-story"));
   await click("功法");
+  for (const name of ["主修清净吐纳", "参悟清净吐纳·会通"]) {
+    assert.ok(
+      (
+        await page
+          .getByRole("button", { name, exact: true })
+          .evaluate((el) => getComputedStyle(el).backgroundImage)
+      ).includes("choice-bronze.webp"),
+      `${name} must retain its painted action surface in the APK`,
+    );
+  }
+  await page
+    .getByRole("button", { name: "参悟清净吐纳·会通", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${out}/study-choice.png` });
   await click("参悟清净吐纳·会通");
   current = await read();
   assert.equal(current.world.insights.qingjing, 1);
