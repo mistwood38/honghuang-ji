@@ -1,0 +1,13 @@
+{
+  "path": "/workspace/artifacts/honghuang-ji-relics-insight-debug.apk",
+  "run": 42440509568,
+  "artifact": 13601382781,
+  "bytes": 22984883,
+  "sha256": "24b97b924f030c6f684d81bda7be5552390670979d8a5eee4e99035070ea9cda",
+  "local_audio": 12,
+  "local_art": 67,
+  "audio_bytes_match": true,
+  "has_remote_server": false,
+  "new_code": true,
+  "painted_button_css_fix": true
+}

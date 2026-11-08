@@ -7,6 +7,7 @@ on:
       - art/stage-two-cinematic
       - feat/factions-lineages
       - fix/lineage-reading-flow
+      - feat/relics-and-insight
     paths-ignore:
       - "docs/**"
       - "screenshots/**"
@@ -46,4 +47,44 @@ jobs:
           name: honghuang-ji-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 14
+
+  offline-runtime:
+    needs: debug-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: honghuang-ji-debug
+          path: apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and exercise the offline Android app
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install -r apk/app-debug.apk
+            node --experimental-strip-types scripts/android-runtime.mjs
+      - name: Upload Android runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-runtime-evidence
+          path: screenshots/android-runtime
+          if-no-files-found: warn
           retention-days: 14

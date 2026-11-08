@@ -183,6 +183,8 @@ export type RoamState = {
   stones: number;
   arts: string[];
   equipped: string | null;
+  relic: string | null;
+  insights: Record<string, 1 | 2>;
   /** Additional learned techniques prepared outside combat. Passive bonuses stay on the main art. */
   prepared: [string | null, string | null];
   /** Automatic combat preference. Old saves default to balanced. */
@@ -240,6 +242,8 @@ export type RoamAct =
   | { type: "origin"; origin: Origin; name: string }
   | { type: "cultivate" }
   | { type: "equip-art"; artId: string }
+  | { type: "equip-relic"; id: string | null }
+  | { type: "comprehend-art"; artId: string; level: 1 | 2 }
   | { type: "prepare-art"; slot: 0 | 1; artId: string | null }
   | { type: "battle-plan"; plan: BattlePlan }
   | { type: "breakthrough"; pill: boolean }

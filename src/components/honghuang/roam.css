@@ -243,8 +243,8 @@
 .roam-prose > p:not(.roam-section-label) { color: #e5decc; line-height: 1.95; }
 .roam-after { border-left: 2px solid #bba276; border-top: 0; border-right: 0; border-bottom: 0; background: #11231f; }
 .roam-after ul { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; padding: 0; list-style: none; color: #c9d9bf; font-size: .9rem; }
-.roam-actions button, .art-scroll button, .library-study button { transition: border-color .18s ease, background-color .18s ease, transform .18s ease; }
-.roam-actions button:hover:not(:disabled), .art-scroll button:hover:not(:disabled), .library-study button:hover { border-color: #bba276; background-color: #1c332b; }
+.roam-actions button, .art-scroll button:not(.game-action), .library-study button { transition: border-color .18s ease, background-color .18s ease, transform .18s ease; }
+.roam-actions button:hover:not(:disabled), .art-scroll button:not(.game-action):hover:not(:disabled), .library-study button:hover { border-color: #bba276; background-color: #1c332b; }
 .roam-actions button:active:not(:disabled), .travel-card:active { transform: translateY(1px); }
 .roam-page button:focus-visible, .farm-idle-panel summary:focus-visible { outline: 2px solid #d2b57e; outline-offset: 3px; }
 .roam-page button:disabled { cursor: default; opacity: .65; }
@@ -291,8 +291,8 @@
 .art-technique > p:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem; color: #e1d3af; font-size: .9rem; }
 .art-technique span { color: #a8c1ae; font-size: .75rem; }
 .art-technique > p:last-child { min-height: 3rem; font-size: .8rem; line-height: 1.8; color: #b7c7b9; }
-.art-scroll button, .library-study button { width: 100%; min-height: 46px; border: 1px solid #89784f; color: #e9dbb7; background: #152d25; padding: .7rem; font-family: var(--font-serif); letter-spacing: .1em; }
-.art-scroll button[aria-pressed="true"] { background: #34311f; opacity: 1; color: #cfbb87; }
+.art-scroll button:not(.game-action), .library-study button { width: 100%; min-height: 46px; border: 1px solid #89784f; color: #e9dbb7; background: #152d25; padding: .7rem; font-family: var(--font-serif); letter-spacing: .1em; }
+.art-scroll button:not(.game-action)[aria-pressed="true"] { background: #34311f; opacity: 1; color: #cfbb87; }
 .library-study { margin-top: 1.5rem; border-top: 1px solid #34473a; padding-top: .8rem; }
 .library-study > p { font-size: .85rem; line-height: 1.8; color: #b4c3b1; }
 .travel-heading { padding: .5rem 0; }
