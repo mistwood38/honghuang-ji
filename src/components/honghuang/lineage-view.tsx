@@ -3,7 +3,8 @@ import { useSave } from "@/lib/honghuang/store";
 import { LINEAGES, lineageOptions, lineageRequirement } from "@/lib/honghuang/roam/lineages";
 import { routeTo } from "@/lib/honghuang/roam/local-world";
 import { ROAM_PLACES } from "@/lib/honghuang/roam/catalog";
-import { artForPlace } from "@/lib/honghuang/visuals";
+import { lineageEcho } from "@/lib/honghuang/roam/lineage-echoes";
+import { EncounterArt } from "./encounter-art";
 import type { RoamAct, RoamReport } from "@/lib/honghuang/roam/state";
 import { ActionButton } from "./action-button";
 import { ActionOutcome } from "./action-outcome";
@@ -40,6 +41,7 @@ export function LineageView({
   const path = routeTo(world, place),
     requirement = lineageRequirement(save);
   const options = lineageOptions(save);
+  const echo = lineageEcho(origin, shownStage, progress?.history ?? []);
   function choose(action: RoamAct, selected: string) {
     const stage = useSave.getState().world?.lineages[origin!]?.stage;
     onAct(action);
@@ -59,8 +61,10 @@ export function LineageView({
   }
   return (
     <section className="lineage-view" aria-label="族脉长卷">
-      <div className="affairs-cover">
-        <img src={artForPlace(place).small} alt="" width="640" height="360" loading="lazy" />
+      <div className="lineage-cover">
+        <div className="lineage-cover-art">
+          <EncounterArt kind="lineage" id={origin} />
+        </div>
         <div>
           <p className="eyebrow">
             此生可书 · {progress?.ending ? "六章已成" : `第 ${shownStage + 1} / 6 章`}
@@ -69,10 +73,27 @@ export function LineageView({
           <p>{definition.subtitle}</p>
         </div>
       </div>
+      <div className="lineage-thread" aria-label="长卷进度">
+        {["一", "二", "三", "四", "五", "六"].map((n, i) => (
+          <span
+            key={n}
+            className={i < (progress?.stage ?? 0) ? "is-written" : ""}
+            aria-current={i === shownStage ? "step" : undefined}
+            aria-label={`第${n}章${i < (progress?.stage ?? 0) ? "已写" : i === shownStage ? "当前" : "未至"}`}
+          >
+            {n}
+          </span>
+        ))}
+      </div>
       {progress?.ending && !receipt ? (
         <article className="lineage-ending" ref={chapterTarget} tabIndex={-1}>
           <p className="eyebrow">此卷落款</p>
           <h3>{progress.ending}</h3>
+          <div className="lineage-last-word">
+            {progress.history.at(-1)?.text.map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+          </div>
           <p>
             这一卷已经写完，此生仍在继续。你留下的因果、停战之约和所学，会跟随之后的修炼与游历。
           </p>
@@ -82,6 +103,12 @@ export function LineageView({
         <article className="lineage-chapter" ref={chapterTarget} tabIndex={-1}>
           <p className="eyebrow">{ROAM_PLACES[place].name}</p>
           <h3>{chapter!.title}</h3>
+          {echo ? (
+            <aside className="lineage-echo" aria-label="前事回响">
+              <p className="eyebrow">前事仍在 · 此刻回响</p>
+              <p>{echo}</p>
+            </aside>
+          ) : null}
           {chapter!.prose.map((line, i) => (
             <p key={i}>{line}</p>
           ))}
@@ -143,6 +170,12 @@ export function LineageView({
             <article key={entry.chapter}>
               <p className="eyebrow">第 {entry.day} 日</p>
               <h4>{entry.title}</h4>
+              {lineageEcho(origin, entry.chapter, progress.history) ? (
+                <aside className="lineage-echo">
+                  <p className="eyebrow">当时的来路</p>
+                  <p>{lineageEcho(origin, entry.chapter, progress.history)}</p>
+                </aside>
+              ) : null}
               {entry.text.map((line, i) => (
                 <p key={i}>{line}</p>
               ))}

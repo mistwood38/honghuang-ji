@@ -1,23 +1,33 @@
+import { useState } from "react";
 import { useSave } from "@/lib/honghuang/store";
-import { GOODS, ROAM_PLACES } from "@/lib/honghuang/roam/catalog";
+import { ROAM_PLACES } from "@/lib/honghuang/roam/catalog";
 import {
   HERITAGES,
   PEOPLE,
   localOptions,
   regionCondition,
-  routeTo,
   sitesAt,
   siteState,
   type LocalOption,
 } from "@/lib/honghuang/roam/local-world";
-import type { RoamAct } from "@/lib/honghuang/roam/state";
+import type { RoamAct, RoamReport } from "@/lib/honghuang/roam/state";
 import { ActionButton } from "./action-button";
+import { ActionOutcome } from "./action-outcome";
+import { WayfarerCard } from "./wayfarer-card";
 import "./local-world.css";
 
 export function LocalWorld({ onAct }: { onAct: (action: RoamAct) => void }) {
   const save = useSave();
+  const [receipt, setReceipt] = useState<{
+    owner: string;
+    report: RoamReport;
+    place: string;
+    day: number;
+  } | null>(null);
   const world = save.world;
   if (!world) return null;
+  const activeReceipt =
+    receipt?.place === world.place && receipt.day === world.day ? receipt : null;
   const options = localOptions(save);
   const localNews = world.living.news
     .filter((entry) => world.known.includes(entry.place))
@@ -29,6 +39,15 @@ export function LocalWorld({ onAct }: { onAct: (action: RoamAct) => void }) {
       world.living.people[p.id]?.place === world.place ||
       world.living.errands[p.id],
   );
+  function perform(action: RoamAct) {
+    const before = useSave.getState().world?.report;
+    onAct(action);
+    const after = useSave.getState().world;
+    const owner =
+      action.type === "local" ? action.site : action.type === "person" ? action.id : null;
+    if (owner && after?.report && before !== after.report)
+      setReceipt({ owner, report: after.report, place: after.place, day: after.day });
+  }
   function buttons(items: LocalOption[]) {
     return (
       <div className="local-actions">
@@ -47,7 +66,7 @@ export function LocalWorld({ onAct }: { onAct: (action: RoamAct) => void }) {
                       : "mountain"
               }
               disabled={option.disabled}
-              onClick={() => onAct(option.act)}
+              onClick={() => perform(option.act)}
             />
             {option.disabled && option.reason ? (
               <p className="local-cost">{option.reason}</p>
@@ -68,7 +87,7 @@ export function LocalWorld({ onAct }: { onAct: (action: RoamAct) => void }) {
         </p>
         <p>走近一处，才知道能做什么。亲手修补、取用或送物，都会留下重访时看得见的痕迹。</p>
       </header>
-      {world.report ? (
+      {world.report && !activeReceipt ? (
         <div className="local-result" role="status" aria-label="此地行动结果">
           <strong>{world.report.title}</strong>
           {world.report.paragraphs.map((line, index) => (
@@ -125,6 +144,9 @@ export function LocalWorld({ onAct }: { onAct: (action: RoamAct) => void }) {
               {state.state === "stripped" && state.cooldown > world.day ? (
                 <p className="local-memory">第 {state.cooldown} 日后可再尝试修补。</p>
               ) : null}
+              {activeReceipt?.owner === site.id ? (
+                <ActionOutcome report={activeReceipt.report} label="此地行动结果" />
+              ) : null}
               {buttons(
                 options.filter(
                   (option) => option.act.type === "local" && option.act.site === site.id,
@@ -141,48 +163,19 @@ export function LocalWorld({ onAct }: { onAct: (action: RoamAct) => void }) {
         {!actors.length ? (
           <p className="roam-empty">此刻没有相识的人停在这里。继续走，或等山风换向。</p>
         ) : null}
-        {actors.map((person) => {
-          const actor = world.living.people[person.id]!;
-          const errand = world.living.errands[person.id];
-          const here = actor.place === world.place;
-          const destination = errand?.stage === "carrying" ? errand.destination : actor.place;
-          const path = routeTo(world, destination);
-          return (
-            <article className="local-person" key={person.id}>
-              <div className="local-person-heading">
-                <h4>{person.name}</h4>
-                <span>{here ? "此刻在场" : ROAM_PLACES[actor.place].name}</span>
-              </div>
-              <p>
-                {person.goal}。第 {actor.nextMove} 日再启程。
-              </p>
-              {errand ? (
-                <p className="local-errand">
-                  {errand.stage === "carrying"
-                    ? `待送达：${ROAM_PLACES[errand.destination].name} · 需 2 ${GOODS[person.good]}。`
-                    : errand.stage === "delivered"
-                      ? `物资已送达，带回信找${person.name}复命。`
-                      : `已完成 ${errand.count} 次托付。${world.day < errand.completed + 4 ? `第 ${errand.completed + 4} 日后可再问近况。` : "重逢时可以再问近况。"}`}
-                </p>
-              ) : null}
-              {buttons(
-                options.filter(
-                  (option) => option.act.type === "person" && option.act.id === person.id,
-                ),
-              )}
-              {path[0] ? (
-                <div className="local-actions">
-                  <ActionButton
-                    label={`循路往${ROAM_PLACES[destination].name}`}
-                    hint={`下一程：${ROAM_PLACES[path[0]].name} · 正常行路，可能遇险`}
-                    emblem="cloud"
-                    onClick={() => onAct({ type: "travel", place: path[0]! })}
-                  />
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
+        {actors.map((person) => (
+          <WayfarerCard
+            key={person.id}
+            person={person}
+            actions={buttons(
+              options.filter(
+                (option) => option.act.type === "person" && option.act.id === person.id,
+              ),
+            )}
+            report={activeReceipt?.owner === person.id ? activeReceipt.report : undefined}
+            onAct={onAct}
+          />
+        ))}
       </section>
       {localNews.length ? (
         <details className="local-news">
