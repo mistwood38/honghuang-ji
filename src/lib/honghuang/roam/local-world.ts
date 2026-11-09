@@ -1,4 +1,5 @@
 import { advancePoliticsAt } from "./politics.ts";
+import { wayfarerScene } from "./wayfarer-dialogue.ts";
 import type { Origin, SaveData } from "../types.ts";
 import { ARTS, GOODS, ROAM_PLACES, clamp } from "./catalog.ts";
 import type { GoodId, LivingWorld, LocalAct, PlaceId, RoamState, SiteState } from "./state.ts";
@@ -498,19 +499,17 @@ export function performLocal(save: SaveData, action: LocalAct): number {
   if (action.type === "person") {
     const person = PEOPLE.find((p) => p.id === action.id)!;
     const actor = living.people[person.id]!;
-    actor.met = true;
     const errand = living.errands[person.id];
     if (action.what === "talk") {
-      const friendly = (world.relations[person.id] ?? 0) >= 4;
+      const dialogue = wayfarerScene(save, person.id, "road");
+      actor.met = true;
       report(person.name, [
-        person.greeting,
-        friendly
-          ? "对方认出了你，先问你近来走的路是否平安。往日托付没有随日子散去。"
-          : person.goal + "。",
+        ...(dialogue?.paragraphs ?? [person.greeting, person.goal + "。"]),
         `还会在${ROAM_PLACES[actor.place].name}停留到第 ${actor.nextMove} 日。`,
       ]);
       return 0;
     }
+    actor.met = true;
     if (action.what === "accept") {
       const destinations = person.route.filter((place) => place !== actor.place);
       const destination = destinations[(errand?.count ?? 0) % destinations.length]!;
