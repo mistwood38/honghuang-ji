@@ -124,6 +124,14 @@ try {
           return box.width > 0 && box.height > 0 && box.top < innerHeight && box.bottom > 0;
         }).every((img) => img.complete && img.naturalWidth > 0);
       }, process.env.BROWSER_SMOKE_READY_SELECTOR, { timeout: timeoutMs });
+      // complete means downloaded; async image decoding can still leave a blank capture.
+      await page.locator(process.env.BROWSER_SMOKE_READY_SELECTOR).first().evaluate(async (root) => {
+        const visible = [...root.querySelectorAll("img")].filter((img) => {
+          const box = img.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.top < innerHeight && box.bottom > 0;
+        });
+        await Promise.all(visible.map((img) => img.decode()));
+      });
     }
 
     const title = await page.title();

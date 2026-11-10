@@ -1,0 +1,26 @@
+[
+  {
+    "path": "art/choice-dao.webp",
+    "bytes": 10110,
+    "sha256": "57296a20f9f52f0ec40f229afaf1ba605271dc466fe7cab4496fd51c71b4d7bb",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "art/choice-wu.webp",
+    "bytes": 10618,
+    "sha256": "c9ae98ffb37c69017943c8b7c4f2b86c0742e1d34522b90a70a0e2c21bce498f",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "art/choice-yao.webp",
+    "bytes": 8906,
+    "sha256": "fe31b282747f829851920083d8a7f3e745527ecf11c50fbe7e11397f96afff62",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "art/choice-ren.webp",
+    "bytes": 12900,
+    "sha256": "68466f5f7f95f41fbb43e1c0fec3a8cf1cece31e1c64133e7c664651487dc293",
+    "matches_android_bundle": true
+  }
+]

@@ -1,20 +1,22 @@
 import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
 import type { RoamAct } from "@/lib/honghuang/roam/state";
+import type { Origin } from "@/lib/honghuang/types";
 import { useActionFeedback } from "./action-feedback";
 import "./action-art.css";
 
-type Emblem = "lotus" | "sword" | "mountain" | "cloud" | "censer" | "scroll";
+export type ActionEmblem = "lotus" | "sword" | "mountain" | "cloud" | "censer" | "scroll";
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
-  emblem?: Emblem;
+  emblem?: ActionEmblem;
   action?: RoamAct;
-  surface?: "seal" | "plaque" | "bare";
+  surface?: "seal" | "plaque" | "bare" | "vow";
+  material?: Origin;
   hint?: string;
   actionId?: string;
   children?: ReactNode;
 };
 
-function emblemFor(action?: RoamAct): Emblem {
+function emblemFor(action?: RoamAct): ActionEmblem {
   if (!action) return "scroll";
   if (["cultivate", "rest", "retreat", "breakthrough"].includes(action.type)) return "lotus";
   if (["gather", "alchemy", "trade", "use", "plot"].includes(action.type)) return "censer";
@@ -37,6 +39,7 @@ export function ActionButton({
   emblem,
   action,
   surface = "seal",
+  material = "dao",
   hint,
   actionId,
   children,
@@ -51,32 +54,52 @@ export function ActionButton({
   const selected = pending === id;
   const [title, ...details] = label.split(" · ");
   const note = hint ?? details.join(" · ");
+  const noteId = `${uid}-hint`;
+  const accessibleName = props["aria-label"] ?? label;
+  const description = [
+    props["aria-describedby"],
+    note && !accessibleName.includes(note) ? noteId : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <button
       {...props}
       type="button"
-      data-ui-sound={action?.type === "combat" ? "skill" : action?.type === "use" || action?.type === "alchemy" ? "item" : undefined}
-      aria-label={props["aria-label"] ?? label}
+      data-ui-sound={
+        action?.type === "combat"
+          ? "skill"
+          : action?.type === "use" || action?.type === "alchemy"
+            ? "item"
+            : undefined
+      }
+      aria-label={accessibleName}
+      aria-describedby={description || undefined}
       disabled={disabled || Boolean(pending)}
       aria-busy={selected || undefined}
       data-selected={selected || undefined}
-      className={`game-action game-action--${surface} ${selected ? "is-committing" : ""} ${className}`}
+      className={`game-action game-action--${surface} ${surface === "vow" ? `vow-${material}` : ""} ${selected ? "is-committing" : ""} ${className}`}
       onClick={(event) => run(id, () => onClick?.(event))}
     >
       {children ?? (
         <>
-          {surface === "seal" ? (
+          {surface === "seal" || surface === "vow" ? (
             <span
               className={`action-emblem emblem-${emblem ?? emblemFor(action)}`}
               aria-hidden="true"
             />
           ) : null}
           <span className="action-copy">
-              <span>{title}</span>
-              {note ? <small>{note}</small> : null}
+            <span>{title}</span>
+            {note ? <small id={noteId}>{note}</small> : null}
           </span>
         </>
       )}
+      {children && note ? (
+        <span id={noteId} className="sr-only">
+          {note}
+        </span>
+      ) : null}
       {surface !== "bare" ? (
         <span className="action-stamp" aria-hidden="true">
           定

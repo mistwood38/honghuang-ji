@@ -5,6 +5,7 @@ import { routeTo } from "@/lib/honghuang/roam/local-world";
 import { ROAM_PLACES } from "@/lib/honghuang/roam/catalog";
 import { lineageEcho } from "@/lib/honghuang/roam/lineage-echoes";
 import { EncounterArt } from "./encounter-art";
+import { lineageChoiceEmblem } from "./lineage-choice-art";
 import type { RoamAct, RoamReport } from "@/lib/honghuang/roam/state";
 import { ActionButton } from "./action-button";
 import { ActionOutcome } from "./action-outcome";
@@ -129,13 +130,19 @@ export function LineageView({
               />
             </div>
           ) : (
-            <div className="local-actions">
+            <div
+              className={`local-actions${options[0]?.act.what === "choose" ? " lineage-choices" : ""}`}
+              role="group"
+              aria-label="此章抉择"
+            >
               {options.map((option) => (
                 <ActionButton
                   key={option.act.choiceId ?? option.act.what}
                   label={option.label}
                   hint={option.hint}
-                  surface="plaque"
+                  surface={option.act.what === "choose" ? "vow" : "plaque"}
+                  material={origin}
+                  emblem={lineageChoiceEmblem(origin, option.act.choiceId)}
                   disabled={option.disabled}
                   onClick={() => choose(option.act, option.label)}
                 />

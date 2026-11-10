@@ -20,7 +20,11 @@ import { StatList } from "./stats";
 import "./play-navigation.css";
 
 export function PlayView() {
-  return <ActionFeedback><PlayContent /></ActionFeedback>;
+  return (
+    <ActionFeedback>
+      <PlayContent />
+    </ActionFeedback>
+  );
 }
 
 function PlayContent() {
@@ -289,6 +293,11 @@ function PlayContent() {
                 return (
                   <ActionButton
                     label={item.choice.text}
+                    hint={
+                      [item.choice.sub, !item.open ? item.reason : null]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
+                    }
                     surface="plaque"
                     actionId={item.choice.id}
                     key={item.choice.id}
@@ -359,7 +368,11 @@ function PlayContent() {
             <br />
             根骨、物事和已经结下的因果会跟着你。
           </p>
-          <button type="button" className="btn-primary mt-4" onClick={() => useSave.getState().openWorld()}>
+          <button
+            type="button"
+            className="btn-primary mt-4"
+            onClick={() => useSave.getState().openWorld()}
+          >
             离开残卷，自行游历
           </button>
         </div>
