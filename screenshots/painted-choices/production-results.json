@@ -1,0 +1,101 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "results": [
+    {
+      "width": 320,
+      "origin": "dao",
+      "name": "original-nine-slice-material-readable-labels-and-intent-art",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "origin": "dao",
+      "name": "keyboard-commit-lock-and-long-result-reading-space",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "origin": "dao",
+      "name": "disabled-cost-hint-accessible-and-save-unchanged",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "origin": "dao",
+      "name": "legacy-story-hints-remain-readable-with-custom-button-content",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "origin": "wu",
+      "name": "original-nine-slice-material-readable-labels-and-intent-art",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "origin": "wu",
+      "name": "keyboard-commit-lock-and-long-result-reading-space",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "origin": "wu",
+      "name": "disabled-cost-hint-accessible-and-save-unchanged",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "origin": "wu",
+      "name": "legacy-story-hints-remain-readable-with-custom-button-content",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "origin": "yao",
+      "name": "original-nine-slice-material-readable-labels-and-intent-art",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "origin": "yao",
+      "name": "keyboard-commit-lock-and-long-result-reading-space",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "origin": "yao",
+      "name": "disabled-cost-hint-accessible-and-save-unchanged",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "origin": "yao",
+      "name": "legacy-story-hints-remain-readable-with-custom-button-content",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "origin": "ren",
+      "name": "original-nine-slice-material-readable-labels-and-intent-art",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "origin": "ren",
+      "name": "keyboard-commit-lock-and-long-result-reading-space",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "origin": "ren",
+      "name": "disabled-cost-hint-accessible-and-save-unchanged",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "origin": "ren",
+      "name": "legacy-story-hints-remain-readable-with-custom-button-content",
+      "ok": true
+    }
+  ]
+}

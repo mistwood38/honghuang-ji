@@ -120,6 +120,65 @@
   font-size: 1.06rem;
   text-align: center;
 }
+/* Nine-sliced original paintings keep carved corners intact as Chinese text wraps. */
+.lineage-view .game-action--vow {
+  --vow-art: url("/art/choice-dao.webp");
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 104px;
+  padding: 0.65rem 0.45rem;
+  border: 14px solid transparent;
+  border-image: var(--vow-art) 48 fill / 1 / 0 stretch;
+  background: transparent;
+  color: var(--action-text);
+  text-align: left;
+  font-family: var(--font-serif);
+  transition:
+    transform 0.16s,
+    filter 0.16s;
+}
+.lineage-view .vow-wu {
+  --vow-art: url("/art/choice-wu.webp");
+}
+.lineage-view .vow-yao {
+  --vow-art: url("/art/choice-yao.webp");
+}
+.lineage-view .vow-ren {
+  --vow-art: url("/art/choice-ren.webp");
+}
+.game-action--vow .action-emblem {
+  flex-basis: 36px;
+  width: 36px;
+  height: 36px;
+}
+.game-action--vow .action-copy {
+  flex: 1;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.game-action--vow .action-copy small {
+  font-size: 0.75rem;
+}
+.game-action--vow .action-copy > span {
+  text-wrap: balance;
+}
+.lineage-view .game-action--vow .action-stamp {
+  right: -0.2rem;
+  top: -1rem;
+}
+.lineage-view .game-action--vow:disabled:not(.is-committing) {
+  opacity: 0.72;
+}
+.lineage-choices {
+  align-items: stretch;
+}
+@media (min-width: 960px) {
+  .lineage-view .lineage-chapter .lineage-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .game-action .action-stamp {
   position: absolute;
   right: 0.5rem;
@@ -237,9 +296,9 @@
 }
 .farm-maps .game-action {
   display: flex;
-  gap: .6rem;
+  gap: 0.6rem;
   align-items: center;
-  padding: .35rem .65rem .35rem .35rem;
+  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
 }
 .farm-map-art {
   width: 44px;

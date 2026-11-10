@@ -1,0 +1,65 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "results": [
+    {
+      "name": "lineage-result-and-explicit-continuation",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "aid-result-stays-by-faction-controls",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "trial-and-patrol-return-to-their-panel",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "lineage-result-and-explicit-continuation",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "aid-result-stays-by-faction-controls",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "trial-and-patrol-return-to-their-panel",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "lineage-result-and-explicit-continuation",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "aid-result-stays-by-faction-controls",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "trial-and-patrol-return-to-their-panel",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "lineage-result-and-explicit-continuation",
+      "width": 1280,
+      "ok": true
+    },
+    {
+      "name": "aid-result-stays-by-faction-controls",
+      "width": 1280,
+      "ok": true
+    },
+    {
+      "name": "trial-and-patrol-return-to-their-panel",
+      "width": 1280,
+      "ok": true
+    }
+  ]
+}
