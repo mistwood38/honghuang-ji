@@ -12,6 +12,7 @@ const pkg = "app.honghuang.ji",
   out = "screenshots/android-runtime";
 const results = [];
 let browser, page;
+let stage = "connect";
 mkdirSync(out, { recursive: true });
 const adb = (...args) => execFileSync("adb", args, { encoding: "utf8", timeout: 20000 }).trim();
 assert.equal(
@@ -45,6 +46,17 @@ async function connect() {
   }
   throw new Error(`Cannot connect to debug WebView: ${reason}`);
 }
+async function capture(name) {
+  // Capture the real Android surface; CDP Page.captureScreenshot is unreliable in WebView.
+  // Keep using this same connected page afterwards so a renderer death cannot pass silently.
+  await page.evaluate(() => document.fonts.ready);
+  await pause(250);
+  writeFileSync(
+    `${out}/${name}.png`,
+    execFileSync("adb", ["exec-out", "screencap", "-p"], { timeout: 20000 }),
+  );
+  assert.equal(await page.evaluate(() => document.visibilityState), "visible");
+}
 async function click(name) {
   await page.getByRole("button", { name, exact: typeof name === "string" }).click();
   await page.waitForFunction(() => !document.querySelector('.game-action[aria-busy="true"]'));
@@ -60,7 +72,7 @@ try {
   assert.equal(adb("shell", "settings", "get", "global", "airplane_mode_on"), "1");
   await connect();
   assert.match(page.url(), /^https?:\/\/localhost\//);
-  await page.screenshot({ path: `${out}/offline-title.png` });
+  await capture("offline-title");
   results.push({ name: "APK cold-start in airplane mode", ok: true });
 
   const save = applyRoam(fresh(), { type: "origin", origin: "dao", name: "安卓行者" }, () => 0.6);
@@ -124,12 +136,12 @@ try {
   await page
     .getByRole("button", { name: "参悟清净吐纳·会通", exact: true })
     .scrollIntoViewIfNeeded();
-  await page.screenshot({ path: `${out}/study-choice.png` });
+  await capture("study-choice");
   await click("参悟清净吐纳·会通");
   current = await read();
   assert.equal(current.world.insights.qingjing, 1);
   assert.equal(current.world.stones, 16);
-  await page.screenshot({ path: `${out}/comprehension.png` });
+  await capture("comprehension");
   results.push({
     name: "Legacy fields migrate; real equip and paid comprehension persist",
     ok: true,
@@ -143,6 +155,7 @@ try {
     ["天书", ".codex-page"],
     ["入世", ".farm-desk"],
   ]) {
+    stage = `offline page: ${label}`;
     await page
       .getByRole("navigation", { name: "游戏主导航" })
       .getByRole("button", { name: new RegExp(`^${label}`) })
@@ -162,11 +175,13 @@ try {
       await detail.locator(".item-art-large").evaluate((el) => getComputedStyle(el).backgroundImage)
     ).includes("/art/relic-icons.webp"),
   );
-  await page.screenshot({ path: `${out}/offline-relic-detail.png` });
+  stage = "HD relic native capture";
+  await capture("offline-relic-detail");
   await page.keyboard.press("Escape");
   await detail.waitFor({ state: "hidden" });
   results.push({ name: "All five lazy pages and HD relic detail work in airplane mode", ok: true });
 
+  stage = "local audio and background lifecycle";
   const files = readdirSync("public/audio").filter((name) => name.endsWith(".ogg"));
   assert.equal(files.length, 12);
   const lengths = await page.evaluate(async (names) => {
@@ -200,6 +215,7 @@ try {
   assert.equal((await read()).world.insights.qingjing, 1);
   results.push({ name: "Android HOME/foreground stops music and resumes its position", ok: true });
 
+  stage = "force stop and restore";
   await browser.close();
   browser = undefined;
   adb("shell", "am", "force-stop", pkg);
@@ -213,15 +229,34 @@ try {
   assert.deepEqual(current.items, save.items);
   assert.ok(current.flags.includes("old-story"));
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  await page.screenshot({ path: `${out}/offline-restart.png` });
+  await capture("offline-restart");
   results.push({
     name: "Force-stop and offline relaunch retain character, relics, history and paid progress",
     ok: true,
   });
 } catch (error) {
-  results.push({ name: "Android runtime", ok: false, error: error.message });
-  if (page && !page.isClosed())
-    await page.screenshot({ path: `${out}/failure.png`, timeout: 5000 }).catch(() => {});
+  results.push({ name: "Android runtime", stage, ok: false, error: error.message });
+  try {
+    writeFileSync(
+      `${out}/native-failure.log`,
+      adb(
+        "logcat",
+        "-d",
+        "-v",
+        "brief",
+        "-t",
+        "400",
+        "AndroidRuntime:E",
+        "chromium:E",
+        "ActivityManager:I",
+        "lmkd:I",
+        "*:S",
+      ),
+    );
+  } catch {
+    /* Keep the original failure if the device itself has disconnected. */
+  }
+  if (page && !page.isClosed()) await capture("failure").catch(() => {});
   process.exitCode = 1;
 } finally {
   writeFileSync(
