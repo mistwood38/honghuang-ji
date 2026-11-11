@@ -204,6 +204,20 @@ export function realmIndex(dao: number) {
   return index;
 }
 
+/** Ordinary progress cannot substitute for a successful major breakthrough. */
+function gainDao(save: SaveData, amount: number, changes: string[]) {
+  const before = save.stats.dao;
+  const nextRealm = REALMS[realmIndex(before) + 1];
+  const ceiling = nextRealm ? nextRealm.min - 1 : CAP.dao;
+  const next = clamp(before + amount, 0, ceiling);
+  save.stats.dao = next;
+  if (next > before) changes.push(`道行 +${next - before}`);
+  if (before + amount > ceiling && nextRealm) {
+    const message = "道行已至本境关口，需以突破打开下一境";
+    if (!changes.includes(message)) changes.push(message);
+  }
+}
+
 function hasKarma(world: RoamState, id: string) {
   return world.karma.includes(id);
 }
@@ -298,6 +312,10 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
   let battleId: string | null = null;
   for (const effect of effects) {
     if (effect.t === "stat") {
+      if (effect.k === "dao" && effect.n > 0) {
+        gainDao(save, effect.n, changes);
+        continue;
+      }
       const next = clamp(save.stats[effect.k] + effect.n, 0, CAP[effect.k]);
       const delta = next - save.stats[effect.k];
       save.stats[effect.k] = next;
@@ -789,11 +807,7 @@ function cultivate(save: SaveData, world: RoamState, rng: () => number) {
   if (world.xiuwei >= 100 && before < 100) changes.push("火候已满，可以尝试突破");
   else if (world.xiuwei > before) changes.push("修为有所积累");
   if (rng() > 0.45) {
-    const nextDao = clamp(save.stats.dao + 1, 0, CAP.dao);
-    if (nextDao !== save.stats.dao) {
-      save.stats.dao = nextDao;
-      changes.push("道行 +1");
-    }
+    gainDao(save, 1, changes);
   }
   spend(world, 1);
   world.report = {
@@ -845,14 +859,15 @@ function breakthrough(save: SaveData, world: RoamState, pill: boolean, rng: () =
   if ((world.layer ?? 1) < 9) {
     if (rng() < 0.82 + world.wuxing * 0.01) {
       world.layer += 1;
-      save.stats.dao = clamp(save.stats.dao + 1, 0, CAP.dao);
+      const changes: string[] = [];
+      gainDao(save, 1, changes);
       world.xiuwei = Math.min(100, world.spare);
       world.spare = Math.max(0, world.spare - world.xiuwei);
       const realm = REALMS[realmIndex(save.stats.dao)] ?? REALMS[0]!;
       world.report = {
         title: `${realm.name} · ${LAYER_NAME[world.layer - 1]}`,
         paragraphs: ["这一层开了。火候重新开始攒，挂机不会停。"],
-        changes: [`升到${LAYER_NAME[world.layer - 1]}`],
+        changes: [`升到${LAYER_NAME[world.layer - 1]}`, ...changes],
       };
       return;
     }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CODEX, CODEX_CATEGORIES } from "@/lib/honghuang/world";
+import { CODEX, CODEX_CATEGORIES } from "@/lib/honghuang/codex-data";
 import { ART, type ArtKey } from "@/lib/honghuang/visuals";
 import { Artwork, PageHeading, SectionHeading } from "./art";
 import "./reading-views.css";
@@ -11,8 +11,8 @@ const CATEGORY_ART: Record<string, ArtKey> = {
   法则: "palace",
   众生: "nuwa",
   势力: "east",
-  山河: "mountain",
-  法宝: "palace",
+  山河: "worldmap",
+  法宝: "relics",
   凡例: "mountain",
 };
 const CATEGORY_LINES: Record<string, string> = {

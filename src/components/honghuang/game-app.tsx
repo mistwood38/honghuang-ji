@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { cueForPlace, musicCue } from "@/lib/honghuang/music";
 import { eraName, ROAM_PLACES } from "@/lib/honghuang/roam/engine";
 import { sceneById } from "@/lib/honghuang/story";
@@ -11,15 +11,21 @@ import { ART, artForPlace, artForScene, moodForScene } from "@/lib/honghuang/vis
 import { APP_NAME, NOVEL_NAME, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
 import type { Screen } from "@/lib/honghuang/types";
 import { Artwork, Atmosphere } from "./art";
-import { CodexView } from "./codex-view";
-import { LandView } from "./land-view";
-import { NovelView } from "./novel-view";
-import { PlayView } from "./play-view";
 import { RestartButton } from "./restart-button";
 import { SaveTransfer } from "./save-transfer";
-import { SelfView } from "./self-view";
 import "./cinematic.css";
 import "./experience.css";
+import "./page-unfolding.css";
+
+const CodexView = lazy(() =>
+  import("./codex-view").then((module) => ({ default: module.CodexView })),
+);
+const LandView = lazy(() => import("./land-view").then((module) => ({ default: module.LandView })));
+const NovelView = lazy(() =>
+  import("./novel-view").then((module) => ({ default: module.NovelView })),
+);
+const PlayView = lazy(() => import("./play-view").then((module) => ({ default: module.PlayView })));
+const SelfView = lazy(() => import("./self-view").then((module) => ({ default: module.SelfView })));
 
 const DOCK: { id: Screen; label: string; mark: string; note: string }[] = [
   { id: "play", label: "入世", mark: "世", note: "一生因果" },
@@ -146,11 +152,19 @@ function Shell() {
         ) : null}
       </header>
       <main id="game-content" className="screen-enter" key={screen}>
-        {screen === "play" ? <PlayView /> : null}
-        {screen === "novel" ? <NovelView /> : null}
-        {screen === "codex" ? <CodexView /> : null}
-        {screen === "land" ? <LandView /> : null}
-        {screen === "self" ? <SelfView /> : null}
+        <Suspense
+          fallback={
+            <div className="page-unfolding" role="status">
+              正在展开此卷…
+            </div>
+          }
+        >
+          {screen === "play" ? <PlayView /> : null}
+          {screen === "novel" ? <NovelView /> : null}
+          {screen === "codex" ? <CodexView /> : null}
+          {screen === "land" ? <LandView /> : null}
+          {screen === "self" ? <SelfView /> : null}
+        </Suspense>
       </main>
       <nav className="dock" aria-label="游戏主导航">
         <ul>

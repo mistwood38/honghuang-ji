@@ -336,9 +336,10 @@
   border: 1px solid #b79b5a55;
 }
 .relic-stage .item-art-large {
-  width: 168px;
-  height: 168px;
-  flex-basis: 168px;
+  width: min(240px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  flex-basis: auto;
 }
 .relic-stage p {
   margin: 0;

@@ -135,6 +135,38 @@ try {
     ok: true,
   });
 
+  // Each lazy page must resolve from the APK with all networking disabled.
+  for (const [label, selector] of [
+    ["山河", ".atlas-page"],
+    ["我的", ".self-page"],
+    ["本纪", ".reader-page"],
+    ["天书", ".codex-page"],
+    ["入世", ".farm-desk"],
+  ]) {
+    await page
+      .getByRole("navigation", { name: "游戏主导航" })
+      .getByRole("button", { name: new RegExp(`^${label}`) })
+      .click();
+    await page.locator(selector).waitFor();
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+      false,
+    );
+  }
+  await click("储物");
+  await page.locator(".relic-use .relic-card").filter({ hasText: "盘古骨" }).click();
+  const detail = page.getByRole("dialog");
+  await detail.waitFor();
+  assert.ok(
+    (
+      await detail.locator(".item-art-large").evaluate((el) => getComputedStyle(el).backgroundImage)
+    ).includes("/art/relic-icons.webp"),
+  );
+  await page.screenshot({ path: `${out}/offline-relic-detail.png` });
+  await page.keyboard.press("Escape");
+  await detail.waitFor({ state: "hidden" });
+  results.push({ name: "All five lazy pages and HD relic detail work in airplane mode", ok: true });
+
   const files = readdirSync("public/audio").filter((name) => name.endsWith(".ogg"));
   assert.equal(files.length, 12);
   const lengths = await page.evaluate(async (names) => {

@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - feat/complete-experience
       - art/stage-two-cinematic
       - feat/factions-lineages
       - fix/lineage-reading-flow

@@ -20,7 +20,9 @@ export type ArtKey =
   | "war"
   | "edge"
   | "clay"
-  | "heavens";
+  | "heavens"
+  | "relics"
+  | "sanctuary";
 export type SceneMood = "mist" | "radiance" | "calamity" | "still" | "embers" | "tide";
 export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = {
   chaos: {
@@ -118,6 +120,50 @@ export const ART: Record<ArtKey, { src: string; small: string; alt: string }> = 
     small: "/art/heavens-small.webp",
     alt: "三十三天层层宫阙叠在云上，越往上越淡",
   },
+  relics: {
+    src: "/art/relics.webp",
+    small: "/art/relics-small.webp",
+    alt: "玄青石台上的古铜钟、灵石、古骨与玉片，器物纹理映着微光",
+  },
+  sanctuary: {
+    src: "/art/cultivation-sanctuary.webp",
+    small: "/art/cultivation-sanctuary-small.webp",
+    alt: "修士在古松石台上静坐，铜炉与古卷相伴，远方是苍青群山和云海",
+  },
+};
+
+/** Chapter IDs keep their illustration when the reading order changes. */
+export const CHAPTER_ART: Record<string, ArtKey> = {
+  c1: "chaos",
+  c2: "chaos",
+  c3: "earth",
+  c4: "palace",
+  c5: "palace",
+  c6: "kunlun",
+  c7: "buzhou",
+  c8: "east",
+  c9: "calamity",
+  c10: "clay",
+  c11: "nuwa",
+  c12: "tribes",
+  c13: "fengshen",
+  c14: "edge",
+  w1: "east",
+  w2: "east",
+  w3: "buzhou",
+  w4: "buzhou",
+  w5: "clay",
+  w6: "nuwa",
+  w7: "tribes",
+  w8: "penglai",
+  w9: "bloodsea",
+  w10: "edge",
+  w11: "fengshen",
+  w12: "sanctuary",
+  w13: "sanctuary",
+  w14: "sanctuary",
+  w15: "east",
+  w16: "penglai",
 };
 
 export type WitnessKey = "pangu" | "hongjun" | "witch" | "dijun" | "yuanshi" | "tongtian";
