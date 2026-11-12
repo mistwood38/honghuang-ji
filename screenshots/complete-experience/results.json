@@ -1,0 +1,119 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "results": [
+    {
+      "width": 320,
+      "name": "nine HD relic details fit and close",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "name": "all five lazy pages, map browsing, chapter art and codex",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "name": "console and layout",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "nine HD relic details fit and close",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "all five lazy pages, map browsing, chapter art and codex",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "pangu-bone: full discover-to-equip UI and reload",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "zhuxian: full discover-to-equip UI and reload",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "xirang: full discover-to-equip UI and reload",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "cultivation respects gate; explicit breakthrough opens it",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "20 consecutive explorations/choices retain local reading and never scroll to top",
+      "events": [
+        "bone-shore-1",
+        "vein-1",
+        "vein-2",
+        "vein-3",
+        "beast-1",
+        "beast-2",
+        "earth-foot",
+        "earth-tree",
+        "earth-bargain",
+        "earth-night-beast",
+        "chaos-kin",
+        "chaos-beat",
+        "night-1",
+        "night-2",
+        "edge-sleeper",
+        "edge-name-burial",
+        "debt-1",
+        "tribes-cough",
+        "tribes-smoke",
+        "soil-shelter-1"
+      ],
+      "regions": [
+        "earth",
+        "chaos",
+        "edge",
+        "tribes",
+        "wahuan"
+      ],
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "console and layout",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "nine HD relic details fit and close",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "all five lazy pages, map browsing, chapter art and codex",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "console and layout",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "nine HD relic details fit and close",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "all five lazy pages, map browsing, chapter art and codex",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "console and layout",
+      "ok": true
+    }
+  ]
+}

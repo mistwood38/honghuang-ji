@@ -1,0 +1,65 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "results": [
+    {
+      "width": 320,
+      "name": "legacy-possessions-nine-details-equip-switch-save",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "name": "two-comprehensions-pay-once-persist-and-change-real-combat",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "name": "layout-and-console",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "legacy-possessions-nine-details-equip-switch-save",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "two-comprehensions-pay-once-persist-and-change-real-combat",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "layout-and-console",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "legacy-possessions-nine-details-equip-switch-save",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "two-comprehensions-pay-once-persist-and-change-real-combat",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "layout-and-console",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "legacy-possessions-nine-details-equip-switch-save",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "two-comprehensions-pay-once-persist-and-change-real-combat",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "layout-and-console",
+      "ok": true
+    }
+  ]
+}

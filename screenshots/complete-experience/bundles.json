@@ -1,0 +1,29 @@
+{
+  "js": {
+    "files": [
+      "index-B2XL3WlS.js",
+      "art-BqRha8j2.js"
+    ],
+    "bytes": 582338,
+    "gzip": 211004
+  },
+  "css": {
+    "files": [
+      "index-w1nhiOwA.css"
+    ],
+    "bytes": 60112,
+    "gzip": 14568
+  },
+  "baseline": {
+    "js": 713704,
+    "jsGzip": 259129,
+    "css": 128031,
+    "cssGzip": 27943,
+    "source": "Previous head 08e5161, same local offline build measured before modifications"
+  },
+  "reductionPercent": {
+    "js": 18.4,
+    "css": 53.0
+  },
+  "compression": "gzip level 6"
+}

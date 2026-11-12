@@ -6,12 +6,12 @@
 
 - 六个核心页面使用本地场景、人物和器物美术；行动采用青铜铭牌与落印反馈，四族分支另有玄玉、黑岩、羽纹和焦木牌面及行动意象。选择后展示结果，阅读衔接由玩家控制，长反馈会留出正文阅读空间。
 - 九门功法可择一主修、两门辅修，并在炼气、筑基后参悟；手动和挂机战斗使用同一套招式规则与三种战策。
-- 九件既有器物可在储物页御使，分别参与修炼、护身、突破、药圃或战后恢复。御器不消耗收藏，同一时间只生效一件。
+- 九件既有器物均可在开放游历中获得，并在储物页御使，分别参与修炼、护身、突破、药圃或战后恢复。御器不消耗收藏，同一时间只生效一件；详情使用高清图集，材料不足的因缘可以暂缓再续。
 - 十三个地区各有可交互的物产、遗迹和歇脚地；修补、取用与休养会留下持续状态。四位行旅人物有原创肖像、行程、托付与关系记录；可问沿途、谈往事、说牵挂，对话回应当地状态和托付进展。
 - 灵、巫、妖、人各六章族脉，共八种结局；章节配四幅独立场景，后续叙事记得先前选择。五方势力有随游戏日推进的补给、护路与争执，结局后仍能自由修行。
 - 六首本地原创器乐配乐与六种短音效，音乐、音效分别调音和静音。采样音源许可及制作方法见 [音频记录](docs/reviews/audio-loading-renewal.md)。实际听感仍需玩家试听。
 
-这不是完整商业游戏的验收声明。当前完成、待完善和未验证的项目统一列在 [完成情况](docs/completion-status.md)，旧报告保留各轮当时的结论。
+当前统一交付分支为 `feat/complete-experience`，包含此前各轮升级。修行必须经过大境界突破，本纪 30 章均有对应本地插画，五个内页按需加载。实际完成与验证边界列在 [完成情况](docs/completion-status.md)，旧报告保留各轮当时的结论。
 
 ## 本地运行
 
@@ -39,6 +39,7 @@ npm run build:android
 启动开发服务后，用 Playwright Chromium 或系统 `/usr/bin/chromium` 运行：
 
 ```bash
+node --experimental-strip-types scripts/completion.browser.mjs
 node --experimental-strip-types scripts/growth.browser.mjs
 node --experimental-strip-types scripts/epic-encounters.browser.mjs
 node --experimental-strip-types scripts/painted-choices.browser.mjs
@@ -46,7 +47,7 @@ node --experimental-strip-types scripts/reading-flow.browser.mjs
 node --experimental-strip-types scripts/roam-feedback.browser.mjs
 ```
 
-脚本可用第一个参数指定本机目标 URL，覆盖 320、360、412px 手机及桌面，使用独立测试存档。最新验收见 [选项与阅读](docs/reviews/painted-choices.md)，此前内容见 [长卷与相遇](docs/reviews/epic-encounters.md)、[御器与参悟](docs/reviews/relics-insight.md)。APK 工作流另包含 Android 模拟器断网启动、音频与存档检查，不将模拟器当作真机测试。本轮只验证 Android 离线网页构建，既有 APK 下载仍对应御器与参悟版本。
+脚本可用第一个参数指定本机目标 URL，覆盖 320、360、412px 手机及桌面，使用独立测试存档。最新验收见 [统一收尾报告](docs/reviews/complete-experience.md)，此前内容见 [长卷与相遇](docs/reviews/epic-encounters.md)、[御器与参悟](docs/reviews/relics-insight.md)。APK 工作流另包含 Android 模拟器断网启动、音频与存档检查，不将模拟器当作真机测试。当前 APK 包含本轮与此前完整升级，下载、源码提交、校验值和原生检查结果见 [Android 交付](docs/android.md)。
 
 ## 美术、来源与历史验收
 

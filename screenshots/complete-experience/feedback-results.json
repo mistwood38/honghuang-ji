@@ -1,0 +1,105 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "results": [
+    {
+      "name": "choice-result",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "learn-and-equip",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "battle-technique",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 320,
+      "ok": true
+    },
+    {
+      "name": "choice-result",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "learn-and-equip",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "battle-technique",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 360,
+      "ok": true
+    },
+    {
+      "name": "choice-result",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "learn-and-equip",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "battle-technique",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 412,
+      "ok": true
+    },
+    {
+      "name": "choice-result",
+      "width": 1280,
+      "ok": true
+    },
+    {
+      "name": "trade-result",
+      "width": 1280,
+      "ok": true
+    },
+    {
+      "name": "learn-and-equip",
+      "width": 1280,
+      "ok": true
+    },
+    {
+      "name": "battle-technique",
+      "width": 1280,
+      "ok": true
+    },
+    {
+      "name": "controls",
+      "width": 1280,
+      "ok": true
+    }
+  ]
+}

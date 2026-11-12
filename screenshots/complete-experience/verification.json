@@ -1,0 +1,55 @@
+{
+  "gameCommit": "660708b6bf04cc1bff043edabc728ea581e6f801",
+  "androidHarnessCommit": "97fc19bdd20d29a53a4245efb9e7d865c473f79d",
+  "unitTests": {
+    "passed": 386,
+    "failed": 0,
+    "groups": [
+      197,
+      189
+    ]
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "webBuild": "passed",
+  "offlineClientBuild": "passed",
+  "browser": {
+    "totalDistinctCases": 89,
+    "productionCompletionCases": 17,
+    "developmentRegressionCases": 72,
+    "widths": [
+      320,
+      360,
+      412,
+      1280
+    ],
+    "consecutiveChoices": 20,
+    "differentEvents": 20,
+    "regions": 5
+  },
+  "simulation": {
+    "seeds": 24,
+    "actionsPerSeed": 120
+  },
+  "smoke": {
+    "development": "passed",
+    "production": "passed",
+    "baselineDivergence": false
+  },
+  "brandCheck": {
+    "ok": true,
+    "warnings": 0
+  },
+  "nativeRuntime": {
+    "platform": "Android 15 / API 35 emulator",
+    "passed": 6,
+    "failed": 0,
+    "runId": 42971167830,
+    "firstAttempt": "CDP screenshot disconnected; native ADB capture and same-page assertions passed on retry"
+  },
+  "deferred": [
+    "music listening quality",
+    "physical Android device",
+    "many-hours human balance testing"
+  ]
+}

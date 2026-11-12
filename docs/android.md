@@ -4,17 +4,19 @@
 
 ## 获取
 
-本次已成功生成：[下载新版测试包](https://github.com/mistwood38/honghuang-ji/actions/runs/42440509568/artifacts/13601382781)（2026-11-08，游戏代码 `51e6cb5`，约 21.9 MiB；下载产物保留至 2026-11-22）。
+本次已成功生成：[下载新版测试包](https://github.com/mistwood38/honghuang-ji/actions/runs/42971167830/artifacts/13833183082)（2026-11-11，源码 `97fc19b`，游戏功能提交 `660708b`，约 23.0 MiB；下载产物保留至 2026-11-25）。
 
-也可以打开仓库的 [Android APK 工作流](https://github.com/mistwood38/honghuang-ji/actions/workflows/android-apk.yml)，选择 `feat/relics-and-insight` 分支对应的成功记录，在底部下载 `honghuang-ji-debug`，解压得到 `app-debug.apk`。下载需要登录 GitHub，构建产物保留 14 天。
+也可以打开仓库的 [Android APK 工作流](https://github.com/mistwood38/honghuang-ji/actions/workflows/android-apk.yml)，选择 `feat/complete-experience` 分支对应的成功记录，在底部下载 `honghuang-ji-debug`，解压得到 `app-debug.apk`。下载需要登录 GitHub，构建产物保留 14 天。
 
-APK SHA-256：`24b97b924f030c6f684d81bda7be5552390670979d8a5eee4e99035070ea9cda`。
+APK SHA-256：`c31e764041550fbee2a500f1a8f2905f63c4ae533c76392cc2ec08c54f7885e8`。
 
 这是 debug 签名测试包，不是应用商店发布。没有合并 `main`。工作流在开发分支代码变更时构建，纯文档和截图更新不重复打包。
 
+此包包含四族独立选项牌面、四位人物肖像与四幅长卷场景、三条法宝因缘、突破关口修复、30 章配图和五页懒加载。已从产物解出并逐字节核对 109 个本地美术、字体、音频等文件，五页脚本分块齐全。
+
 ## 画面、音乐与存档
 
-桌面图标沿用已重制的玄玉金龙标识，加载画面沿用当前开天封面。背景音乐与音效分开开关、调节音量，包含已制作的本地配乐文件。首次播放需用户操作。
+桌面图标沿用已重制的玄玉金龙标识，加载画面使用古松山台修行插画，封面为开天绘画。背景音乐与音效分开开关、调节音量，包含已制作的本地配乐文件。首次播放需用户操作。
 
 安卓返回键先关闭面板，再返回入世或封面；封面再返回时将应用收至后台。后台暂停音频，前台按用户设置恢复。旧版人物、物品和剧情记录仍可导入，新版会补齐当地山河、族脉、世局、御器和功法领悟字段。
 
@@ -22,6 +24,6 @@ APK SHA-256：`24b97b924f030c6f684d81bda7be5552390670979d8a5eee4e99035070ea9cda`
 
 ## 验证边界
 
-网页版与安卓离线资源构建、原生 APK 构建和 Android 15 / API 35 模拟器检查已通过，详见 [本次验收报告](reviews/relics-insight.md)。模拟器实际安装 APK，并在飞行模式下验证冷启动、12 个本地音频解码、御器/参悟操作、音乐经系统 HOME 后恢复、强制关闭后保留旧人物/器物/剧情和新增进度；也检查了青铜按钮样式没有被旧规则覆盖。
+网页版与安卓离线资源构建、原生 APK 构建和 Android 15 / API 35 模拟器检查已通过，详见 [本次验收报告](reviews/complete-experience.md)。模拟器实际安装 APK，并在飞行模式下验证冷启动、12 个本地音频解码、御器/参悟操作、音乐经系统 HOME 后恢复、强制关闭后保留旧人物/器物/剧情和新增进度；还验证了五个页面的懒加载分块和高清器物详情在飞行模式下可用，青铜按钮样式没有被旧规则覆盖。[六项原生结果](../screenshots/complete-experience/android/results.json)与安卓原生截图已保留。
 
 手机浏览器另覆盖 320、360、412 像素。以上不等同于安卓真机测试：真机性能、长时间后台与耗电、扬声器听感、旧 APK 跨签名覆盖安装尚未验证。

@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "97fc19bdd20d29a53a4245efb9e7d865c473f79d",
+  "gameCommit": "660708b6bf04cc1bff043edabc728ea581e6f801",
+  "runId": 42971167830,
+  "artifactId": 13833183082,
+  "bytes": 24146640,
+  "sha256": "c31e764041550fbee2a500f1a8f2905f63c4ae533c76392cc2ec08c54f7885e8",
+  "verifiedLocalAssets": 109,
+  "lazyPages": [
+    "play",
+    "land",
+    "self",
+    "novel",
+    "codex"
+  ],
+  "artifactExpires": "2026-11-25"
+}
