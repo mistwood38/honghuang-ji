@@ -1,22 +1,31 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { cueForPlace, musicCue } from "@/lib/honghuang/music";
 import { eraName, ROAM_PLACES } from "@/lib/honghuang/roam/engine";
 import { sceneById } from "@/lib/honghuang/story";
-import { playUi, setAmbience, unlockSound } from "@/lib/honghuang/sound";
+import { playUi, setAmbience, setAudioMix, unlockSound } from "@/lib/honghuang/sound";
 import { useSave } from "@/lib/honghuang/store";
+import { useAudioMix } from "@/lib/honghuang/audio-settings";
+import { LoadingView } from "./loading-view";
+import { SoundSettings } from "./sound-settings";
 import { ART, artForPlace, artForScene, moodForScene } from "@/lib/honghuang/visuals";
 import { APP_NAME, NOVEL_NAME, realmOf, STAT_LABEL, STAT_ORDER } from "@/lib/honghuang/world";
 import type { Screen } from "@/lib/honghuang/types";
 import { Artwork, Atmosphere } from "./art";
-import { CodexView } from "./codex-view";
-import { LandView } from "./land-view";
-import { NovelView } from "./novel-view";
-import { PlayView } from "./play-view";
 import { RestartButton } from "./restart-button";
 import { SaveTransfer } from "./save-transfer";
-import { SelfView } from "./self-view";
 import "./cinematic.css";
 import "./experience.css";
+import "./page-unfolding.css";
+
+const CodexView = lazy(() =>
+  import("./codex-view").then((module) => ({ default: module.CodexView })),
+);
+const LandView = lazy(() => import("./land-view").then((module) => ({ default: module.LandView })));
+const NovelView = lazy(() =>
+  import("./novel-view").then((module) => ({ default: module.NovelView })),
+);
+const PlayView = lazy(() => import("./play-view").then((module) => ({ default: module.PlayView })));
+const SelfView = lazy(() => import("./self-view").then((module) => ({ default: module.SelfView })));
 
 const DOCK: { id: Screen; label: string; mark: string; note: string }[] = [
   { id: "play", label: "入世", mark: "世", note: "一生因果" },
@@ -28,6 +37,7 @@ const DOCK: { id: Screen; label: string; mark: string; note: string }[] = [
 
 export function GameApp() {
   useEffect(() => {
+    void useAudioMix.persist.rehydrate();
     void Promise.resolve(useSave.persist.rehydrate()).finally(() =>
       useSave.getState().setHydrated(true),
     );
@@ -35,12 +45,26 @@ export function GameApp() {
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       if (!useSave.getState().sound) return;
-      const element = event.target instanceof Element ? event.target.closest("button, summary") : null;
+      const element =
+        event.target instanceof Element ? event.target.closest("button, summary") : null;
       if (!(element instanceof HTMLElement)) return;
       if (element instanceof HTMLButtonElement && element.disabled) return;
       const confirm =
-        element.classList.contains("choice") || element.classList.contains("fate-button");
-      playUi(confirm ? "confirm" : "tap");
+        element.classList.contains("choice") ||
+        element.classList.contains("fate-button") ||
+        element.classList.contains("game-action--plaque");
+      const kind = element.dataset.uiSound;
+      playUi(
+        kind === "skill" || kind === "item" || kind === "confirm"
+          ? kind
+          : confirm
+            ? "confirm"
+            : element.classList.contains("dock-item") || element.closest(".roam-tabs")
+              ? "tab"
+              : element.tagName === "SUMMARY"
+                ? "panel"
+                : "tap",
+      );
     };
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
@@ -52,10 +76,7 @@ export function GameApp() {
       <Shell />
     </>
   ) : (
-    <div className="awakening" role="status">
-      <span className="seal">洪</span>
-      <p>天地未明，灵识将醒。</p>
-    </div>
+    <LoadingView />
   );
 }
 
@@ -102,9 +123,13 @@ function Shell() {
             onClick={() => setScreen("title")}
             aria-label="洪荒纪 · 返回封面"
           >
-            <span className="brand-seal" aria-hidden="true">
-              洪
-            </span>
+            <img
+              className="brand-emblem"
+              src="/art/app-emblem.webp"
+              alt=""
+              width="36"
+              height="36"
+            />
             {APP_NAME}
             <span className="brand-caption">洪荒神话 · 沉浸叙事</span>
           </button>
@@ -127,11 +152,19 @@ function Shell() {
         ) : null}
       </header>
       <main id="game-content" className="screen-enter" key={screen}>
-        {screen === "play" ? <PlayView /> : null}
-        {screen === "novel" ? <NovelView /> : null}
-        {screen === "codex" ? <CodexView /> : null}
-        {screen === "land" ? <LandView /> : null}
-        {screen === "self" ? <SelfView /> : null}
+        <Suspense
+          fallback={
+            <div className="page-unfolding" role="status">
+              正在展开此卷…
+            </div>
+          }
+        >
+          {screen === "play" ? <PlayView /> : null}
+          {screen === "novel" ? <NovelView /> : null}
+          {screen === "codex" ? <CodexView /> : null}
+          {screen === "land" ? <LandView /> : null}
+          {screen === "self" ? <SelfView /> : null}
+        </Suspense>
       </main>
       <nav className="dock" aria-label="游戏主导航">
         <ul>
@@ -157,28 +190,36 @@ function Shell() {
   );
 }
 function Ambience() {
+  const mix = useAudioMix();
+  useEffect(() => setAudioMix(mix), [mix]);
   const screen = useSave((state) => state.screen);
   const sound = useSave((state) => state.sound);
   const sceneId = useSave((state) => state.sceneId);
   const place = useSave((state) => state.world?.place);
+  const phase = useSave((state) => state.world?.phase);
+  const seated = useSave(
+    (state) => Boolean(state.world?.retreat) || state.world?.idle?.kind === "sit",
+  );
   useEffect(() => {
     if (!sound) {
       setAmbience(false);
       return;
     }
     if (screen === "play" && place) {
-      setAmbience(true, cueForPlace(place));
+      setAmbience(true, phase === "battle" ? "calamity" : seated ? "self" : cueForPlace(place));
       return;
     }
     const scene = sceneById(sceneId);
     setAmbience(true, musicCue(screen, scene ? moodForScene(scene) : "mist"));
-  }, [screen, sound, sceneId, place]);
+  }, [screen, sound, sceneId, place, phase, seated]);
   return null;
 }
 function primeSound() {
   const live = useSave.getState();
   const scene = sceneById(live.sceneId);
-  const cue = live.world ? cueForPlace(live.world.place) : musicCue(live.screen, scene ? moodForScene(scene) : "mist");
+  const cue = live.world
+    ? cueForPlace(live.world.place)
+    : musicCue(live.screen, scene ? moodForScene(scene) : "mist");
   setAmbience(true, cue);
   unlockSound();
   live.setSound(true);
@@ -199,26 +240,29 @@ function SoundButton() {
   const sound = useSave((state) => state.sound);
   const setSound = useSave((state) => state.setSound);
   return (
-    <button
-      type="button"
-      className="sound-button"
-      aria-label={`乐声${sound ? "开" : "关"}`}
-      aria-pressed={sound}
-      onClick={() => {
-        if (!sound) primeSound();
-        else {
-          setAmbience(false);
-          setSound(false);
-        }
-      }}
-    >
-      <span className={`sound-bars ${sound ? "sound-on" : ""}`} aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
-      <span>乐声{sound ? "开" : "关"}</span>
-    </button>
+    <div className="sound-controls">
+      <button
+        type="button"
+        className="sound-button"
+        aria-label={`乐声${sound ? "开" : "关"}`}
+        aria-pressed={sound}
+        onClick={() => {
+          if (!sound) primeSound();
+          else {
+            setAmbience(false);
+            setSound(false);
+          }
+        }}
+      >
+        <span className={`sound-bars ${sound ? "sound-on" : ""}`} aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span>乐声{sound ? "开" : "关"}</span>
+      </button>
+      <SoundSettings />
+    </div>
   );
 }
 function TitleScreen() {
@@ -258,9 +302,7 @@ function TitleScreen() {
         <div className="title-divider" aria-hidden="true">
           <span />◇<span />
         </div>
-        <p className="title-line">
-          斧声之前，你已不肯散。日子很长，不必十几步就写成结局。
-        </p>
+        <p className="title-line">斧声之前，你已不肯散。日子很长，不必十几步就写成结局。</p>
         <p className="title-description">
           山河有时代，没有人强迫你跟着时代跑完。
           <br />
@@ -280,7 +322,11 @@ function TitleScreen() {
           <span>
             {started ? "继 续 此 生" : "踏 入 洪 荒"}
             <small>
-              {started ? (world ? "回到你停下的那一日" : "回到残卷") : "自由游历 · 不是十几步的结局"}
+              {started
+                ? world
+                  ? "回到你停下的那一日"
+                  : "回到残卷"
+                : "自由游历 · 不是十几步的结局"}
             </small>
           </span>
           <span className="fate-button-arrow" aria-hidden="true">

@@ -1,0 +1,79 @@
+{
+  "platform": "Android 15 / API 35 emulator",
+  "results": [
+    {
+      "name": "APK cold-start in airplane mode",
+      "ok": true
+    },
+    {
+      "name": "Legacy fields migrate; real equip and paid comprehension persist",
+      "ok": true
+    },
+    {
+      "name": "All five lazy pages and HD relic detail work in airplane mode",
+      "ok": true
+    },
+    {
+      "name": "All 12 local audio files decode while offline",
+      "ok": true,
+      "files": [
+        {
+          "file": "score-cloud-road.ogg",
+          "seconds": 109.10329166666666
+        },
+        {
+          "file": "score-ember-oath.ogg",
+          "seconds": 102.857125
+        },
+        {
+          "file": "score-first-light.ogg",
+          "seconds": 100.006875
+        },
+        {
+          "file": "score-ink-moon.ogg",
+          "seconds": 112.952
+        },
+        {
+          "file": "score-jade-breath.ogg",
+          "seconds": 106.682625
+        },
+        {
+          "file": "score-mountain-sea.ogg",
+          "seconds": 92.31816666666667
+        },
+        {
+          "file": "ui-soft-confirm.ogg",
+          "seconds": 0.662
+        },
+        {
+          "file": "ui-soft-item.ogg",
+          "seconds": 0.654
+        },
+        {
+          "file": "ui-soft-panel.ogg",
+          "seconds": 0.67
+        },
+        {
+          "file": "ui-soft-skill.ogg",
+          "seconds": 0.662
+        },
+        {
+          "file": "ui-soft-tab.ogg",
+          "seconds": 0.662
+        },
+        {
+          "file": "ui-soft-tap.ogg",
+          "seconds": 0.666
+        }
+      ]
+    },
+    {
+      "name": "Android HOME/foreground stops music and resumes its position",
+      "ok": true
+    },
+    {
+      "name": "Force-stop and offline relaunch retain character, relics, history and paid progress",
+      "ok": true
+    }
+  ]
+}

@@ -627,13 +627,16 @@
   width: 62px;
   height: 62px;
   flex: 0 0 62px;
-  background-image: url("/art/relic-icons.webp");
+  background-image: url("/art/relic-icons-small.webp");
   background-size: 300% 300%;
   background-position: var(--item-x) var(--item-y);
   border: 1px solid #98805280;
   box-shadow:
     0 3px 14px #0004,
     inset 0 0 0 3px #071715;
+}
+.item-art-large {
+  background-image: url("/art/relic-icons.webp");
 }
 .item-art-unknown {
   background-image: none;
@@ -811,9 +814,6 @@
   }
   .ending-actions > .flex > button {
     flex: 1;
-  }
-  .item-art {
-    background-image: url("/art/relic-icons-small.webp");
   }
 }
 @media (max-width: 359px) {

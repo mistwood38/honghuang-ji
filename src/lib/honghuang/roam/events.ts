@@ -1,4 +1,5 @@
 import type { Effect, EventChoice, PlaceId, RoamEvent } from "./state.ts";
+import { RELIC_JOURNEYS, RELIC_JOURNEY_EVENTS } from "./relic-journeys.ts";
 
 function fx(...effects: Effect[]): Effect[] {
   return effects;
@@ -47,6 +48,7 @@ const friend = "old-friend";
 const echo = "pillar-echo";
 
 export const CHAINS: { id: string; name: string; stages: string[] }[] = [
+  ...RELIC_JOURNEYS,
   { id: stone, name: "不周碎问", stages: ["stone-1", "stone-2", "stone-3"] },
   { id: blood, name: "血海馈赠", stages: ["blood-1", "blood-2", "blood-3"] },
   { id: purple, name: "紫气未落", stages: ["purple-1", "purple-2", "purple-3"] },
@@ -70,6 +72,7 @@ export const CHAINS: { id: string; name: string; stages: string[] }[] = [
 ];
 
 export const EVENTS: RoamEvent[] = [
+  ...RELIC_JOURNEY_EVENTS,
   ev("stone-1", "buzhou", "石在响", [
     "不周的一块碎石自己在响。响声很直，直得像有人用骨头敲你的牙。",
     "巫族的人走过，不捡。他们说直的东西自己会找主人，找错了，山会来要。",
@@ -1480,6 +1483,15 @@ export const EVENTS: RoamEvent[] = [
 ];
 
 export const KARMA_LABEL: Record<string, string> = {
+  "bone-kept-shore": "以矿石护住河岸",
+  "bone-held-rope": "寒水中替过河人托绳",
+  "bone-shore-received": "收下山骨与换肩之法",
+  "sword-anchored": "替血海渡船做过护锚",
+  "sword-held-ferry": "握住割伤手背的渡船绳",
+  "sword-ferry-received": "记住剑锋也该留出归路",
+  "soil-mended": "替幼苗补过雨棚",
+  "soil-sheltered": "雨中护住过幼苗",
+  "soil-shelter-received": "为后来的人留下一圈土",
   "took-stone": "取走不周碎石",
   "buried-stone": "把碎石埋回山根",
   "returned-stone": "把直的东西还了回去",

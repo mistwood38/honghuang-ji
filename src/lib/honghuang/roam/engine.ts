@@ -1,6 +1,8 @@
 import type { Origin, SaveData, StatKey } from "../types.ts";
 import { cleanName } from "../engine.ts";
-import { REALMS } from "../world.ts";
+import { activeRelic, normalizeRelic, relicGuard, RELIC_USES } from "./relics.ts";
+import { INSIGHT_NAMES, INSIGHT_STEPS, insightLevel, insightRequirement, normalizeInsights, techniqueFor } from "./insight.ts";
+import { REALMS, ITEMS } from "../world.ts";
 import {
   ARTS,
   BEASTS,
@@ -18,7 +20,13 @@ import {
   eraOf,
 } from "./catalog.ts";
 import { CHAINS, EVENTS, eventById } from "./events.ts";
+import { adjustFaction, affairsOptions, createPolitics, normalizePolitics, performAffairs } from "./politics.ts";
+import { lineageOptions, normalizeLineages, performLineage } from "./lineages.ts";
+import { BATTLE_PLANS } from "./battle-plans.ts";
+import { normalizePrepared, preparedTechniques, TECHNIQUES } from "./techniques.ts";
+import { advanceLiving, createLiving, localOptions, normalizeLiving, performLocal, sameLocalAct } from "./local-world.ts";
 import type {
+  BattleState,
   Effect,
   EventChoice,
   GoodId,
@@ -67,6 +75,13 @@ export function createRoam(): RoamState {
     stones: 0,
     arts: [],
     equipped: null,
+    relic: null,
+    insights: {},
+    prepared: [null, null],
+    battlePlan: "balanced",
+    living: createLiving(),
+    politics: createPolitics(),
+    lineages: {},
     spells: [],
     bag: {},
     relations: {},
@@ -110,6 +125,10 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     return null;
   }
   const base = createRoam();
+  const day = Number.isFinite(Number(body.day)) ? clamp(Math.floor(Number(body.day)), 1, 1_000_000) : 1;
+  const learned = Array.isArray(body.arts) ? body.arts.filter((id) => typeof id === "string") : [];
+  const main = body.equipped && learned.includes(body.equipped) && Object.hasOwn(ARTS, body.equipped)
+    ? body.equipped : learned.find((id) => Object.hasOwn(ARTS, id)) ?? null;
   return {
     ...base,
     ...body,
@@ -117,7 +136,15 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     phase: body.phase,
     known: Array.isArray(body.known) ? body.known.filter((id): id is PlaceId => id in ROAM_PLACES) : base.known,
     bag: body.bag && typeof body.bag === "object" ? body.bag : {},
-    arts: Array.isArray(body.arts) ? body.arts.filter((id) => typeof id === "string") : [],
+    arts: learned,
+    equipped: main,
+    relic: normalizeRelic(body.relic),
+    insights: normalizeInsights(body.insights, learned),
+    prepared: normalizePrepared(body.prepared, learned, main),
+    battlePlan: body.battlePlan && Object.hasOwn(BATTLE_PLANS, body.battlePlan) ? body.battlePlan : "balanced",
+    living: normalizeLiving(body.living, day),
+    politics: normalizePolitics(body.politics, day),
+    lineages: normalizeLineages(body.lineages),
     spells: Array.isArray(body.spells) ? body.spells.filter((id) => typeof id === "string") : [],
     karma: Array.isArray(body.karma) ? body.karma.filter((id) => typeof id === "string") : [],
     seen: Array.isArray(body.seen) ? body.seen.filter((id) => typeof id === "string") : [],
@@ -130,7 +157,7 @@ export function normalizeRoam(raw: unknown): RoamState | null {
     xiuwei: clamp(Number(body.xiuwei) || 0, 0, 100),
     lingqi: clamp(Number(body.lingqi) || 0, 0, 80),
     wound: clamp(Number(body.wound) || 0, 0, 6),
-    day: Math.max(1, Number(body.day) || 1),
+    day,
     retreat:
       body.retreat && typeof body.retreat.watch === "number"
         ? { watch: clamp(body.retreat.watch, 0, 3) }
@@ -175,6 +202,20 @@ export function realmIndex(dao: number) {
     if (dao >= realm.min) index = i;
   });
   return index;
+}
+
+/** Ordinary progress cannot substitute for a successful major breakthrough. */
+function gainDao(save: SaveData, amount: number, changes: string[]) {
+  const before = save.stats.dao;
+  const nextRealm = REALMS[realmIndex(before) + 1];
+  const ceiling = nextRealm ? nextRealm.min - 1 : CAP.dao;
+  const next = clamp(before + amount, 0, ceiling);
+  save.stats.dao = next;
+  if (next > before) changes.push(`道行 +${next - before}`);
+  if (before + amount > ceiling && nextRealm) {
+    const message = "道行已至本境关口，需以突破打开下一境";
+    if (!changes.includes(message)) changes.push(message);
+  }
 }
 
 function hasKarma(world: RoamState, id: string) {
@@ -271,6 +312,10 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
   let battleId: string | null = null;
   for (const effect of effects) {
     if (effect.t === "stat") {
+      if (effect.k === "dao" && effect.n > 0) {
+        gainDao(save, effect.n, changes);
+        continue;
+      }
       const next = clamp(save.stats[effect.k] + effect.n, 0, CAP[effect.k]);
       const delta = next - save.stats[effect.k];
       save.stats[effect.k] = next;
@@ -295,6 +340,7 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
     } else if (effect.t === "drop") {
       world.karma = world.karma.filter((id) => id !== effect.id);
       save.items = save.items.filter((id) => id !== effect.id);
+      if (world.relic === effect.id) world.relic = null;
     } else if (effect.t === "rel") {
       world.relations[effect.id] = clamp((world.relations[effect.id] ?? 0) + effect.n, -100, 100);
       changes.push(effect.n >= 0 ? "有人记住了你的好" : "有人记住了你的拒绝");
@@ -326,7 +372,10 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
     } else if (effect.t === "spell") {
       if (!world.spells.includes(effect.id)) world.spells.push(effect.id);
     } else if (effect.t === "equip") {
-      if (world.arts.includes(effect.id)) world.equipped = effect.id;
+      if (world.arts.includes(effect.id)) {
+        world.equipped = effect.id;
+        world.prepared = normalizePrepared(world.prepared, world.arts, world.equipped);
+      }
     } else if (effect.t === "sect") {
       world.sect = effect.id;
       world.sectRank = effect.rank ?? 0;
@@ -357,6 +406,11 @@ function applyEffects(save: SaveData, world: RoamState, effects: Effect[], rng: 
       battleId = effect.id;
     } else if (effect.t === "skew") {
       world.eraSkew += effect.n;
+    } else if (effect.t === "faction") {
+      if (Object.hasOwn(world.politics.factions, effect.id)) {
+        adjustFaction(world, effect.id, effect.power, effect.supply);
+        changes.push("护路势力的声威与补给改变");
+      }
     } else if (effect.t === "place") {
       world.place = effect.id;
       if (!world.known.includes(effect.id)) world.known.push(effect.id);
@@ -391,37 +445,48 @@ function startBattle(world: RoamState, id: string, rng: () => number) {
 function powerOf(save: SaveData, world: RoamState) {
   const art = world.equipped ? ARTS[world.equipped] : undefined;
   const bond = world.beast ? Math.floor(world.beast.bond / 25) : 0;
-  return 6 + realmIndex(save.stats.dao) * 3 + Math.floor((world.layer - 1) / 2) + world.gear * 2 + Math.floor(save.stats.kill / 10) + (art?.combat ?? 0) + bond;
+  return 6 + realmIndex(save.stats.dao) * 3 + Math.floor((world.layer - 1) / 2) + world.gear * 2 + Math.floor(save.stats.kill / 10) + (art?.combat ?? 0) + bond + (activeRelic(save) === "zhuxian" ? 2 : 0);
 }
 
-function finishBattle(save: SaveData, world: RoamState, win: boolean) {
+function finishBattle(save: SaveData, world: RoamState, win: boolean, rng: () => number) {
   const battle = world.battle;
   if (!battle) return;
   const paragraphs = win ? battle.winText : battle.loseText;
   const changes = win
-    ? applyEffects(save, world, [{ t: "stat", k: "kill", n: 1 }, { t: "good", id: "ore", n: 1 }], Math.random)
-    : applyEffects(save, world, [{ t: "wound", n: 1 }], Math.random);
+    ? applyEffects(save, world, battle.win.length ? battle.win : [{ t: "stat", k: "kill", n: 1 }, { t: "good", id: "ore", n: 1 }], rng)
+    : applyEffects(save, world, battle.lose.length ? battle.lose : [{ t: "wound", n: 1 }], rng);
   world.phase = "free";
   world.battle = null;
   world.eventId = null;
+  if (win && battle.id.startsWith("rift-") && world.gear < 8 && rng() < .35) {
+    world.gear += 1;
+    changes.push("护身之物更好了一档");
+  }
+  if (win && activeRelic(save) === "incense") {
+    const healed = Math.min(4, CAP.life - save.stats.life);
+    save.stats.life += healed;
+    if (healed) changes.push(`人族香火护归 · 道躯 +${healed}`);
+  }
   world.report = { title: win ? "这一场停了" : "你退了下来", paragraphs, changes };
   remember(world, world.report.title, paragraphs[0] ?? "");
 }
 
-function strikeEnemy(save: SaveData, world: RoamState, amount: number) {
+function strikeEnemy(save: SaveData, world: RoamState, amount: number, rng: () => number) {
   const battle = world.battle;
   if (!battle) return;
   battle.hp = Math.max(0, battle.hp - amount);
   battle.log.push(`你打中${battle.name}，它的势头弱了一截。`);
-  if (battle.hp <= 0) finishBattle(save, world, true);
+  if (battle.hp <= 0) finishBattle(save, world, true, rng);
 }
 
-function enemyStrike(save: SaveData, world: RoamState) {
+function enemyStrike(save: SaveData, world: RoamState, rng: () => number) {
   const battle = world.battle;
   if (!battle || world.phase !== "battle") return;
-  const reduced = battle.guard;
+  const relicProtection = relicGuard(save, battle.round);
+  const reduced = battle.guard + relicProtection;
   battle.guard = 0;
   const damage = Math.max(1, battle.atk - realmIndex(save.stats.dao) - reduced);
+  if (relicProtection && damage < Math.max(1, battle.atk - realmIndex(save.stats.dao) - reduced + relicProtection)) battle.log.push(`${ITEMS[activeRelic(save)!]!.name}为你承住一部分攻势。`);
   save.stats.life = clamp(save.stats.life - damage, 0, CAP.life);
   battle.log.push(`${battle.name}还击，你的道躯承了这一下。`);
   battle.round += 1;
@@ -439,7 +504,7 @@ function enemyStrike(save: SaveData, world: RoamState) {
   }
   if (battle.round > 8) {
     battle.log.push("你们谁也没有把对方留下。这场斗自己散了。");
-    finishBattle(save, world, false);
+    finishBattle(save, world, false, rng);
   }
 }
 
@@ -574,11 +639,18 @@ export function applyRoam(save: SaveData, act: RoamAct, rng: () => number = Math
     const now = act.now ?? Date.now();
     const world = save.world;
     if (!world?.idle || world.phase !== "free") return save;
-    if (now - (world.lastTick || now) < 20_000) return save;
+    if (now >= world.lastTick && now - (world.lastTick || now) < (world.idle.kind === "wander" ? 2500 : 20_000)) return save;
   }
   const next = cloneSave(save);
   next.world = next.world ?? createRoam();
+  next.world.living ??= createLiving(next.world.day);
+  next.world.prepared ??= [null, null];
+  next.world.politics ??= createPolitics(next.world.day);
+  next.world.lineages ??= {};
+  next.world.insights ??= {};
+  next.world.relic = activeRelic(next);
   dispatch(next, next.world, act, rng);
+  advanceLiving(next.world);
   next.version = 2;
   return next;
 }
@@ -592,7 +664,7 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
   if (world.phase === "origin") return;
   if (world.phase === "battle") {
     if (act.type !== "combat") return;
-    combat(save, world, act.move, rng);
+    combat(save, world, act.move, rng, act.artId);
     return;
   }
   if (world.phase === "event") {
@@ -600,7 +672,89 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
     choose(save, world, act.choiceId, rng);
     return;
   }
-  if (act.type === "cultivate") cultivate(save, world, rng);
+  if (act.type === "affairs" || act.type === "lineage") {
+    const options = () => (act.type === "affairs" ? affairsOptions(save) : lineageOptions(save));
+    const same = (candidate: RoamAct) =>
+      candidate.type === act.type &&
+      candidate.what === act.what &&
+      (candidate.type === "affairs" && act.type === "affairs"
+        ? candidate.faction === act.faction
+        : candidate.type === "lineage" &&
+          act.type === "lineage" &&
+          candidate.chapter === act.chapter &&
+          candidate.choiceId === act.choiceId);
+    let option = options().find((item) => same(item.act));
+    if (!option || option.disabled) return;
+    if (!(act.type === "lineage" && act.what === "begin")) {
+      accrueIdle(save, world, Date.now(), rng);
+      world.idle = null;
+      option = options().find((item) => same(item.act));
+      if (!option || option.disabled) {
+        world.report = {
+          title: "先整顿行囊",
+          paragraphs: ["刚才那段修行已结算，如今的资源或道躯不足以继续。没有再扣除这一步的消耗。"],
+          changes: ["挂机已停下"],
+        };
+        return;
+      }
+    }
+    const apply = (effects: Effect[]) => applyEffects(save, world, effects, rng);
+    const days =
+      act.type === "affairs" ? performAffairs(save, act, apply) : performLineage(save, act, apply);
+    if (days) spend(world, days);
+    if (world.report) remember(world, world.report.title, world.report.paragraphs[0] ?? "");
+  } else if (act.type === "cultivate") cultivate(save, world, rng);
+  else if (act.type === "local" || act.type === "person") {
+    const option = localOptions(save).find((option) => sameLocalAct(option.act, act));
+    if (!option || option.disabled) return;
+    if (act.type === "local" && act.what !== "survey" || act.type === "person" && act.what === "deliver") {
+      accrueIdle(save, world, Date.now(), rng);
+      world.idle = null;
+      const settled = localOptions(save).find((item) => sameLocalAct(item.act, act));
+      if (!settled || settled.disabled) {
+        world.report = { title: "先歇一歇", paragraphs: ["刚才那段游历已经结算，当前道躯或灵气不足以完成这一步。没有再次扣除材料，可先调息再来。"], changes: ["挂机已停下"] };
+        return;
+      }
+    }
+    const days = performLocal(save, act);
+    if (days) spend(world, days);
+    if (world.report) remember(world, world.report.title, world.report.paragraphs[0] ?? "");
+  }
+  else if (act.type === "equip-relic") {
+    if (world.retreat || act.id === world.relic || act.id !== null && (!Object.hasOwn(RELIC_USES, act.id) || !save.items.includes(act.id))) return;
+    accrueIdle(save, world, Date.now(), rng);
+    world.relic = act.id;
+    world.report = { title: "御器", paragraphs: [act.id ? `你将${ITEMS[act.id]!.name}引入周身气机。此物仍在行囊，不因御使而消失。` : "你收回了器物上的气机。收藏与旧有因缘仍然留着。"], changes: [act.id ? RELIC_USES[act.id]!.detail : "当前未御使器物"] };
+  }
+  else if (act.type === "comprehend-art") {
+    if (insightRequirement(save, act.artId, act.level)) return;
+    accrueIdle(save, world, Date.now(), rng);
+    world.idle = null;
+    const blocked = insightRequirement(save, act.artId, act.level);
+    if (blocked) { world.report = { title: "先整顿气息", paragraphs: [blocked, "挂机已结算并停下，没有扣除参悟费用。"], changes: [] }; return; }
+    const step = INSIGHT_STEPS[act.level - 1]!;
+    const effects: Effect[] = [{ t: "stone", n: -step.stones }, { t: "ling", n: -step.qi }, ...Object.entries(step.goods).map(([id, n]) => ({ t: "good" as const, id: id as GoodId, n: -n! }))];
+    const changes = applyEffects(save, world, effects, rng);
+    world.insights[act.artId] = act.level;
+    spend(world, 1);
+    world.report = { title: `${ARTS[act.artId]!.name} · ${INSIGHT_NAMES[act.level]}`, paragraphs: [act.level === 1 ? "你没有多背一篇口诀，只把熟悉的气息重新走了一遍。原来浪费的那一点，终于肯留在体内。" : "境界撑开了旧法的余地。招式仍是那一式，出手与收手之间却多了自己的分寸。", techniqueFor(world, act.artId)!.detail], changes: [...changes, `领悟至${INSIGHT_NAMES[act.level]}`, `招式现耗 ${techniqueFor(world, act.artId)!.cost} 灵气`] };
+    remember(world, world.report.title, world.report.paragraphs[0]!);
+  }
+  else if (act.type === "equip-art") equipArt(save, world, act.artId, rng);
+  else if (act.type === "prepare-art") {
+    if (world.retreat || ![0, 1].includes(act.slot) || act.artId === world.equipped ||
+      act.artId !== null && (!world.arts.includes(act.artId) || !Object.hasOwn(TECHNIQUES, act.artId) || world.prepared.includes(act.artId))) return;
+    if (world.prepared[act.slot] === act.artId) return;
+    accrueIdle(save, world, Date.now(), rng);
+    world.prepared[act.slot] = act.artId;
+    world.report = { title: "行前备法", paragraphs: [act.artId ? `你将${TECHNIQUES[act.artId]!.name}纳入行前演练。主修的根基未变，临阵时多了一种应对。` : "你将这一路辅修收回识海，旧日所学仍然保留。"], changes: [act.artId ? `辅修${act.slot + 1} · ${ARTS[act.artId]!.name}` : `辅修${act.slot + 1}已收起`] };
+  }
+  else if (act.type === "battle-plan") {
+    if (world.retreat || !Object.hasOwn(BATTLE_PLANS, act.plan) || act.plan === world.battlePlan) return;
+    accrueIdle(save, world, Date.now(), rng);
+    world.battlePlan = act.plan;
+    world.report = { title: "临阵之策", paragraphs: [BATTLE_PLANS[act.plan].detail], changes: [`斗法策略 · ${BATTLE_PLANS[act.plan].name}`] };
+  }
   else if (act.type === "breakthrough") breakthrough(save, world, act.pill, rng);
   else if (act.type === "explore") explore(save, world, rng);
   else if (act.type === "travel") travel(save, world, act.place, rng);
@@ -619,6 +773,16 @@ function dispatch(save: SaveData, world: RoamState, act: RoamAct, rng: () => num
   else if (act.type === "notice") notice(world, act.eventId);
 }
 
+function equipArt(save: SaveData, world: RoamState, id: string, rng: () => number) {
+  if (world.retreat || !world.arts.includes(id) || !Object.hasOwn(ARTS, id) || world.equipped === id) return;
+  // Settle seated cultivation using the previous art before changing its bonus.
+  accrueIdle(save, world, Date.now(), rng);
+  world.equipped = id;
+  world.prepared = normalizePrepared(world.prepared, world.arts, id);
+  world.report = { title: "转修", paragraphs: [`你将${ARTS[id]!.name}定为主修。旧日所学仍留在识海，不因这一念而散。`], changes: [`主修 · ${ARTS[id]!.name}`] };
+  remember(world, "转修", world.report.paragraphs[0]!);
+}
+
 function cultivate(save: SaveData, world: RoamState, rng: () => number) {
   if (interrupt(world)) return;
   const line = CULTIVATE_LINES[Math.floor(rng() * CULTIVATE_LINES.length)]!;
@@ -630,9 +794,10 @@ function cultivate(save: SaveData, world: RoamState, rng: () => number) {
   const realm = REALMS[realmIndex(save.stats.dao)]!;
   const nextRealm = REALMS[realmIndex(save.stats.dao) + 1];
   const changes: string[] = [];
-  if (world.lingqi >= 2) {
-    world.lingqi -= 2;
-    changes.push("灵气 -2");
+  const cultivationCost = activeRelic(save) === "chaos-qi" ? 1 : 2;
+  if (world.lingqi >= cultivationCost) {
+    world.lingqi -= cultivationCost;
+    changes.push(`灵气 -${cultivationCost}${cultivationCost === 1 ? " · 混沌气含护" : ""}`);
   } else {
     gain *= 0.55;
     changes.push("灵气不足，这一日只进了一半");
@@ -642,11 +807,7 @@ function cultivate(save: SaveData, world: RoamState, rng: () => number) {
   if (world.xiuwei >= 100 && before < 100) changes.push("火候已满，可以尝试突破");
   else if (world.xiuwei > before) changes.push("修为有所积累");
   if (rng() > 0.45) {
-    const nextDao = clamp(save.stats.dao + 1, 0, CAP.dao);
-    if (nextDao !== save.stats.dao) {
-      save.stats.dao = nextDao;
-      changes.push("道行 +1");
-    }
+    gainDao(save, 1, changes);
   }
   spend(world, 1);
   world.report = {
@@ -691,20 +852,22 @@ function breakthrough(save: SaveData, world: RoamState, pill: boolean, rng: () =
   let chance = 0.4 + world.wuxing * 0.035 + (save.stats.qi / 160) * 0.16 - world.wound * 0.09;
   chance += usedPill ? 0.22 : 0;
   chance += world.cave * 0.04;
+  if (activeRelic(save) === "purple-qi") chance += 0.05;
   chance -= (save.stats.demon / 100) * 0.15;
   chance = clamp(chance, 0.08, 0.92);
   spend(world, 1);
   if ((world.layer ?? 1) < 9) {
     if (rng() < 0.82 + world.wuxing * 0.01) {
       world.layer += 1;
-      save.stats.dao = clamp(save.stats.dao + 1, 0, CAP.dao);
+      const changes: string[] = [];
+      gainDao(save, 1, changes);
       world.xiuwei = Math.min(100, world.spare);
       world.spare = Math.max(0, world.spare - world.xiuwei);
       const realm = REALMS[realmIndex(save.stats.dao)] ?? REALMS[0]!;
       world.report = {
         title: `${realm.name} · ${LAYER_NAME[world.layer - 1]}`,
         paragraphs: ["这一层开了。火候重新开始攒，挂机不会停。"],
-        changes: [`升到${LAYER_NAME[world.layer - 1]}`],
+        changes: [`升到${LAYER_NAME[world.layer - 1]}`, ...changes],
       };
       return;
     }
@@ -777,6 +940,9 @@ function travel(save: SaveData, world: RoamState, place: PlaceId, rng: () => num
     return;
   }
   if (interrupt(world)) return;
+  // Settle the old location before starting a manual journey.
+  accrueIdle(save, world, Date.now(), rng);
+  world.idle = null;
   world.place = place;
   if (!world.known.includes(place)) world.known.push(place);
   spend(world, 1);
@@ -813,7 +979,7 @@ function gather(save: SaveData, world: RoamState, rng: () => number) {
 
 function rest(save: SaveData, world: RoamState) {
   if (interrupt(world)) return;
-  const heal = 7 + world.cave * 2;
+  const heal = 7 + world.cave * 2 + (activeRelic(save) === "buzhou-stone" ? 3 : 0);
   const before = save.stats.life;
   save.stats.life = clamp(save.stats.life + heal, 0, CAP.life);
   world.wound = clamp(world.wound - 1, 0, 6);
@@ -1040,7 +1206,7 @@ function plotAct(save: SaveData, world: RoamState, what: "plant" | "harvest") {
   }
   if (interrupt(world)) return;
   world.plot = null;
-  const amount = world.cave > 0 ? 3 : 2;
+  const amount = (world.cave > 0 ? 3 : 2) + (activeRelic(save) === "xirang" ? 2 : 0);
   world.bag.herb = (world.bag.herb ?? 0) + amount;
   const changes = [`灵草 +${amount}`];
   if (world.cave > 1 || world.place === "wahuan") {
@@ -1142,7 +1308,7 @@ function trade(save: SaveData, world: RoamState, what: "buy" | "sell", id: GoodI
     world.bag[id] = (world.bag[id] ?? 0) + 1;
     world.report = {
       title: "换取",
-      paragraphs: [`你在${ROAM_PLACES[world.place].name}换到${GOODS[id]}。价钱是当面说的，不是事先写在袖子上的。`],
+      paragraphs: [`你在${ROAM_PLACES[world.place].name}换到${GOODS[id]}。`],
       changes: [`灵石 -${offer.cost}`, `${GOODS[id]} +1`],
     };
     return;
@@ -1205,12 +1371,20 @@ function emptyHaul(): NonNullable<RoamState["haul"]> {
   return { breaths: 0, xiu: 0, ling: 0, stones: 0, wound: 0, goods: {} };
 }
 
-function accrueIdle(world: RoamState, now: number) {
+function accrueIdle(save: SaveData, world: RoamState, now: number, rng: () => number = Math.random) {
   if (!world.idle) return false;
   const from = world.lastTick || now;
   if (now < from) {
     world.lastTick = now;
     return false;
+  }
+  if (world.idle.kind === "wander") {
+    const fights = Math.floor((now - from) / 2500);
+    if (fights <= 0) return false;
+    bankFights(world, save, fights, rng);
+    // Keep sub-tick time, discard time beyond the advertised storage cap.
+    world.lastTick = fights >= 480 ? now : from + fights * 2500;
+    return true;
   }
   const capBreaths = 8 * 60 * 3;
   const have = world.haul?.breaths ?? 0;
@@ -1240,8 +1414,8 @@ function accrueIdle(world: RoamState, now: number) {
   return true;
 }
 
-function claimHaul(save: SaveData, world: RoamState, now: number) {
-  accrueIdle(world, now);
+function claimHaul(save: SaveData, world: RoamState, now: number, rng: () => number = Math.random) {
+  accrueIdle(save, world, now, rng);
   const haul = world.haul;
   if (!haul || haul.breaths <= 0) {
     world.report = {
@@ -1281,7 +1455,7 @@ function claimHaul(save: SaveData, world: RoamState, now: number) {
       kind === "打坐"
         ? "灵气没有因为你去看别处就停。回来时，火候比走的时候厚。"
         : "路自己在走。你不在的时候，它仍把能捡的东西留在原地。",
-      "一次最多收下八个时辰。更早的部分，天地没有替你存着。",
+      "打坐最多暂存八小时，游历最多暂存四百八十轮。超过上限的时光不再累积收获。",
     ],
     changes,
   };
@@ -1296,6 +1470,7 @@ function idleAct(save: SaveData, world: RoamState, act: Extract<RoamAct, { type:
       world.report = { title: "这张图还去不了", paragraphs: ["先把近处的图挂熟，或者把境界抬上去。"], changes: [] };
       return;
     }
+    accrueIdle(save, world, now, rng);
     world.farm = act.place;
     world.place = act.place;
     world.idle = { kind: "wander" };
@@ -1312,18 +1487,20 @@ function idleAct(save: SaveData, world: RoamState, act: Extract<RoamAct, { type:
     return;
   }
   if (what === "sync") {
-    accrueIdle(world, now);
+    accrueIdle(save, world, now, rng);
     return;
   }
   if (what === "claim") {
-    claimHaul(save, world, now);
+    claimHaul(save, world, now, rng);
     return;
   }
   if (what === "stop") {
-    if (world.haul && world.haul.breaths > 0) claimHaul(save, world, now);
+    accrueIdle(save, world, now, rng);
+    const collected = Boolean(world.haul && world.haul.breaths > 0);
+    if (world.haul && world.haul.breaths > 0) claimHaul(save, world, now, rng);
     world.idle = null;
     world.lastTick = now;
-    if (!world.haul) {
+    if (!collected) {
       world.report = {
         title: "停下",
         paragraphs: ["挂机停了。停下之后，离开不再替你修炼。"],
@@ -1337,8 +1514,9 @@ function idleAct(save: SaveData, world: RoamState, act: Extract<RoamAct, { type:
     world.report = { title: "定中", paragraphs: ["你还在按时辰坐。出关之后再挂机。"], changes: [] };
     return;
   }
-  accrueIdle(world, now);
+  accrueIdle(save, world, now, rng);
   world.idle = { kind: what };
+  if (what === "wander") world.farm = world.place;
   world.lastTick = now;
   world.report = {
     title: what === "sit" ? "打坐挂机" : "游历挂机",
@@ -1386,70 +1564,128 @@ const FOE: Record<PlaceId, { name: string; need: number }> = {
 };
 
 function fightTick(save: SaveData, world: RoamState, now: number, rng: () => number) {
-  if (world.retreat || world.phase !== "free") return;
+  if (world.retreat || world.phase !== "free" || world.idle?.kind !== "wander") return;
   if (!world.farm) world.farm = world.place;
   const gap = world.lastTick ? now - world.lastTick : 0;
-  if (world.lastTick && gap >= 8_000) {
-    const fights = Math.min(480, Math.floor(gap / 2_500));
-    if (fights > 0) bankFights(world, save, fights, rng);
-    world.lastTick = now;
+  if (world.lastTick && gap < 2_500) {
+    // Mount/visibility callbacks share the same clock as the interval.
+    // Re-anchor a clock rollback without awarding a fight for it.
+    if (gap < 0) world.lastTick = now;
     return;
   }
-  const line = strikeOnce(save, world, rng);
-  pushFarm(world, line);
-  world.idle = { kind: "wander" };
-  world.lastTick = now;
-  world.place = world.farm;
+  if (world.lastTick && gap >= 8_000) {
+    accrueIdle(save, world, now, rng);
+    return;
+  }
+  const fights = Math.max(1, Math.floor(gap / 2500));
+  for (let i = 0; i < fights; i++) pushFarm(world, strikeOnce(save, world, rng));
+  world.lastTick = world.lastTick ? world.lastTick + fights * 2500 : now;
+}
+
+/** Same enemy state can be played manually or by the automatic decision policy. */
+export function farmBattle(place: PlaceId): BattleState {
+  const foe = FOE[place];
+  return {
+    id: `farm-${place}`, name: foe.name, hp: foe.need * 3, max: foe.need * 3,
+    atk: Math.max(2, foe.need - 4), def: Math.max(0, Math.floor(foe.need / 4) - 1),
+    guard: 0, round: 1, log: [], win: [], lose: [],
+    winText: [`${foe.name}的气息散了。`], loseText: [`${foe.name}把你逼退。`],
+  };
+}
+
+export function automaticAction(save: SaveData): Extract<RoamAct, { type: "combat" }> {
+  const world = save.world;
+  if (!world?.battle) return { type: "combat", move: "strike" };
+  const available = preparedTechniques(world).filter((id) => world.lingqi >= techniqueFor(world, id)!.cost);
+  let picked: string | undefined;
+  if (save.stats.life <= 50) {
+    picked = available.find((id) => techniqueFor(world, id)!.heal > 0 && CAP.life - save.stats.life >= techniqueFor(world, id)!.heal);
+    if (!picked && world.battlePlan === "reserve") picked = available.find((id) => techniqueFor(world, id)!.guard > 0 || techniqueFor(world, id)!.bind);
+  }
+  if (!picked && world.battlePlan !== "reserve") {
+    const attacks = available.filter((id) => techniqueFor(world, id)!.power > 0);
+    if (world.battlePlan === "assault") attacks.sort((a, b) => techniqueFor(world, b)!.power - techniqueFor(world, a)!.power);
+    if (world.battlePlan === "assault" || world.battle.round % 2 === 1) picked = attacks[0];
+  }
+  if (picked) return { type: "combat", move: "technique", artId: picked };
+  const art = world.equipped ? ARTS[world.equipped] : undefined;
+  return { type: "combat", move: world.battlePlan === "assault" && world.lingqi >= 4 && (art?.spell || world.spells.length) ? "spell" : "strike" };
+}
+export function automaticMove(save: SaveData): Extract<RoamAct, { type: "combat" }>["move"] {
+  return automaticAction(save).move;
+}
+
+/** Only the real combat resolver decides hits, guards, healing and victory. */
+export function resolveFarmBattle(save: SaveData, rng: () => number) {
+  const simulated = cloneSave(save);
+  const world = simulated.world!;
+  const battle = farmBattle(world.farm ?? world.place);
+  world.phase = "battle";
+  world.battle = battle;
+  const moves: string[] = [];
+  for (let round = 0; round < 8 && world.phase === "battle"; round++) {
+    const action = automaticAction(simulated);
+    const name = action.move === "technique" ? TECHNIQUES[action.artId!]!.name : action.move === "spell" ? "施法" : "攻";
+    moves.push(name);
+    combat(simulated, world, action.move, rng, action.artId);
+  }
+  return { win: battle.hp <= 0, moves, life: simulated.stats.life, lingqi: world.lingqi, wound: world.wound };
+}
+
+type FarmReward = { xiu: number; stone: number; good?: GoodId; line: string };
+function farmStep(save: SaveData, world: RoamState, rng: () => number): FarmReward {
+  if (save.stats.life < 35) {
+    const before = save.stats.life;
+    save.stats.life = Math.min(CAP.life, before + 12);
+    world.lingqi = Math.min(80, world.lingqi + 3);
+    world.wound = Math.max(0, world.wound - 1);
+    return { xiu: 0, stone: 0, line: `战间调息。道躯 +${save.stats.life - before}，灵气 +3。` };
+  }
+  const placeId = world.farm ?? world.place;
+  const place = ROAM_PLACES[placeId];
+  const result = resolveFarmBattle(save, rng);
+  const lifeChange = result.life - save.stats.life;
+  const qiChange = Math.round((result.lingqi - world.lingqi) * 10) / 10;
+  save.stats.life = result.life;
+  world.lingqi = result.lingqi;
+  world.wound = result.wound;
+  const detail = `${result.moves.join(" → ")}；道躯 ${lifeChange > 0 ? "+" : ""}${lifeChange}，灵气 ${qiChange > 0 ? "+" : ""}${qiChange}`;
+  if (!result.win) return { xiu: .12, stone: 0, line: `${FOE[placeId].name}把你逼退。${detail}` };
+  const xiu = 2.4 + place.spirit * .35 + world.gear * .15;
+  world.lingqi = Math.min(80, world.lingqi + .2);
+  const roll = rng();
+  let good: GoodId | undefined;
+  let stone = 0;
+  let loot = "修为有所积累";
+  if (roll < .08 && world.gear < 8) { world.gear += 1; loot += "，护身之物更好了一档"; }
+  else if (roll < .45) { good = place.good; loot += `，${GOODS[good]} +1`; }
+  else if (roll < .62) { stone = 1; loot += "，灵石 +1"; }
+  return { xiu, good, stone, line: `斩了${FOE[placeId].name}。${detail}。${loot}。` };
 }
 
 function strikeOnce(save: SaveData, world: RoamState, rng: () => number) {
-  const placeId = world.farm ?? world.place;
-  const place = ROAM_PLACES[placeId];
-  const foe = FOE[placeId];
-  const win = powerOf(save, world) >= foe.need;
-  if (!win) {
-    if (rng() < 0.35) world.wound = clamp(world.wound + 1, 0, 6);
-    addXiu(world, 0.12);
-    return `${foe.name}把你逼退。这张图还压不住。`;
-  }
-  addXiu(world, 2.4 + place.spirit * 0.35 + world.gear * 0.15);
-  world.lingqi = clamp(world.lingqi + 0.2, 0, 80);
-  const roll = rng();
-  if (roll < 0.08 && world.gear < 8) {
-    world.gear += 1;
-    return `斩了${foe.name}。护身之物更好了一档。`;
-  }
-  if (roll < 0.45) {
-    world.bag[place.good] = (world.bag[place.good] ?? 0) + 1;
-    return `斩了${foe.name}。修为有所积累，${GOODS[place.good]} +1`;
-  }
-  if (roll < 0.62) {
-    world.stones += 1;
-    return `斩了${foe.name}。修为有所积累，灵石 +1`;
-  }
-  return `斩了${foe.name}。修为有所积累。`;
+  const reward = farmStep(save, world, rng);
+  addXiu(world, reward.xiu);
+  world.stones += reward.stone;
+  if (reward.good) world.bag[reward.good] = (world.bag[reward.good] ?? 0) + 1;
+  return reward.line;
 }
 
 function bankFights(world: RoamState, save: SaveData, fights: number, rng: () => number) {
   const haul = world.haul ?? emptyHaul();
-  const placeId = world.farm ?? world.place;
-  const place = ROAM_PLACES[placeId];
-  const foe = FOE[placeId];
-  const win = powerOf(save, world) >= foe.need;
-  haul.breaths += fights;
-  if (win) {
-    haul.xiu += fights * (2.4 + place.spirit * 0.35 + world.gear * 0.15);
-    haul.ling += fights * 0.15;
-    const goods = Math.floor(fights * 0.42);
-    if (goods > 0) haul.goods[place.good] = (haul.goods[place.good] ?? 0) + goods;
-    haul.stones += Math.floor(fights * 0.2);
-  } else {
-    haul.xiu += fights * 0.12;
-    haul.wound += Math.min(2, Math.floor(fights / 40));
+  const count = Math.max(0, Math.min(fights, 480 - haul.breaths));
+  let last = "";
+  for (let i = 0; i < count; i++) {
+    const reward = farmStep(save, world, rng);
+    haul.breaths += 1;
+    haul.xiu += reward.xiu;
+    haul.stones += reward.stone;
+    if (reward.good) haul.goods[reward.good] = (haul.goods[reward.good] ?? 0) + 1;
+    last = reward.line;
   }
+  if (!count) return;
   world.haul = haul;
-  pushFarm(world, win ? `离开的这段时间，${place.name}仍在替你斩${foe.name}。回来再收。` : `离开时你压不住${foe.name}。这段几乎没有收获。`);
-  void rng;
+  pushFarm(world, `离线推演 ${count} 轮，沿用主修与临阵之策。收获待领取；道躯、灵气和护身已结算。末轮：${last}`);
 }
 
 function continueChain(save: SaveData, world: RoamState, chainId: string) {
@@ -1504,14 +1740,32 @@ function choose(save: SaveData, world: RoamState, choiceId: string, rng: () => n
   remember(world, event.title, choice.result[0] ?? choice.text);
 }
 
-function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "guard" | "flee", rng: () => number) {
+function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "guard" | "flee" | "technique", rng: () => number, artId?: string) {
   const battle = world.battle;
   if (!battle) return;
   const art = world.equipped ? ARTS[world.equipped] : undefined;
+  if (move === "technique") {
+    const id = artId ?? world.equipped;
+    const technique = id && preparedTechniques(world).includes(id) ? techniqueFor(world, id) : undefined;
+    if (!technique || world.lingqi < technique.cost) return;
+    world.lingqi -= technique.cost;
+    battle.guard = technique.guard;
+    const healed = Math.min(technique.heal, CAP.life - save.stats.life);
+    save.stats.life += healed;
+    battle.log.push(`你使出${technique.name}。灵气 -${technique.cost}${healed ? `，道躯 +${healed}` : ""}。`);
+    if (technique.power > 0) strikeEnemy(save, world, Math.max(1, Math.round(powerOf(save, world) * technique.power) - battle.def), rng);
+    if (world.phase !== "battle") return;
+    if (technique.bind) {
+      battle.log.push(`${battle.name}被牵制，这一回合未能还击。`);
+      battle.round += 1;
+      if (battle.round > 8) finishBattle(save, world, false, rng);
+    } else enemyStrike(save, world, rng);
+    return;
+  }
   if (move === "guard") {
     battle.guard = 4 + realmIndex(save.stats.dao);
     battle.log.push("你收势，准备把下一击卸开。");
-    enemyStrike(save, world);
+    enemyStrike(save, world, rng);
     return;
   }
   if (move === "flee") {
@@ -1523,7 +1777,7 @@ function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "gu
       return;
     }
     battle.log.push("你没能抽身。");
-    enemyStrike(save, world);
+    enemyStrike(save, world, rng);
     return;
   }
   if (move === "spell") {
@@ -1533,16 +1787,16 @@ function combat(save: SaveData, world: RoamState, move: "strike" | "spell" | "gu
     } else {
       world.lingqi -= 4;
       const amount = Math.max(2, Math.round(powerOf(save, world) * 1.6) - battle.def);
-      strikeEnemy(save, world, amount);
+      strikeEnemy(save, world, amount, rng);
       if (world.phase !== "battle") return;
-      enemyStrike(save, world);
+      enemyStrike(save, world, rng);
       return;
     }
   }
   const amount = Math.max(1, powerOf(save, world) + Math.floor(rng() * 4) - battle.def);
-  strikeEnemy(save, world, amount);
+  strikeEnemy(save, world, amount, rng);
   if (world.phase !== "battle") return;
-  enemyStrike(save, world);
+  enemyStrike(save, world, rng);
 }
 
 export function adoptChronicle(save: SaveData): SaveData {
@@ -1618,6 +1872,9 @@ export function menuActs(save: SaveData): MenuAct[] {
     { id: "idle-wander", label: world.idle?.kind === "wander" ? "继续游历挂机" : "在此游历挂机", act: { type: "idle", what: "wander" } },
   ];
   if (world.idle) acts.push({ id: "idle-stop", label: "停下挂机", act: { type: "idle", what: "stop" } });
+  for (const id of new Set(world.arts)) {
+    if (Object.hasOwn(ARTS, id) && id !== world.equipped) acts.push({ id: `equip-${id}`, label: `主修${ARTS[id]!.name}`, act: { type: "equip-art", artId: id } });
+  }
   if ((world.haul?.breaths ?? 0) > 0) acts.push({ id: "idle-claim", label: "收起这段修行", act: { type: "idle", what: "claim" } });
   if (world.xiuwei >= 100 && realmIndex(save.stats.dao) < REALMS.length - 1) {
     acts.push({ id: "break", label: "尝试突破", act: { type: "breakthrough", pill: false } });
@@ -1662,12 +1919,12 @@ export function menuActs(save: SaveData): MenuAct[] {
   if (market) {
     for (const offer of market.buy) {
       if (world.stones >= offer.cost) {
-        acts.push({ id: `buy-${offer.id}`, label: `换取${GOODS[offer.id]}`, act: { type: "trade", what: "buy", id: offer.id } });
+        acts.push({ id: `buy-${offer.id}`, label: `换取${GOODS[offer.id]} · ${offer.cost} 灵石`, act: { type: "trade", what: "buy", id: offer.id } });
       }
     }
     for (const offer of market.sell) {
       if ((world.bag[offer.id] ?? 0) > 0) {
-        acts.push({ id: `sell-${offer.id}`, label: `售出${GOODS[offer.id]}`, act: { type: "trade", what: "sell", id: offer.id } });
+        acts.push({ id: `sell-${offer.id}`, label: `售出${GOODS[offer.id]} · ${offer.pay} 灵石`, act: { type: "trade", what: "sell", id: offer.id } });
       }
     }
   }
@@ -1693,29 +1950,26 @@ function openRift(save: SaveData, world: RoamState, rng: () => number) {
     world.report = { title: "秘境今日已尽", paragraphs: ["一日三次。日子走到明天，次数会回来。"], changes: [] };
     return;
   }
+  accrueIdle(save, world, Date.now(), rng);
   world.riftLeft -= 1;
+  world.idle = null;
   const placeId = world.farm ?? world.place;
   const place = ROAM_PLACES[placeId];
-  const foe = FOE[placeId];
-  if (powerOf(save, world) < foe.need) {
-    world.wound = clamp(world.wound + 1, 0, 6);
-    world.report = {
-      title: "秘境把你推出来",
-      paragraphs: [`${foe.name}守在门口。先把外面这张图挂熟，再进来。`],
-      changes: ["伤势加重"],
-    };
-    return;
-  }
-  addXiu(world, 28);
-  world.stones += 4;
-  world.bag[place.good] = (world.bag[place.good] ?? 0) + 3;
-  if (rng() < 0.35 && world.gear < 8) world.gear += 1;
+  const battle = farmBattle(placeId);
+  battle.id = `rift-${placeId}`;
+  battle.name = `${battle.name} · 秘境守主`;
+  battle.hp = battle.max = Math.ceil(battle.max * 1.3);
+  battle.atk += 2;
+  battle.win = [{ t: "xiu", n: 28 }, { t: "stone", n: 4 }, { t: "good", id: place.good, n: 3 }];
+  battle.winText = [`${place.name}的秘境安静下来。你带着所得，从来路走回。`];
+  world.phase = "battle";
+  world.battle = battle;
   world.report = {
-    title: "秘境回来",
-    paragraphs: [`你在${place.name}的秘境里走了一遭，出来时手里是满的。`],
-    changes: ["修为有所积累", "灵石 +4", `${GOODS[place.good]} +3`],
+    title: "秘境 · 守关",
+    paragraphs: [`${battle.name}守在前面。此行暂歇挂机，如何出招，由你自己来。`],
+    changes: [],
   };
-  remember(world, "秘境", world.report.paragraphs[0] ?? "");
+
 }
 
 export function farmChoices(save: SaveData): PlaceId[] {
@@ -1755,14 +2009,33 @@ export function legalActs(save: SaveData): RoamAct[] {
     ];
     const art = world.equipped ? ARTS[world.equipped] : undefined;
     if (art?.spell || world.spells.length) acts.push({ type: "combat", move: "spell" });
+    for (const id of preparedTechniques(world)) {
+      if (world.lingqi >= techniqueFor(world, id)!.cost) acts.push({ type: "combat", move: "technique", artId: id });
+    }
     return acts;
   }
   if (world.phase === "event") {
     const event = world.eventId ? eventById(world.eventId) : null;
     if (!event) return [{ type: "choose", choiceId: "__leave" }];
-    return visibleChoices(world, event).map((choice) => ({ type: "choose" as const, choiceId: choice.id }));
+    return visibleChoices(world, event).map((choice) => ({
+      type: "choose" as const,
+      choiceId: choice.id,
+    }));
   }
-  return menuActs(save).map((item) => item.act);
+  return [
+    ...menuActs(save).map((item) => item.act),
+    ...(!world.retreat ? save.items.filter((id) => Object.hasOwn(RELIC_USES, id) && id !== world.relic).map((id) => ({ type: "equip-relic" as const, id })) : []),
+    ...world.arts.flatMap((artId) => { const level = insightLevel(world, artId) + 1; return level <= 2 && !insightRequirement(save, artId, level) ? [{ type: "comprehend-art" as const, artId, level: level as 1 | 2 }] : []; }),
+    ...localOptions(save)
+      .filter((item) => !item.disabled)
+      .map((item) => item.act),
+    ...affairsOptions(save)
+      .filter((item) => !item.disabled)
+      .map((item) => item.act),
+    ...lineageOptions(save)
+      .filter((item) => !item.disabled)
+      .map((item) => item.act),
+  ];
 }
 
 const LEAK = /道行\s*[+\-＋－]\s*\d|气运\s*[+\-＋－]\s*\d|心魔\s*[+\-＋－]\s*\d|仁德\s*[+\-＋－]\s*\d|杀伐\s*[+\-＋－]\s*\d|道躯\s*[+\-＋－]\s*\d/;

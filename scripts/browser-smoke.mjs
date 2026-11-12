@@ -110,6 +110,29 @@ try {
     const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
     const status = resp?.status() ?? 0;
     await page.waitForTimeout(1000);
+    // Optional app-specific readiness. A cold hydrated game may still show its
+    // legitimate loading screen at one second; a stuck loader must still time out.
+    if (process.env.BROWSER_SMOKE_READY_SELECTOR) {
+      await page.locator(process.env.BROWSER_SMOKE_READY_SELECTOR).first().waitFor({
+        state: "visible",
+        timeout: timeoutMs,
+      });
+      await page.waitForFunction((selector) => {
+        const images = [...(document.querySelector(selector)?.querySelectorAll("img") ?? [])];
+        return images.filter((img) => {
+          const box = img.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.top < innerHeight && box.bottom > 0;
+        }).every((img) => img.complete && img.naturalWidth > 0);
+      }, process.env.BROWSER_SMOKE_READY_SELECTOR, { timeout: timeoutMs });
+      // complete means downloaded; async image decoding can still leave a blank capture.
+      await page.locator(process.env.BROWSER_SMOKE_READY_SELECTOR).first().evaluate(async (root) => {
+        const visible = [...root.querySelectorAll("img")].filter((img) => {
+          const box = img.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.top < innerHeight && box.bottom > 0;
+        });
+        await Promise.all(visible.map((img) => img.decode()));
+      });
+    }
 
     const title = await page.title();
     const hasCanvas = (await page.locator("canvas").count()) > 0;
@@ -121,7 +144,7 @@ try {
       const el = document.documentElement;
       return el.scrollWidth > el.clientWidth + 1;
     });
-    await page.screenshot({ path: vp.screenshot, fullPage: false });
+    await page.screenshot({ path: vp.screenshot, fullPage: false, animations: "disabled" });
     await page.close();
 
     viewports[vp.name] = {

@@ -1,0 +1,286 @@
+:where(.local-world, .lineage-view) {
+  --story-ink: #0b1b19;
+  --story-panel: #10251f;
+  --story-gold: #d5bd84;
+  --story-text: #e2dfd1;
+  --story-muted: #b7c5bb;
+  --story-rule: #a98c5147;
+}
+.painted-atlas {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 1;
+  isolation: isolate;
+}
+.painted-atlas--lineage {
+  aspect-ratio: 836 / 470;
+}
+.painted-atlas picture {
+  display: contents;
+}
+.painted-atlas img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200%;
+  height: 200%;
+  max-width: none;
+  transform: translate(calc(var(--atlas-column) * -50%), calc(var(--atlas-row) * -50%));
+}
+.local-person.wayfarer-card {
+  padding: 0;
+  overflow: hidden;
+  margin-top: 1.4rem;
+  background: var(--story-ink);
+  border-color: var(--story-rule);
+}
+.wayfarer-stage {
+  position: relative;
+  min-width: 0;
+  isolation: isolate;
+  overflow: hidden;
+}
+.wayfarer-portrait {
+  aspect-ratio: 1;
+}
+.wayfarer-stage::after {
+  content: "";
+  position: absolute;
+  inset: 45% 0 0;
+  background: linear-gradient(transparent, var(--story-ink));
+  pointer-events: none;
+}
+.wayfarer-nameplate {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 1.1rem 1.2rem;
+  z-index: 1;
+}
+.wayfarer-nameplate h4 {
+  font: 2.1rem/1.4 var(--font-serif);
+  color: var(--story-gold);
+  letter-spacing: 0.18em;
+  text-shadow: 0 2px 12px var(--story-ink);
+}
+.wayfarer-nameplate > p:last-child {
+  font: 0.75rem/1.8 var(--font-serif);
+  color: var(--story-text);
+}
+.wayfarer-seal {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2rem;
+  height: 2.5rem;
+  border: 1px solid var(--story-gold);
+  color: var(--story-gold);
+  background: var(--story-ink);
+  font: 1.1rem/2.2 var(--font-serif);
+  text-align: center;
+}
+.wayfarer-content {
+  min-width: 0;
+  padding: 1rem;
+}
+.wayfarer-location {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  color: var(--story-muted);
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--story-rule);
+}
+.wayfarer-topics {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.7rem 0;
+}
+.wayfarer-topics button {
+  flex: 1;
+  min-height: 44px;
+  color: var(--story-muted);
+  font: 0.9rem/1.4 var(--font-serif);
+  border-bottom: 1px solid var(--story-rule);
+  background: transparent;
+}
+.wayfarer-topics button[aria-pressed="true"] {
+  color: var(--story-gold);
+  border-bottom-color: var(--story-gold);
+}
+.wayfarer-dialogue {
+  scroll-margin-block: 7rem;
+  outline: none;
+}
+.wayfarer-dialogue:focus-visible {
+  outline: 1px solid var(--story-gold);
+  outline-offset: 3px;
+}
+.wayfarer-spoken p,
+.wayfarer-arrival {
+  font: 0.96rem/2 var(--font-serif);
+  color: var(--story-text);
+  margin: 0.85rem 0;
+}
+.wayfarer-memory {
+  border-left: 2px solid var(--story-rule);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  line-height: 1.85;
+  color: var(--story-gold);
+}
+.wayfarer-card.is-away .wayfarer-stage {
+  max-height: 140px;
+}
+.wayfarer-card.is-away .wayfarer-portrait {
+  width: 140px;
+}
+.wayfarer-card.is-away .wayfarer-nameplate {
+  left: 128px;
+  padding-left: 0.6rem;
+}
+.wayfarer-card.is-away .wayfarer-nameplate h4 {
+  font-size: 1.4rem;
+}
+.wayfarer-card.is-away .wayfarer-seal {
+  display: none;
+}
+.wayfarer-card.is-away .wayfarer-stage::after {
+  display: none;
+}
+.wayfarer-card.is-away .wayfarer-nameplate > p:last-child {
+  font-size: 0.65rem;
+}
+.lineage-cover {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1rem 1.1rem 1.25rem;
+  min-height: 258px;
+  display: flex;
+  align-items: end;
+  background: var(--story-ink);
+}
+.lineage-cover-art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  container-type: size;
+}
+.lineage-cover-art > .painted-atlas {
+  position: absolute;
+  width: max(100cqw, calc(100cqh * 836 / 470));
+  height: auto;
+  aspect-ratio: 836 / 470;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.lineage-cover::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(transparent 24%, var(--story-ink));
+}
+.lineage-cover h2 {
+  font: 1.65rem/1.5 var(--font-serif);
+  color: var(--story-gold);
+  margin: 0.45rem 0;
+}
+.lineage-cover p:last-child {
+  font: 0.85rem/1.85 var(--font-serif);
+  color: var(--story-text);
+}
+.lineage-thread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem;
+  border-inline: 1px solid var(--story-rule);
+  background: var(--story-ink);
+}
+.lineage-thread span {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--story-rule);
+  font: 0.8rem var(--font-serif);
+  color: var(--story-muted);
+}
+.lineage-thread .is-written {
+  border-color: var(--story-gold);
+  color: var(--story-gold);
+}
+.lineage-thread [aria-current="step"] {
+  color: var(--story-ink);
+  background: var(--story-gold);
+}
+.lineage-echo {
+  margin: 1.15rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 2px solid var(--story-gold);
+  background: var(--story-ink);
+}
+.lineage-echo p {
+  color: var(--story-muted);
+  font: 0.88rem/1.95 var(--font-serif);
+  margin-top: 0.45rem;
+}
+.lineage-echo .eyebrow {
+  color: var(--story-gold);
+  font: 0.65rem/1.5 var(--font-serif);
+}
+.lineage-ending .lineage-last-word {
+  border-top: 1px solid var(--story-rule);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.lineage-chapter > p:not([class]) {
+  text-indent: 2em;
+}
+.wayfarer-spoken {
+  animation: story-ink-in 0.22s ease-out;
+}
+@keyframes story-ink-in {
+  from {
+    opacity: 0.45;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (min-width: 760px) {
+  .wayfarer-card.is-present {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+  }
+  .wayfarer-card.is-present .wayfarer-stage {
+    align-self: start;
+  }
+  .wayfarer-content {
+    padding: 1.3rem;
+  }
+  .lineage-cover {
+    min-height: 350px;
+    padding: 1.5rem 2rem;
+  }
+  .lineage-cover h2 {
+    font-size: 2rem;
+  }
+  .lineage-chapter {
+    padding: 1.6rem 2rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wayfarer-spoken {
+    animation: none;
+  }
+}

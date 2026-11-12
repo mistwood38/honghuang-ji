@@ -1,58 +1,61 @@
 # 洪荒纪
 
-一款在浏览器里玩的洪荒神话文字游戏：应答混沌、穿过大事件、决定自己的一生；也可以独立阅读《混沌本纪》与天书。
+一款可以离线游玩的洪荒文字 RPG。保留原有互动本纪、小说和天书，同时提供独立于主线的修行、探索、回合斗法、宗门委托和长期因果。网页与 Android 测试包共用游戏规则。
 
-本分支完成六个核心页面的美术重建：开天封面、剧情场景、山河图鉴、灵识立绘、纸本古籍与分类天书。当前版采用玄玉漆金界面，加入四根骨形象、九器物图标、天地舆图、封神场景与完整结局收束。各界面使用不同的长曲（古琴录音，劫难场面为一段可合法随包的管弦战曲），主要按钮有短促击响。选择后才揭晓属性变化，换幕时停在新正文而不是跳回页顶。保留原剧情、数值、结局与 v1 本地存档。所有新增原画、乐声和中文字体均保存在项目内。许可见 `public/audio/CREDITS.txt`。
+## 当前可玩内容
+
+- 六个核心页面使用本地场景、人物和器物美术；行动采用青铜铭牌与落印反馈，四族分支另有玄玉、黑岩、羽纹和焦木牌面及行动意象。选择后展示结果，阅读衔接由玩家控制，长反馈会留出正文阅读空间。
+- 九门功法可择一主修、两门辅修，并在炼气、筑基后参悟；手动和挂机战斗使用同一套招式规则与三种战策。
+- 九件既有器物均可在开放游历中获得，并在储物页御使，分别参与修炼、护身、突破、药圃或战后恢复。御器不消耗收藏，同一时间只生效一件；详情使用高清图集，材料不足的因缘可以暂缓再续。
+- 十三个地区各有可交互的物产、遗迹和歇脚地；修补、取用与休养会留下持续状态。四位行旅人物有原创肖像、行程、托付与关系记录；可问沿途、谈往事、说牵挂，对话回应当地状态和托付进展。
+- 灵、巫、妖、人各六章族脉，共八种结局；章节配四幅独立场景，后续叙事记得先前选择。五方势力有随游戏日推进的补给、护路与争执，结局后仍能自由修行。
+- 六首本地原创器乐配乐与六种短音效，音乐、音效分别调音和静音。采样音源许可及制作方法见 [音频记录](docs/reviews/audio-loading-renewal.md)。实际听感仍需玩家试听。
+
+当前统一交付分支为 `feat/complete-experience`，包含此前各轮升级。修行必须经过大境界突破，本纪 30 章均有对应本地插画，五个内页按需加载。实际完成与验证边界列在 [完成情况](docs/completion-status.md)，旧报告保留各轮当时的结论。
 
 ## 本地运行
 
-建议使用 Node.js 22.18+ 或 24（原项目使用 Node 22，本次实测 Node 24）。
+使用 Node.js 22.18+ 或 24：
 
 ```bash
 npm ci
 npm run dev
 ```
 
-开发服务默认在 `http://localhost:8080`，无需账户、外部图片服务或数据库配置。存档保存在当前浏览器的 `honghuang-ji-save`；请保持原访问域名和浏览器数据，存档不会跨域名自动转移。手机安装包的做法见 [Android 安装说明](docs/android.md)。
-
+开发服务为 `http://localhost:8080`。游戏无需账户或数据库；存档保存在当前浏览器的 `honghuang-ji-save`。旧版人物、器物和剧情记录会保留，新字段补默认值。换域名、浏览器或安装包时，请通过游戏内「存档搬移」导出、导入。
 
 ```bash
 npm run typecheck
-npm run build
 npm run lint
 npm test
-node --experimental-strip-types --test src/lib/honghuang/balance.test.ts
+npm run build
+npm run build:android
 ```
 
-原 `npm test` 未包含洪荒玩法测试，因此最后一条应单独运行。第二轮已隔离原有平台测试夹具并清理两处 Lint 问题；当前完整测试和 Lint 均通过，具体结果见 [当前版验收](docs/premium-upgrade.md)。
+`npm test` 已包含原平台测试、洪荒存档与玩法回归、长程模拟。未配置 `DATABASE_URL` 时，正式构建按原项目规则跳过外部数据库迁移。安卓离线构建见 [Android 安装说明](docs/android.md)。
 
 ## 浏览器验收
 
-安装 Playwright Chromium，或设置系统 Chromium 路径，再启动开发服务：
+启动开发服务后，用 Playwright Chromium 或系统 `/usr/bin/chromium` 运行：
 
 ```bash
-PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node scripts/art-browser-qa.mjs
+node --experimental-strip-types scripts/completion.browser.mjs
+node --experimental-strip-types scripts/growth.browser.mjs
+node --experimental-strip-types scripts/epic-encounters.browser.mjs
+node --experimental-strip-types scripts/painted-choices.browser.mjs
+node --experimental-strip-types scripts/reading-flow.browser.mjs
+node --experimental-strip-types scripts/roam-feedback.browser.mjs
 ```
 
-追加 `--refinement` 会运行原有全部流程及第二轮专项检查，并仅保存少量新增截图。
+脚本可用第一个参数指定本机目标 URL，覆盖 320、360、412px 手机及桌面，使用独立测试存档。最新验收见 [统一收尾报告](docs/reviews/complete-experience.md)，此前内容见 [长卷与相遇](docs/reviews/epic-encounters.md)、[御器与参悟](docs/reviews/relics-insight.md)。APK 工作流另包含 Android 模拟器断网启动、音频与存档检查，不将模拟器当作真机测试。当前 APK 包含本轮与此前完整升级，下载、源码提交、校验值和原生检查结果见 [Android 交付](docs/android.md)。
 
-默认检查 `http://127.0.0.1:8080/`，覆盖 390px、320px 手机与 1440px 桌面。脚本支持用第一个参数指定目标 URL、第二个参数指定截图目录，详见脚本。它使用独立浏览器上下文，不会访问真实用户的存档。
+## 美术、来源与历史验收
 
-当前版全套检查可运行 `node --experimental-strip-types scripts/premium-browser-qa.mjs`，会先复用上述50项回归，再验证新界面、四根骨、九器物、14地志和9结局展示。
+- [美术规范与资源](docs/art-direction.md)、[六页重建](docs/premium-upgrade.md)、[青铜选项与共用战斗](docs/reviews/bronze-actions-combat.md)
+- [配乐、加载与图标](docs/reviews/audio-loading-renewal.md)、[境内探索](docs/reviews/living-regions.md)、[族脉与世局](docs/reviews/factions-lineages.md)、[阅读衔接](docs/reviews/reading-flow.md)
+- [原画提示词](public/art/scenes.md)、[人物及器物](public/art/pilgrim-relics.md)、[根骨立绘](public/art/origin-portraits.md)、[器物与地图](public/art/premium-artkit.md)
+- [四位行旅与四族山河原画](public/art/epic-encounters.md)、[正文字体来源与新增字形](public/fonts/CREDITS.md)
+- [四族选项牌面](public/art/painted-choices.md)
+- [音频许可](public/audio/CREDITS.txt)、[正文字体许可](public/fonts/OFL.txt)、[字标字体许可](public/fonts/MaShanZheng-OFL.txt)
 
-## 美术与兼容性记录
-
-- [美术规范、素材与授权](docs/art-direction.md)
-- [当前版全界面升级、素材与实拍](docs/premium-upgrade.md)
-- [第二轮验收结果与新增截图](docs/refinement-validation.md)
-- [第一轮验收与原始前后对照](docs/art-validation.md)
-- [原 v1 存档契约与回归夹具](docs/compatibility-review.md)
-- [场景原画来源与提示词](public/art/scenes.md)
-- [人物及器物来源与提示词](public/art/pilgrim-relics.md)
-- [地域原画一](public/art/regional-scenes-a.md) / [地域原画二](public/art/regional-scenes-b.md)
-- [根骨立绘来源](public/art/origin-portraits.md) / [器物图集与舆图来源](public/art/premium-artkit.md)
-- [正文字体授权](public/fonts/OFL.txt) / [字标字体授权](public/fonts/MaShanZheng-OFL.txt)
-
-`src/lib/honghuang/visuals.ts` 负责既有场景/地点到美术的映射；引擎、存档、故事、小说和世界数据保持原样。地图只供地志浏览，不提供移动或传送；人物形象按既有根骨选择，器物图标按既有ID选择。血海、东海、娲皇、人族火塘、蓬莱、幽冥已补充专属意象原画；其他场景仍部分共用，尚未为每名神灵或物品制作独立原画。
-
-`screenshots/premium/` 提供当前界面实拍；`screenshots/before/`、`screenshots/after/` 与 `screenshots/refinement/` 保留前轮对照。此次仅提交独立开发分支及 PR，不自动合并或发布。
+旧篇「山河」保留地志浏览；开放游历的行路由原有游戏规则处理。原小说正文没有因新玩法被删改。`screenshots/` 保存各轮截图及部分自动化结果。开发使用独立分支和 PR，不自动合并 main 或发布正式版本。

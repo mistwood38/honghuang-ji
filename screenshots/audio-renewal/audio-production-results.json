@@ -1,0 +1,28 @@
+[
+  {
+    "width": 320,
+    "ok": true
+  },
+  {
+    "width": 360,
+    "ok": true
+  },
+  {
+    "width": 412,
+    "ok": true
+  },
+  {
+    "width": 1280,
+    "ok": true
+  },
+  {
+    "name": "loading-to-game",
+    "width": 360,
+    "ok": true
+  },
+  {
+    "name": "loading-to-game",
+    "width": 1280,
+    "ok": true
+  }
+]

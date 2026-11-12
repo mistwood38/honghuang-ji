@@ -1,0 +1,74 @@
+.relic-loadout {
+  margin-top: 1.5rem;
+  min-width: 0;
+}
+.relic-loadout h2 {
+  font: 1.35rem/1.7 var(--font-serif);
+  color: #ddc99c;
+}
+.growth-guidance,
+.relic-use > p {
+  font-size: 0.85rem;
+  line-height: 1.9;
+  color: #bdc9b9;
+  margin: 0.7rem 0;
+}
+.relic-loadout-grid {
+  display: grid;
+  gap: 1rem;
+}
+.relic-use,
+.insight-study {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #b59a5c47;
+  background: #0c221c;
+}
+.relic-use.is-attuned {
+  border-color: #c0a36b;
+  box-shadow: inset 0 0 22px #d8b65c0b;
+}
+.relic-use h3 {
+  font: 1.1rem/1.7 var(--font-serif);
+  color: #d7c18c;
+}
+.relic-use .relic-list {
+  grid-template-columns: 1fr;
+  margin: 0 0 0.7rem;
+}
+.relic-use .relic-card {
+  width: 100%;
+}
+.relic-use .game-action {
+  width: 100%;
+}
+.relic-current {
+  padding: 1rem 0;
+}
+.relic-current p {
+  color: #d8c48d;
+  margin-bottom: 0.6rem;
+}
+.insight-study {
+  margin-top: 1rem;
+}
+.insight-study h4 {
+  color: #dbc595;
+  font: 1rem/1.8 var(--font-serif);
+}
+.insight-study p {
+  font-size: 0.8rem;
+  line-height: 1.85;
+  margin: 0.5rem 0;
+}
+.insight-study .game-action {
+  width: 100%;
+}
+.insight-status {
+  color: #c6ad72;
+}
+@media (min-width: 720px) {
+  .relic-loadout-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "base": "d67a2b5",
+  "viewports": [
+    {
+      "width": 360,
+      "ok": true,
+      "manualActions": 13
+    }
+  ],
+  "errors": [],
+  "checks": [
+    {
+      "case": "three real idle ticks",
+      "width": 360,
+      "beforeY": 563,
+      "afterY": 563,
+      "buttonBefore": 447.921875,
+      "buttonAfter": 447.921875
+    },
+    {
+      "case": "four remounts at same time do not award fights",
+      "ok": true
+    },
+    {
+      "case": "v1 migration retains identity, items and chronicle",
+      "ok": true
+    }
+  ],
+  "ok": true
+}

@@ -1,0 +1,65 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "results": [
+    {
+      "width": 320,
+      "name": "legacy-save-chapter-choice-persists-and-cannot-repeat",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "name": "trial-real-victory-travel-ending-and-continue",
+      "ok": true
+    },
+    {
+      "width": 320,
+      "name": "aid-truce-patrol-real-rewards-and-stable-scroll",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "legacy-save-chapter-choice-persists-and-cannot-repeat",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "trial-real-victory-travel-ending-and-continue",
+      "ok": true
+    },
+    {
+      "width": 360,
+      "name": "aid-truce-patrol-real-rewards-and-stable-scroll",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "legacy-save-chapter-choice-persists-and-cannot-repeat",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "trial-real-victory-travel-ending-and-continue",
+      "ok": true
+    },
+    {
+      "width": 412,
+      "name": "aid-truce-patrol-real-rewards-and-stable-scroll",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "legacy-save-chapter-choice-persists-and-cannot-repeat",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "trial-real-victory-travel-ending-and-continue",
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "name": "aid-truce-patrol-real-rewards-and-stable-scroll",
+      "ok": true
+    }
+  ]
+}

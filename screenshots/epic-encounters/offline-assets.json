@@ -1,0 +1,32 @@
+[
+  {
+    "path": "art/wayfarers.webp",
+    "bytes": 325802,
+    "sha256": "0e3fa93b4099e8d2ca2a0ba2ad9c91a84fcae765b9580f31a4a97fbf0e691a6e",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "art/wayfarers-small.webp",
+    "bytes": 157040,
+    "sha256": "b8c2bcaabcc4ed734b6aa9441c7cd36d74b529b458981658a2b175c6baeb0c14",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "art/lineage-vistas.webp",
+    "bytes": 432572,
+    "sha256": "328371360ec670bc2055bbc6bb53ce2ee989dae8062d5fe9a26f48ef81848107",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "art/lineage-vistas-small.webp",
+    "bytes": 196960,
+    "sha256": "68048faa0bf82258fc22d4098dfd1f0f8fa3daf829a562af0cfff522cf1733b2",
+    "matches_android_bundle": true
+  },
+  {
+    "path": "fonts/honghuang-song.woff2",
+    "bytes": 487716,
+    "sha256": "aba408bd1485fb6be58694911bd4fe9fee7c2de288e658a4006e7e90f7bcf5a3",
+    "matches_android_bundle": true
+  }
+]

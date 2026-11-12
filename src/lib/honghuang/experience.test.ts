@@ -4,6 +4,7 @@ import { buildAftermath } from "./aftermath.ts";
 import { fresh } from "./engine.ts";
 import { musicCue, storyScrollTop, MUSIC } from "./music.ts";
 import { audioContextExists, setAmbience } from "./sound.ts";
+import { DEFAULT_MIX, normalizeMix } from "./audio-settings.ts";
 
 test("each screen and mood has its own bed", () => {
   const cues = [
@@ -23,7 +24,8 @@ test("each screen and mood has its own bed", () => {
   for (const cue of cues) {
     assert.equal(MUSIC[cue].src.startsWith("/audio/"), true);
   }
-  assert.equal(MUSIC.calamity.title, "Hope");
+  assert.equal(MUSIC.calamity.title, "踏劫");
+  assert.ok(new Set(Object.values(MUSIC).map(track => track.src)).size >= 6);
   assert.notEqual(MUSIC.land.src, MUSIC.tide.src);
 });
 
@@ -61,4 +63,13 @@ test("a muted life does not construct an audio context", () => {
   setAmbience(true, "title");
   assert.equal(audioContextExists(), false);
   setAmbience(false);
+});
+
+test("old and malformed audio preferences receive safe independent defaults", () => {
+  assert.deepEqual(normalizeMix(undefined), DEFAULT_MIX);
+  assert.deepEqual(normalizeMix({ music: false, effects: true, musicVolume: 4, effectsVolume: -1 }), {
+    music: false, effects: true, musicVolume: 1, effectsVolume: 0,
+  });
+  assert.equal(normalizeMix({ musicVolume: Number.NaN }).musicVolume, DEFAULT_MIX.musicVolume);
+  assert.equal(normalizeMix({ effects: false }).effects, false);
 });

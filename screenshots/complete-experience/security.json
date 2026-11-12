@@ -1,0 +1,11 @@
+{
+  "scope": "Tracked text including staged delivery; all commit patches since play/open-cultivation",
+  "commitCount": 19,
+  "patterns": [
+    "github-token",
+    "private-key",
+    "aws-access-key",
+    "service-key"
+  ],
+  "matches": []
+}

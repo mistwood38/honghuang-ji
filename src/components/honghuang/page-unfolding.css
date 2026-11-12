@@ -1,0 +1,9 @@
+.page-unfolding {
+  min-height: 50vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  color: #d5bd84;
+  font: 1rem/1.8 var(--font-serif);
+  letter-spacing: 0.16em;
+}

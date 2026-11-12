@@ -2,27 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { CHAPTERS, NOVEL_PREFACE } from "@/lib/honghuang/novel";
 import { NOVEL_NAME } from "@/lib/honghuang/world";
 import { useSave } from "@/lib/honghuang/store";
-import { ART, type ArtKey } from "@/lib/honghuang/visuals";
+import { ART, CHAPTER_ART } from "@/lib/honghuang/visuals";
 import { Artwork, PageHeading } from "./art";
 import "./reading-views.css";
 
 const VOLUMES = [...new Set(CHAPTERS.map((chapter) => chapter.volume))];
-const CHAPTER_ART: ArtKey[] = [
-  "chaos",
-  "chaos",
-  "mountain",
-  "palace",
-  "palace",
-  "mountain",
-  "mountain",
-  "east",
-  "calamity",
-  "nuwa",
-  "nuwa",
-  "tribes",
-  "fengshen",
-  "mountain",
-];
 
 export function NovelView() {
   const index = useSave((state) => state.novelIndex);
@@ -99,7 +83,7 @@ export function NovelView() {
 
   return (
     <section className="page-wrap reader-page">
-      <PageHeading label="本纪 · 五卷十四章" title={NOVEL_NAME}>
+      <PageHeading label={`本纪 · ${VOLUMES.length} 卷 ${CHAPTERS.length} 章`} title={NOVEL_NAME}>
         <p>天地初开，万灵有名。翻开这一方洪荒的正史。</p>
       </PageHeading>
       <div className="reader-layout">
@@ -145,7 +129,7 @@ export function NovelView() {
             className={`manuscript reader-manuscript ${largeText ? "reader-large-text" : ""}`}
           >
             <div className="reader-leaf-art" key={`art-${chapter.id}`}>
-              <Artwork art={ART[CHAPTER_ART[safe] ?? "mountain"]} eager />
+              <Artwork art={ART[CHAPTER_ART[chapter.id] ?? "mountain"]} eager />
               <span aria-hidden="true" className="reader-art-inscription">
                 {chapter.volume}
               </span>
